@@ -42,6 +42,22 @@ The app does not ship with a real vault, key, or private calendar feed URL.
 - By default, summoning Orb starts listening when a key is saved. Disable this in Settings if preferred. The microphone status is shown beneath the orb.
 - Drag the small dots above the orb to move it. It floats above normal windows and can appear on other Spaces.
 
+## Screenshots
+
+Click an image to view it at full size.
+
+**Listening**
+
+[![Vault Orb listening on the Mac desktop](docs/images/orb-listening.png)](docs/images/orb-listening.png)
+
+**Calendar view**
+
+[![Vault Orb showing a month calendar and day agenda](docs/images/calendar-view.png)](docs/images/calendar-view.png)
+
+**Today's tasks**
+
+[![Vault Orb showing today's tasks](docs/images/today-tasks.png)](docs/images/today-tasks.png)
+
 ## Contextual visuals
 
 There is no permanent dashboard. A companion card appears when useful:
