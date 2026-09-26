@@ -1,0 +1,214 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const YAML = require('yaml');
+
+const FOLDERS = { life: '0. Home/Life Tasks', business: '0. Home/Business Tasks' };
+const RULES_PATH = '0. Home/Task Rules.md';
+const hash = text => crypto.createHash('sha256').update(text).digest('hex');
+const localDate = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+function string(value, name, max = 500) {
+  if (typeof value !== 'string' || !value.trim() || value.length > max) throw new Error(`${name} must be nonempty text (up to ${max} characters).`);
+  return value.trim();
+}
+function vaultPath(value, name, {note=false}={}) {
+  const relative=string(value,name,500);
+  if(path.isAbsolute(relative) || relative.includes('\\') || relative.split('/').some(p=>!p || p==='..' || p.startsWith('.'))) throw new Error(`${name} must be a visible path relative to the vault.`);
+  if(note && !relative.endsWith('.md')) throw new Error(`${name} must be a Markdown note.`);
+  return relative;
+}
+function dateValue(value) {
+  if (value === null || value === '') return null;
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?$/.test(value)) throw new Error('Use a local date YYYY-MM-DD, or YYYY-MM-DDTHH:mm:ss.');
+  const [y,m,d,h=0,min=0,s=0] = value.split(/[-T:]/).map(Number);
+  const check = new Date(y,m-1,d,h,min,s);
+  if (check.getFullYear()!==y || check.getMonth()!==m-1 || check.getDate()!==d || check.getHours()!==h || check.getMinutes()!==min || check.getSeconds()!==s) throw new Error('Invalid calendar date or local time.');
+  return value;
+}
+function parseNote(text) {
+  const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  if (!match) return { doc: new YAML.Document({}), data: {}, body: text, hasFrontmatter: false };
+  const doc = YAML.parseDocument(match[1]);
+  if (doc.errors.length || !YAML.isMap(doc.contents)) throw new Error('Invalid YAML properties; fix this note in Obsidian first.');
+  return { doc, data: doc.toJSON(), body: text.slice(match[0].length), hasFrontmatter: true };
+}
+function atomicWrite(file, text) {
+  const temp = `${file}.${crypto.randomUUID()}.tmp`;
+  try {
+    fs.writeFileSync(temp,text,{mode:0o600,flag:'wx'});
+    const fd=fs.openSync(temp,'r'); try {fs.fsyncSync(fd);} finally {fs.closeSync(fd);}
+    fs.renameSync(temp,file);
+  } finally { if(fs.existsSync(temp)) fs.unlinkSync(temp); }
+}
+
+class Vault {
+  constructor(root, stateDir, {folders=FOLDERS,rulesPath=RULES_PATH}={}) {
+    this.root = fs.realpathSync(root);
+    if (!fs.statSync(this.root).isDirectory()) throw new Error('Choose a vault folder.');
+    this.folders={life:vaultPath(folders.life,'Life tasks folder'),business:vaultPath(folders.business,'Business tasks folder')};
+    if(this.folders.life===this.folders.business || this.folders.life.startsWith(this.folders.business+'/') || this.folders.business.startsWith(this.folders.life+'/')) throw new Error('Life and business task folders must be separate.');
+    this.rulesPath=rulesPath===''?'':vaultPath(rulesPath,'Task rules note',{note:true});
+    this.stateDir = stateDir;
+    fs.mkdirSync(stateDir,{recursive:true,mode:0o700});
+    this.journalFile = path.join(stateDir,`history-${hash(this.root).slice(0,16)}.json`);
+  }
+  validateTaskFolders() {
+    for(const [list,folder] of Object.entries(this.folders)) {
+      const file=this.resolve(folder,{note:false});
+      if(!fs.statSync(file).isDirectory()) throw new Error(`${list} tasks path must be a folder.`);
+    }
+    if(this.rulesPath) this.read(this.rulesPath);
+  }
+  resolve(relative, {missing=false, note=true}={}) {
+    string(relative,'Note path',2000);
+    if(path.isAbsolute(relative) || relative.includes('\\') || relative.split('/').some(p=>!p || p==='..' || p.startsWith('.'))) throw new Error('Only visible files inside the selected vault are accessible.');
+    if(note && !relative.endsWith('.md')) throw new Error('Only Markdown notes are supported.');
+    const target=path.join(this.root,relative);
+    let current=this.root;
+    const parts=relative.split('/');
+    for(let i=0;i<parts.length;i++) {
+      current=path.join(current,parts[i]);
+      if(!fs.existsSync(current)) {
+        // lstat also detects dangling symlinks.
+        try { if(fs.lstatSync(current).isSymbolicLink()) throw new Error('Symbolic links are not supported.'); } catch(e) {if(e.code!=='ENOENT') throw e;}
+        if(missing && i===parts.length-1) return target;
+        throw new Error(`Not found: ${relative}`);
+      }
+      if(fs.lstatSync(current).isSymbolicLink()) throw new Error('Symbolic links are not supported.');
+      const real=fs.realpathSync(current);
+      if(!real.startsWith(this.root+path.sep)) throw new Error('Path is outside the vault.');
+    }
+    return target;
+  }
+  read(relative) {
+    const file=this.resolve(relative,{note:false});
+    if(!['.md','.txt'].includes(path.extname(file).toLowerCase()))throw new Error('Only Markdown and plain text notes are supported.');
+    if(fs.statSync(file).size>512*1024) throw new Error('This note is too large (maximum 512 KB).');
+    const content=fs.readFileSync(file,'utf8');
+    return {path:relative,content,version:hash(content)};
+  }
+  walk(folder='',extensions=['.md']) {
+    const base=folder ? this.resolve(folder,{note:false}) : this.root;
+    const result=[];
+    const visit=(dir,depth=0)=> {
+      if(depth>24) return;
+      for(const entry of fs.readdirSync(dir,{withFileTypes:true})) {
+        if(entry.name.startsWith('.') || entry.isSymbolicLink() || ['node_modules','dist'].includes(entry.name)) continue;
+        const file=path.join(dir,entry.name);
+        if(entry.isDirectory()) visit(file,depth+1);
+        else if(entry.isFile() && extensions.includes(path.extname(entry.name).toLowerCase())) result.push(path.relative(this.root,file));
+      }
+    };
+    visit(base); return result.sort();
+  }
+  findFiles(query) {
+    const terms=string(query,'Search query',300).toLowerCase().split(/\s+/);
+    return {files:this.walk('',['.md','.txt','.csv','.tsv','.xlsx']).map(p=>({path:p,score:terms.reduce((s,t)=>s+(p.toLowerCase().includes(t)?1:0),0)})).filter(f=>f.score).sort((a,b)=>b.score-a.score).slice(0,40)};
+  }
+  search(query,limit=12) {
+    const terms=string(query,'Search query',300).toLowerCase().split(/\s+/);
+    const results=[]; let skipped=0;
+    for(const relative of this.walk()) {
+      try {
+        const note=this.read(relative), lower=note.content.toLowerCase(), title=relative.toLowerCase();
+        const score=terms.reduce((s,t)=>s+(title.includes(t)?8:0)+(lower.includes(t)?1:0),0);
+        if(score) {
+          const index=Math.max(0,lower.indexOf(terms.find(t=>lower.includes(t)) || terms[0]));
+          results.push({path:relative,version:note.version,score,excerpt:note.content.slice(Math.max(0,index-100),index+600)});
+        }
+      } catch {skipped++;}
+    }
+    results.sort((a,b)=>b.score-a.score);
+    return {results:results.slice(0,Math.min(30,limit)),total:results.length,skipped};
+  }
+  tasks({scope='all',date=localDate(),include_completed=false}={}) {
+    if(!['all','today','overdue','life','business'].includes(scope)) throw new Error('Unknown task scope.');
+    dateValue(date); const day=date.slice(0,10), tasks=[], warnings=[];
+    for(const [list,folder] of Object.entries(this.folders)) {
+      if(!fs.existsSync(path.join(this.root,folder))) continue;
+      for(const relative of this.walk(folder)) {
+        try {
+          const note=this.read(relative), {data}=parseNote(note.content);
+          if(data.type!=='task' || (!include_completed && data.completed===true)) continue;
+          const planned=typeof data.planned==='string'?data.planned:null, due=typeof data.due==='string'?data.due:null;
+          const today=planned?.slice(0,10)===day || due?.slice(0,10)===day;
+          const overdue=!!due && due.slice(0,10)<day;
+          if(scope==='today'&&!today || scope==='overdue'&&!overdue || ['life','business'].includes(scope)&&scope!==list) continue;
+          tasks.push({path:relative,title:path.basename(relative,'.md'),list,category:data.category||'Inbox',venture:data.venture||null,planned,due,completed:data.completed===true,today,overdue,version:note.version});
+        } catch(e) {warnings.push({path:relative,error:e.message});}
+      }
+    }
+    tasks.sort((a,b)=>(a.due||a.planned||'9999').localeCompare(b.due||b.planned||'9999'));
+    return {date:day,tasks,warnings};
+  }
+  history() {
+    if(!fs.existsSync(this.journalFile)) return [];
+    const entries=JSON.parse(fs.readFileSync(this.journalFile,'utf8'));
+    if(!Array.isArray(entries)) throw new Error('Change history is damaged. Restore it before making changes.');
+    // Recover a crash between applying a change and marking its journal entry.
+    for(const e of entries) if(e.status==='pending') {
+      try {e.status=this.read(e.path).version===e.afterHash?'applied':'uncertain';} catch {e.status='uncertain';}
+    }
+    return entries;
+  }
+  publicHistory() {return this.history().slice(-30).reverse().map(({id,path,action,at,status})=>({id,path,action,at,status}));}
+  commit(relative,before,after,action) {
+    const file=this.resolve(relative,{missing:before===null});
+    if(before!==null && fs.readFileSync(file,'utf8')!==before) throw new Error('Note changed since it was read. Read it again before editing.');
+    const entries=this.history();
+    const entry={id:crypto.randomUUID(),path:relative,action,at:new Date().toISOString(),before,afterHash:hash(after),status:'pending'};
+    entries.push(entry); atomicWrite(this.journalFile,JSON.stringify(entries,null,2));
+    try {
+      if(before===null) fs.writeFileSync(file,after,{flag:'wx',mode:0o600});
+      else atomicWrite(file,after);
+    } catch(e) {entry.status='failed';atomicWrite(this.journalFile,JSON.stringify(entries,null,2));throw e;}
+    entry.status='applied'; atomicWrite(this.journalFile,JSON.stringify(entries,null,2));
+    return {path:relative,version:entry.afterHash,change_id:entry.id,action};
+  }
+  createTask(args) {
+    const title=string(args.title,'Title',180);
+    if(/[\r\n]/.test(title)) throw new Error('Title must be a single line.');
+    const folder=this.folders[args.list]; if(!folder) throw new Error('Choose life or business.');
+    this.resolve(folder,{note:false});
+    const safe=title.replace(/[\/\\:*?"<>|\x00-\x1f]/g,'-').replace(/^\.+/,'').trim();
+    if(!safe) throw new Error('Choose a valid title.');
+    let relative=`${folder}/${safe}.md`, n=2;
+    while(fs.existsSync(path.join(this.root,relative))) relative=`${folder}/${safe} (${n++}).md`;
+    const data={type:'task',category:args.category ? string(args.category,'Category',100):'Inbox',planned:dateValue(args.planned??null),due:dateValue(args.due??null),completed:false};
+    if(args.list==='business') data.venture=args.venture?string(args.venture,'Venture',100):null;
+    const body=args.details ? string(args.details,'Details',20000) : '';
+    return this.commit(relative,null,`---\n${YAML.stringify(data)}---\n\n# ${title}\n${body?'\n'+body+'\n':''}`,'Task added');
+  }
+  updateTask({path:relative,version,...changes}) {
+    if(!Object.values(this.folders).some(f=>relative.startsWith(f+'/'))) throw new Error('Only task notes in the task folders can be updated.');
+    const note=this.read(relative);
+    if(version!==note.version) throw new Error('Task changed. Read it again before editing.');
+    const parsed=parseNote(note.content); if(parsed.data.type!=='task') throw new Error('This is not a task note.');
+    let changed=false;
+    for(const [key,value] of Object.entries(changes)) {
+      if(!['planned','due','completed','category','venture'].includes(key)) throw new Error(`Unsupported task field: ${key}`);
+      // Null means leave unchanged; empty date string clears a date.
+      if(value===null || value===undefined) continue;
+      if(key==='completed') {if(typeof value!=='boolean') throw new Error('Completed must be true or false.');parsed.doc.set(key,value);}
+      else if(['planned','due'].includes(key)) parsed.doc.set(key,dateValue(value));
+      else parsed.doc.set(key,string(value,key,100));
+      changed=true;
+    }
+    if(!changed) throw new Error('No fields to update.');
+    return this.commit(relative,note.content,`---\n${parsed.doc.toString()}---\n${parsed.body}`,'Task updated');
+  }
+  appendNote({path:relative,version,text}) {
+    const note=this.read(relative); if(version!==note.version) throw new Error('Note changed. Read it again before appending.');
+    return this.commit(relative,note.content,note.content.trimEnd()+'\n\n'+string(text,'Text',20000)+'\n','Note appended');
+  }
+  undo(id) {
+    const entries=this.history(), entry=id?entries.find(e=>e.id===id):entries.findLast(e=>e.status==='applied');
+    if(!entry || entry.status!=='applied') throw new Error('No change available to undo.');
+    const file=this.resolve(entry.path), current=this.read(entry.path);
+    if(current.version!==entry.afterHash) throw new Error('This note has changed since that action. Undo newer edits first, or review it in Obsidian.');
+    if(entry.before===null) fs.unlinkSync(file); else atomicWrite(file,entry.before);
+    entry.status='undone'; atomicWrite(this.journalFile,JSON.stringify(entries,null,2));
+    return {path:entry.path,action:'Change undone',change_id:entry.id};
+  }
+}
+module.exports={Vault,FOLDERS,RULES_PATH,parseNote,localDate,dateValue,hash,atomicWrite};

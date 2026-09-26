@@ -1,0 +1,30 @@
+{
+  "name": "vault-orb",
+  "productName": "Vault Orb",
+  "version": "0.2.1",
+  "description": "A voice companion for your Obsidian vault",
+  "private": true,
+  "main": "src/main.cjs",
+  "scripts": {
+    "build:native": "node scripts/build-native.cjs",
+    "start": "electron .",
+    "test": "node --test test/*.test.cjs",
+    "prepackage": "npm run build:native",
+    "package": "electron-packager . 'Vault Orb' --platform=darwin --arch=arm64 --out=dist --overwrite --icon=assets/icon.icns --app-bundle-id=app.vaultorb.desktop --extend-info=assets/Info.plist --ignore='^/(dist|test|screenshots|scripts|vault-template|agent.cjs|package-lock.json)' --extra-resource=native/orb-shortcut.node"
+  },
+  "dependencies": {
+    "csv-parse": "^7.0.3",
+    "exceljs": "^4.4.0",
+    "ical.js": "^2.2.1",
+    "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^41.0.0"
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "^11.1.1"
+    }
+  }
+}
