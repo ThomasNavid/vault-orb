@@ -1,7 +1,7 @@
 {
   "name": "vault-orb",
   "productName": "Vault Orb",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A voice companion for your Obsidian vault",
   "private": true,
   "main": "src/main.cjs",

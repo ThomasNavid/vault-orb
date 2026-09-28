@@ -94,6 +94,22 @@ test('calendar tool is available to voice and deep queries',()=>{
   assert.ok(agent);
 });
 
+test('completing a task refreshes the calendar shown beside the orb',async t=>{
+  const vault=fixture(t);
+  const created=vault.createTask({title:'File report',list:'business',planned:'2026-09-27',due:null});
+  const events=[];
+  const agent=new Agent({vault,getKey:()=>'',onActivity:event=>events.push(event),fetchImpl:async()=>({ok:true,headers:{get:()=>null},arrayBuffer:async()=>Buffer.from(ics)})});
+  await agent.execute('query_calendar',{start:'2026-09-26',end:'2026-09-29',include_tasks:true});
+  await agent.execute('update_task',{path:created.path,version:created.version,planned:null,due:null,completed:true,category:null,venture:null});
+  const views=events.filter(event=>event.kind==='visual').map(event=>event.visual);
+  assert.equal(views.length,2);
+  assert.equal(views[0].kind,'calendar');
+  assert.equal(views[0].days.flatMap(day=>day.items).some(item=>item.kind==='task'),true);
+  assert.equal(views[1].kind,'calendar');
+  assert.equal(views[1].days.flatMap(day=>day.items).some(item=>item.kind==='task'),false);
+  assert.equal(views[1].days.flatMap(day=>day.items).some(item=>item.kind==='event'),true);
+});
+
 test('calendar visual places multi-day events and task dates on the right days',()=>{
   const visual=calendarVisual({start:'2026-09-27',end:'2026-09-30',timezone:'Europe/London',items:[
     {kind:'event',title:'Time off',start:'2026-09-27',end:'2026-09-29',allDay:true},

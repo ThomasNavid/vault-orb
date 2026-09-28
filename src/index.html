@@ -53,6 +53,13 @@
       </div>
       <p class="help">Task paths are relative to the chosen vault. Create the folders in Obsidian first.</p>
 
+      <h2 class="group-title">Google Calendar</h2>
+      <div class="group">
+        <div class="field"><label for="calendar-id">Calendar for new events</label><select id="calendar-id"><option value="">Choose a Google calendar</option></select></div>
+        <div class="field"><label for="calendar-token">Full Calendar access token</label><input id="calendar-token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste token from Obsidian"></div>
+      </div>
+      <p id="calendar-setup" class="help">In Obsidian Full Calendar, connect a Google calendar and enable Local REST Server. Generate a token with Read events, Write events and Read providers, then paste it here. Keep Obsidian open for calendar writes.</p>
+
       <h2 class="group-title">OpenAI</h2>
       <div class="group">
         <div class="field"><label for="api-key">API key</label><input id="api-key" type="password" placeholder="sk-…" autocomplete="off" spellcheck="false"></div>

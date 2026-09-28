@@ -2,6 +2,7 @@ const {app,BrowserWindow,ipcMain,dialog,safeStorage,globalShortcut,Menu,shell,se
 const fs=require('node:fs'),path=require('node:path'),{pathToFileURL}=require('node:url');
 const {Vault,FOLDERS,RULES_PATH,atomicWrite}=require('./vault.cjs');
 const {Agent}=require('./agent.cjs');
+const {pluginSettings}=require('./google-calendar.cjs');
 let win,tray,shortcut,shortcutActive=false,rendererReady=false,pendingActivation=false,config={},vault,agent,controller=new AbortController(),conversation=[],calls=new Map(),generation=0,chatBusy=false,quitting=false;
 const userData=app.getPath('userData');
 const configFile=path.join(userData,'settings.json');
@@ -9,8 +10,9 @@ const index=path.join(__dirname,'index.html');
 const trusted=event=>event.sender===win?.webContents && event.senderFrame?.url===pathToFileURL(index).href;
 function handle(name,fn) {ipcMain.handle(name,async(event,...args)=>{if(!trusted(event))throw new Error('Untrusted window.');return fn(...args);});}
 function getKey() {if(!config.encryptedKey)return '';if(!safeStorage.isEncryptionAvailable())throw new Error('macOS key encryption is unavailable.');return safeStorage.decryptString(Buffer.from(config.encryptedKey,'base64'));}
-function publicSettings() {return {vaultPath:config.vaultPath||'',taskFolders:{...FOLDERS,...config.taskFolders},rulesPath:config.rulesPath??RULES_PATH,hasKey:!!config.encryptedKey,autoStart:config.autoStart!==false,voiceModel:'gpt-realtime-2.1',advancedModel:'gpt-6-sol',shortcutActive};}
-function setupVault() {if(!config.vaultPath) return;vault=new Vault(config.vaultPath,path.join(userData,'changes'),{folders:config.taskFolders||FOLDERS,rulesPath:config.rulesPath??RULES_PATH});agent=new Agent({vault,getKey,onActivity:data=>win?.webContents.send('activity',data)});}
+function getCalendarToken() {if(!config.encryptedCalendarToken)return '';if(!safeStorage.isEncryptionAvailable())throw new Error('macOS key encryption is unavailable.');return safeStorage.decryptString(Buffer.from(config.encryptedCalendarToken,'base64'));}
+function publicSettings() {let calendar={calendars:[],enabled:false};try {if(vault)calendar=pluginSettings(vault);}catch{}return {vaultPath:config.vaultPath||'',taskFolders:{...FOLDERS,...config.taskFolders},rulesPath:config.rulesPath??RULES_PATH,hasKey:!!config.encryptedKey,hasCalendarToken:!!config.encryptedCalendarToken,googleCalendars:calendar.calendars.map(({id,name})=>({id,name})),fullCalendarServer:calendar.enabled,calendarId:config.calendarId||'',autoStart:config.autoStart!==false,voiceModel:'gpt-realtime-2.1',advancedModel:'gpt-6-sol',shortcutActive};}
+function setupVault() {if(!config.vaultPath) return;vault=new Vault(config.vaultPath,path.join(userData,'changes'),{folders:config.taskFolders||FOLDERS,rulesPath:config.rulesPath??RULES_PATH});agent=new Agent({vault,getKey,getCalendarAccess:()=>({token:getCalendarToken(),calendarId:config.calendarId||''}),onActivity:data=>win?.webContents.send('activity',data)});}
 function stop() {controller.abort();controller=new AbortController();calls.clear();generation++;}
 function resize(mode='compact'){
   const previous=win.getBounds(),work=screen.getDisplayMatching(previous).workArea;
@@ -72,11 +74,15 @@ else {
     handle('enable-shortcut',async()=>{if(!shortcut)throw new Error('The native shortcut module is unavailable.');return startShortcut();});
     handle('settings',()=>publicSettings());
     handle('choose-vault',async()=>{const r=await dialog.showOpenDialog(win,{title:'Choose your Obsidian vault',properties:['openDirectory'],defaultPath:config.vaultPath||app.getPath('documents')});return r.canceled?null:r.filePaths[0];});
-    handle('save-settings',({vaultPath,taskFolders,rulesPath,key,autoStart})=>{
+    handle('save-settings',({vaultPath,taskFolders,rulesPath,key,calendarToken,calendarId,autoStart})=>{
       const candidate=new Vault(vaultPath,path.join(userData,'changes'),{folders:taskFolders||FOLDERS,rulesPath:rulesPath??RULES_PATH});
       candidate.validateTaskFolders();
+      const available=pluginSettings(candidate).calendars;
+      if(calendarId&&!available.some(c=>c.id===calendarId))throw new Error('Choose a Google calendar connected in this Obsidian vault.');
       const next={...config,vaultPath:candidate.root,taskFolders:candidate.folders,rulesPath:candidate.rulesPath,autoStart:!!autoStart};
       if(key){if(typeof key!=='string'||key.length>1000||!key.startsWith('sk-'))throw new Error('Enter a valid OpenAI API key.');if(!safeStorage.isEncryptionAvailable())throw new Error('macOS key encryption is unavailable.');next.encryptedKey=safeStorage.encryptString(key.trim()).toString('base64');}
+      next.calendarId=calendarId||'';
+      if(calendarToken){if(typeof calendarToken!=='string'||calendarToken.length>2000)throw new Error('Enter a valid Full Calendar access token.');if(!safeStorage.isEncryptionAvailable())throw new Error('macOS key encryption is unavailable.');next.encryptedCalendarToken=safeStorage.encryptString(calendarToken.trim()).toString('base64');}
       atomicWrite(configFile,JSON.stringify(next,null,2));config=next;stop();conversation=[];setupVault();return publicSettings();
     });
     handle('today',()=>{if(!vault)throw new Error('Choose a valid vault in Settings.');return {today:vault.tasks({scope:'today'}),overdue:vault.tasks({scope:'overdue'})};});

@@ -21,7 +21,7 @@
   });
   return list;
  }
- function calendar(v,open){
+ function calendar(v,open,selectedDate){
   const months=new Map();for(const day of v.days){const month=day.date.slice(0,7);if(!months.has(month))months.set(month,[]);months.get(month).push(day);}
   const keys=[...months.keys()],wrap=el('div','calendar-view'),warningCount=v.warnings?.length||0;
   if(warningCount){
@@ -34,7 +34,9 @@
   prev.type=next.type='button';prev.setAttribute('aria-label','Previous month');next.setAttribute('aria-label','Next month');controls.append(prev,label,next);
   const grid=el('div','calendar-grid'),agenda=el('section','calendar-agenda');wrap.append(controls,grid,agenda);
   if(!keys.length){wrap.append(el('p','empty','No dates in this range.'));return wrap;}
-  let monthIndex=0,selected=months.get(keys[0]).find(day=>day.items.length)?.date||v.start;
+  let monthIndex=selectedDate?keys.indexOf(selectedDate.slice(0,7)):-1;
+  if(monthIndex<0)monthIndex=0;
+  let selected=selectedDate&&v.days.some(day=>day.date===selectedDate)?selectedDate:months.get(keys[0]).find(day=>day.items.length)?.date||v.start;
   const dateLabel=day=>new Date(day+'T12:00:00Z').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'});
   const timeLabel=item=>{
    if(item.kind==='task')return (item.dateType==='due'?'Deadline':'Planned')+(item.allDay?' · all day':' · '+item.start.slice(11,16));
@@ -82,8 +84,9 @@
   showMonth();return wrap;
  }
  window.renderVisual=(host,v,openSource)=>{
+  const selectedDate=host.querySelector('.calendar-day[aria-pressed="true"]')?.dataset.date;
   host.replaceChildren();host.append(el('h1',null,v.title),el('p','subtitle',v.subtitle||''));
-  if(v.kind==='calendar')host.append(calendar(v,openSource));
+  if(v.kind==='calendar')host.append(calendar(v,openSource,selectedDate));
   else if(v.kind==='table'){
    if(!v.rows.length)host.append(el('p','empty',v.emptyText||'No rows to show.'));else host.append(isTaskTable(v)?taskList(v,openSource):table(v.columns,v.rows,v.rowPaths,openSource));
   }else{

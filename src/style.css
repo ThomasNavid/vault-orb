@@ -230,6 +230,7 @@ td:first-child{color:var(--text-1)}
 label{display:block;color:var(--text-2);font-size:12px;margin:0 0 7px}
 .optional{color:var(--text-3);font-size:var(--fs-1);margin-left:4px}
 input:not([type=checkbox]){border:1px solid var(--line-2);border-radius:var(--r-sm);background:#0c1117b3;color:var(--text-1);padding:8px 10px;width:100%;font-size:12.5px;transition:border-color .2s,box-shadow .2s}
+select{border:1px solid var(--line-2);border-radius:var(--r-sm);background:#0c1117;color:var(--text-1);padding:8px 10px;width:100%;font:12.5px var(--font)}
 input:not([type=checkbox]):focus{border-color:#9cc8d866;box-shadow:0 0 0 3px #9cc8d81a;outline:0}
 input:not([type=checkbox])::placeholder{color:var(--text-3)}
 input[readonly]{color:var(--text-2)}

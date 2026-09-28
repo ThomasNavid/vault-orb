@@ -3,6 +3,7 @@ const path=require('node:path');
 const crypto=require('node:crypto');
 const ICAL=require('ical.js');
 const {dateValue,localDate}=require('./vault.cjs');
+const {listGoogleEvents}=require('./google-calendar.cjs');
 
 const SETTINGS='.obsidian/plugins/full-calendar-remastered/data.json';
 const MAX_FEED_BYTES=5*1024*1024;
@@ -102,6 +103,10 @@ async function queryCalendar(vault,{start=null,end=null,include_tasks=true}={},o
     try {items.push(...parseEvents(await feed(source,options),source.name,zone,first,last));}
     catch(e) {options.signal?.throwIfAborted();warnings.push({calendar:source.name,error:e.message});}
   }
+  if(options.google?.token) {
+    try {items.push(...await listGoogleEvents(vault,{...options.google,calendarId:null,start:first,end:last,fetchImpl:options.fetchImpl,signal:options.signal}));}
+    catch(e) {options.signal?.throwIfAborted();warnings.push({calendar:'Google Calendar',error:e.message});}
+  }
   if(include_tasks) {
     const result=vault.tasks({scope:'all',date:first});
     warnings.push(...result.warnings.map(w=>({path:w.path,error:w.error})));
@@ -111,8 +116,10 @@ async function queryCalendar(vault,{start=null,end=null,include_tasks=true}={},o
       items.push({kind:'task',title:task.title,dateType:field,start:value,end:null,allDay:value.length===10,list:task.list,path:task.path,source:'task note',_sort:Date.parse(`${day}T${value.length===10?'00:00:00':value.slice(11)}Z`)});
     }
   }
-  items.sort((a,b)=>a._sort-b._sort||a.title.localeCompare(b.title));
-  const total=items.length;
-  return {start:first,end:last,timezone:zone,items:items.slice(0,MAX_EVENTS).map(({_sort,...item})=>item),total,truncated:total>MAX_EVENTS,warnings,calendars:sources.map(({name})=>name)};
+  const googleKeys=new Set(items.filter(item=>item.source==='Google Calendar').map(item=>`${item.title.toLowerCase()}\0${item.start}\0${item.end}`));
+  const visible=items.filter(item=>item.source!=='Full Calendar iCal'||!googleKeys.has(`${item.title.toLowerCase()}\0${item.start}\0${item.end}`));
+  visible.sort((a,b)=>a._sort-b._sort||a.title.localeCompare(b.title));
+  const total=visible.length;
+  return {start:first,end:last,timezone:zone,items:visible.slice(0,MAX_EVENTS).map(({_sort,...item})=>item),total,truncated:total>MAX_EVENTS,warnings,calendars:sources.map(({name})=>name)};
 }
 module.exports={queryCalendar,parseEvents,settings,addDays};
