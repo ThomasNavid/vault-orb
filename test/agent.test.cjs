@@ -15,7 +15,7 @@ test('Realtime connection keeps the permanent API key in the backend and include
   let captured;
   const agent=new Agent({vault:{read:()=>({content:'Rules'})},getKey:()=> 'test-key',fetchImpl:async(url,options)=>{captured={url,options};return {ok:true,text:async()=> 'sdp-answer'};}});
   const answer=await agent.connect('v=0\r\n');assert.equal(answer,'sdp-answer');assert.match(captured.url,/realtime\/calls$/);
-  const session=JSON.parse(captured.options.body.get('session'));assert.equal(session.model,'gpt-realtime-2.1');assert.equal(session.audio.output.voice,'marin');assert.ok(session.tools.some(t=>t.name==='think_deeply'));
+  const session=JSON.parse(captured.options.body.get('session'));assert.equal(session.model,'gpt-realtime-2.1');assert.equal(session.audio.output.voice,'cedar');assert.ok(session.tools.some(t=>t.name==='think_deeply'));
 });
 test('cancellation prevents a model tool response from making further edits',async()=>{
   const controller=new AbortController();let wrote=false;

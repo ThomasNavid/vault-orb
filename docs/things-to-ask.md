@@ -8,7 +8,7 @@ For the examples naming files below, copy the [fictional sample vault](../vault-
 
 ## Start without knowing what to ask
 
-Click **Today** beneath the orb for a read-only overview of today's tasks, past deadlines, active goals, habit progress, and calendar. Click **Explore** for starting requests covering the major features. Selecting an Explore card submits an ordinary assistant request; it has the same prerequisites and write boundaries as typing that request.
+Click **Today** beneath the orb for a read-only overview of today's tasks, past deadlines, active goals, habit progress, and calendar. Click **Explore** for starting requests covering the major features. Selecting an Explore suggestion submits an ordinary assistant request; it has the same prerequisites and write boundaries as typing that request.
 
 [Today and Explore guide](features/today-and-explore.md)
 

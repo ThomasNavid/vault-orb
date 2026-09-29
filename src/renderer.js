@@ -9,13 +9,35 @@ if(preview){
  api={settings:async()=>({vaultPath:'/Preview/Main',taskFolders:{life:'0. Home/Life Tasks',business:'0. Home/Business Tasks'},rulesPath:'0. Home/Task Rules.md',goalsFolder:'0. Home/Goals',hasKey:true,googleCalendars:[],hasCalendarToken:false,calendarId:'',fullCalendarServer:false,autoStart:false,shortcutActive:true}),history:async()=>[],chooseVault:async()=>'/Preview/Main',saveSettings:async()=>{throw new Error('Preview only. Use Settings in the Mac app.');},openNote:async()=>{},stop:async()=>{},ready:async()=>{},resize:async()=>{},hide:async()=>{},onActivity:()=>{},onActivate:()=>{},onHide:()=>{},onSettings:()=>{},onShortcut:()=>{}};
  api.goals=async scope=>displayVisual(previewGoals(scope));
 }
-function showPanel(mode){
+// The panel keeps a short trail of views so the header's back button returns to where you came from.
+let panelTrail=[];
+const panelInfo={home:['i-sun','orange','Today'],welcome:['i-sparkle','blue','Explore'],transcript:['i-chat','blue','Conversation'],settings:['i-gear','gray','Settings'],history:['i-clock','purple','Recent changes'],steps:['i-steps','teal','Steps']};
+const visualInfo={goals:['i-target','red','Goals'],habits:['i-flame','green','Habits'],calendar:['i-calendar','red','Calendar'],table:['i-list','orange','Results'],line:['i-chart','purple','Chart'],area:['i-chart','purple','Chart'],bar:['i-chart','purple','Chart']};
+function showPanel(mode,{back=false}={}){
  if(mode!=='home')homeGeneration++;
- cardMode=mode;$('companion').hidden=!mode;
+ if(!mode){panelTrail=[];$('ask-input').value='';}else if(!back&&cardMode&&cardMode!==mode){panelTrail=panelTrail.filter(m=>m!==mode&&m!==cardMode);panelTrail.push(cardMode);}
+ const opening=mode&&!cardMode;cardMode=mode;$('companion').hidden=!mode;
  for(const name of ['visual','home','welcome','transcript','settings','history','steps'])$(name+'-view').hidden=name!==mode;
  $('home-button').setAttribute('aria-pressed',String(mode==='home'));$('discover-button').setAttribute('aria-pressed',String(mode==='welcome'));
- $('card-eyebrow').textContent={visual:'In view',home:'Your day',welcome:'Explore Orb',transcript:'Conversation',settings:'Preferences',history:'In your vault',steps:'Behind the scenes'}[mode]||'';
+ const titled=['settings','history'].includes(mode);$('ask-form').hidden=titled;$('card-eyebrow').hidden=!titled;$('card-eyebrow').textContent=panelInfo[mode]?.[2]||'';
+ $('ask-input').placeholder=mode==='welcome'?'Ask Orb, or search views and suggestions…':'Ask Orb anything…';$('ask-input').setAttribute('aria-expanded',String(mode==='welcome'));
+ const backLabel=panelTrail.length?`Back to ${panelInfo[panelTrail.at(-1)]?.[2]||'previous view'}`:'Close panel';$('close-card').setAttribute('aria-label',backLabel);$('close-card').title=backLabel;
+ if(mode!=='settings')$('settings-error').hidden=true;
+ if(mode==='welcome')renderCommands();
+ updateFooter();
+ if(opening&&mode==='welcome')setTimeout(()=>$('ask-input').focus(),60);
  api.resize(['home','welcome'].includes(mode)?'visual':mode||'compact').catch(()=>{});
+}
+function panelBack(){const previous=panelTrail.pop();if(previous)showPanel(previous,{back:true});else showPanel(null);}
+function updateFooter(){
+ if(!cardMode)return;
+ const [icon,tint,title]=cardMode==='visual'?visualInfo[currentVisual?.kind]||['i-sparkle','blue','In view']:panelInfo[cardMode];
+ $('footer-icon').dataset.tint=tint;$('footer-icon').querySelector('use').setAttribute('href','#'+icon);$('footer-title').textContent=title;
+ const selected=cardMode==='welcome'?commandItems[commandIndex]:null;
+ const primary=cardMode==='settings'?'Save settings':cardMode==='history'?'':selected?.accessory==='Ask'?'Ask Orb':selected?'Open':'Ask Orb';
+ $('footer-primary').hidden=!primary;$('footer-primary').firstChild.textContent=primary;
+ $('card-footer').querySelector('.action-divider').hidden=!primary;
+ $('footer-secondary').firstChild.textContent=cardMode!=='welcome'?'Explore':panelTrail.length?'Back':'Close';
 }
 function error(e){const message=(e?.message||String(e)).replace(/^Error invoking remote method '[^']+': Error: /,'');$('error-text').textContent=message;$('error').hidden=false;addMessage('tool',message);if(!cardMode)showPanel('transcript');}
 function setStatus(state,text,detail=''){visual.setState(state);$('status-wrap').dataset.state=state;const node=$('status'),key=text+'\n'+detail;if((node.dataset.key??node.textContent)===key)return;node.dataset.key=key;node.textContent=text;if(detail){const d=document.createElement('span');d.className='status-detail';d.textContent=detail;node.append(' · ',d);}node.classList.remove('swap');void node.offsetWidth;node.classList.add('swap');}
@@ -68,14 +90,14 @@ function renderSteps(){
 }
 function addMessage(role,text,id=crypto.randomUUID()){
  let item=transcriptItems.get(id);
- if(!item){item=document.createElement('div');item.className=`message ${role}`;const label=document.createElement('span');label.className='message-label';label.textContent={user:'YOU',assistant:'ORB',deep:'DEEPER THINKING',tool:'IN YOUR VAULT'}[role]||'ORB';const content=document.createElement('span');item.append(label,content);$('transcript').append(item);transcriptItems.set(id,item);}
+ if(!item){item=document.createElement('div');item.className=`message ${role}`;const label=document.createElement('span');label.className='message-label';label.textContent={user:'You',assistant:'Orb',deep:'Deeper thinking',tool:'In your vault'}[role]||'Orb';const content=document.createElement('span');item.append(label,content);$('transcript').append(item);transcriptItems.set(id,item);}
  item.lastChild.textContent=text;$('transcript-view').scrollTop=$('transcript-view').scrollHeight;return item;
 }
 function liveUI(){
  $('voice-icon').setAttribute('href',connected||connecting?'#i-stop':'#i-mic');$('voice-button').classList.toggle('live',connected||connecting);$('mute-button').hidden=!connected;$('connection-dot').classList.toggle('live',connected);
  const label=connected||connecting?'End voice conversation':'Start voice conversation';$('orb-button').setAttribute('aria-label',label);$('voice-button').setAttribute('aria-label',label);$('voice-button').title=label;
 }
-function displayVisual(v){currentVisual=v;if(!v){if(cardMode==='visual')showPanel(null);return;}window.renderVisual($('visual-view'),v,path=>api.openNote(path).catch(error),{habits:args=>api.habits(args),setHabit:async args=>{await api.setHabit(args);const status=$('visual-view').querySelector('.habit-status');if(status)status.textContent='Saved to your vault.';},openHabitRecord:async args=>{const result=await api.openHabitRecord(args);await api.openNote(result.path);},filterGoals:scope=>api.goals(scope).catch(error),request:text=>submit(text).catch(error)});showPanel('visual');}
+function displayVisual(v){currentVisual=v;if(!v){if(cardMode==='visual')panelBack();return;}window.renderVisual($('visual-view'),v,path=>api.openNote(path).catch(error),{habits:args=>api.habits(args),setHabit:async args=>{await api.setHabit(args);const status=$('visual-view').querySelector('.habit-status');if(status)status.textContent='Saved to your vault.';},openHabitRecord:async args=>{const result=await api.openHabitRecord(args);await api.openNote(result.path);},filterGoals:scope=>api.goals(scope).catch(error),request:text=>submit(text).catch(error)});showPanel('visual');}
 const node=(tag,cls,text)=>{const element=document.createElement(tag);if(cls)element.className=cls;if(text!==undefined)element.textContent=String(text);return element;};
 const dateText=value=>{if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return '';const date=new Date(value+'T12:00:00Z');return Number.isNaN(date.getTime())?'':date.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'});};
 const entries=value=>Array.isArray(value)?value:Array.isArray(value?.tasks)?value.tasks:[];
@@ -120,15 +142,44 @@ function renderHome(data){
 }
 async function openHome(){const generation=++homeGeneration;showPanel('home');$('home-content').replaceChildren(node('p','empty','Gathering your day…'));$('home-date').textContent='';$('refresh-home').disabled=true;try{const data=await api.today();if(generation===homeGeneration&&cardMode==='home')renderHome(data);}catch(e){if(generation===homeGeneration&&cardMode==='home')$('home-content').replaceChildren(node('p','home-note','Today could not be loaded. '+(e?.message||String(e))));}finally{if(generation===homeGeneration)$('refresh-home').disabled=false;}}
 const prompts=[
- ['Plan','What needs my attention today?','Show what is planned or due today, plus anything past its deadline.'],
- ['Goals','Move a goal forward','What can I do today to move my active goals forward?'],
- ['Habits','Check my habits','Show my habits and what I have recorded this week.'],
- ['Calendar','See my schedule','What is on my calendar today?'],
- ['Notes','Find meeting notes','Find notes about meetings in my vault.'],
- ['Numbers','Make sense of data','Find a spreadsheet in my vault and show a useful trend if the data supports one.']
+ ['Plan','What needs my attention today?','Show what is planned or due today, plus anything past its deadline.','i-list','orange'],
+ ['Goals','Move a goal forward','What can I do today to move my active goals forward?','i-target','red'],
+ ['Habits','Check my habits','Show my habits and what I have recorded this week.','i-flame','green'],
+ ['Calendar','See my schedule','What is on my calendar today?','i-calendar','red'],
+ ['Notes','Find meeting notes','Find notes about meetings in my vault.','i-doc','yellow'],
+ ['Numbers','Make sense of data','Find a spreadsheet in my vault and show a useful trend if the data supports one.','i-chart','purple']
 ];
-function openWelcome(){showPanel('welcome');try{localStorage.setItem('orb-welcome-seen','1');}catch{};}
-for(const [category,label,request] of prompts){const button=node('button','discovery-prompt');button.type='button';button.append(node('small',null,category),node('span',null,label));button.onclick=()=>submit(request).catch(error);$('discovery-prompts').append(button);}
+// Explore is a command list: views open directly, suggestions submit their request exactly as if typed.
+const commands=[
+ {group:'Views',icon:'i-sun',tint:'orange',title:'Today',subtitle:'Tasks, goals, habits and calendar',accessory:'View',run:()=>openHome()},
+ {group:'Views',icon:'i-target',tint:'red',title:'Goals',subtitle:'Active goals and reviews',accessory:'View',run:()=>api.goals('active')},
+ {group:'Views',icon:'i-flame',tint:'green',title:'Habits',subtitle:'Log a day and see your year',accessory:'View',run:()=>api.habits({date:null,year:null})},
+ ...prompts.map(([category,label,request,icon,tint])=>({group:'Try asking',icon,tint,title:label,subtitle:category,accessory:'Ask',run:()=>submit(request)})),
+ {group:'Orb',icon:'i-chat',tint:'blue',title:'Conversation',subtitle:'This session’s transcript',accessory:'View',run:()=>showPanel('transcript')},
+ {group:'Orb',icon:'i-clock',tint:'purple',title:'Recent changes',subtitle:'Review and undo Orb’s edits',accessory:'View',run:()=>{showPanel('history');return refreshHistory();}},
+ {group:'Orb',icon:'i-gear',tint:'gray',title:'Settings',subtitle:'Vault, API key and shortcut',accessory:'View',run:()=>openSettings()}
+];
+let commandItems=[],commandIndex=0;
+const appIcon=(icon,tint)=>{const box=node('span','app-icon');box.dataset.tint=tint;box.setAttribute('aria-hidden','true');const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('class','icon');const use=document.createElementNS('http://www.w3.org/2000/svg','use');use.setAttribute('href','#'+icon);s.append(use);box.append(s);return box;};
+function renderCommands(){
+ const query=$('ask-input').value.trim(),words=query.toLowerCase().split(/\s+/).filter(Boolean),list=$('command-list');
+ commandItems=commands.filter(c=>words.every(w=>`${c.title} ${c.subtitle} ${c.group}`.toLowerCase().includes(w)));
+ if(query)commandItems.unshift({group:'Ask Orb',icon:'i-sparkle',tint:'blue',title:query,subtitle:'Ask Orb',accessory:'Ask',run:()=>submit(query)});
+ commandIndex=Math.max(0,Math.min(commandIndex,commandItems.length-1));list.replaceChildren();let group=null;
+ commandItems.forEach((c,i)=>{
+  if(c.group!==group){group=c.group;const heading=node('li','command-group',group);heading.setAttribute('role','presentation');list.append(heading);}
+  const row=node('li','command');row.id='command-'+i;row.setAttribute('role','option');row.append(appIcon(c.icon,c.tint),node('span','command-title',c.title),node('span','command-subtitle',c.subtitle),node('span','command-accessory',c.accessory));
+  row.onpointermove=()=>{if(commandIndex!==i)selectCommand(i);};row.onclick=()=>runCommand(i);list.append(row);
+ });
+ selectCommand(commandIndex);
+}
+function selectCommand(i){
+ commandIndex=i;const rows=$('command-list').querySelectorAll('.command');rows.forEach((row,j)=>row.setAttribute('aria-selected',String(j===i)));
+ if(rows[i]){$('ask-input').setAttribute('aria-activedescendant',rows[i].id);rows[i].scrollIntoView({block:'nearest'});}else $('ask-input').removeAttribute('aria-activedescendant');
+ updateFooter();
+}
+function runCommand(i=commandIndex){const command=commandItems[i];if(!command)return;Promise.resolve(command.run()).catch(error);}
+function openWelcome(){showPanel('welcome');$('ask-input').focus();try{localStorage.setItem('orb-welcome-seen','1');}catch{};}
 function updateShortcut(active){if(settings)settings.shortcutActive=active;$('shortcut-hint').querySelector('span').textContent=active?'summon Orb':'set up shortcut';$('shortcut-hint').classList.toggle('needs-setup',!active);$('shortcut-status').textContent=active?'Ready. Double-tap Control from any app.':'The shortcut listener could not start. Try restarting it below.';$('enable-shortcut').textContent=active?'Ready':'Retry';$('enable-shortcut').disabled=active;}
 function touch(){clearTimeout(idleTimer);if(connected)idleTimer=setTimeout(()=>{endVoice();setStatus('idle','Conversation ended after five quiet minutes.');},5*60*1000);}
 function send(event){if(channel?.readyState==='open')channel.send(JSON.stringify(event));}
@@ -210,7 +261,7 @@ async function submit(text){
   if(!settings?.hasKey){openSettings();return;}
   if(connecting){error('Wait for voice to connect, or cancel it first.');return;}
   if(connected&&(responseActive||toolDepth)){error('Wait for Orb to finish, or interrupt by speaking.');return;}
-  $('message').value='';$('error').hidden=true;clearToolActivity();addMessage('user',text);
+  $('message').value='';$('ask-input').value='';$('error').hidden=true;clearToolActivity();addMessage('user',text);
   if(connected){
     send({type:'conversation.item.create',item:{type:'message',role:'user',content:[{type:'input_text',text}]}});send({type:'response.create'});touch();return;
   }
@@ -229,14 +280,22 @@ async function refreshHistory(){
 }
 async function openSettings(){if(connected||connecting)endVoice();settings=await api.settings();$('vault-path').value=settings.vaultPath;$('life-folder').value=settings.taskFolders.life;$('business-folder').value=settings.taskFolders.business;$('rules-path').value=settings.rulesPath;$('goals-folder').value=settings.goalsFolder??'0. Home/Goals';$('habit-folder').value=settings.habitFolder??'0. Home/Habit Log';$('habit-script').value=settings.habitScript??'99. System/99.4 Scripts/habits/view.js';$('auto-start').checked=settings.autoStart;$('api-key').value='';$('api-key').placeholder=settings.hasKey?'Key saved':'sk-…';$('calendar-token').value='';$('calendar-token').placeholder=settings.hasCalendarToken?'Token saved':'Paste token from Obsidian';const select=$('calendar-id');select.replaceChildren(new Option('Choose a Google calendar',''));for(const calendar of settings.googleCalendars||[])select.add(new Option(calendar.name,calendar.id));select.value=settings.calendarId||(settings.googleCalendars?.length===1?settings.googleCalendars[0].id:'');$('calendar-setup').textContent=!settings.googleCalendars?.length?'Connect a Google calendar in Obsidian Full Calendar first. Then reopen Orb Settings.':!settings.fullCalendarServer?'Enable Local REST Server in Obsidian Full Calendar → Integrations. Generate a token with Read events, Write events and Read providers.':'Generate a Full Calendar token with Read events, Write events and Read providers. Keep Obsidian open for calendar writes.';$('settings-error').hidden=true;updateShortcut(settings.shortcutActive);showPanel('settings');}
 $('home-button').onclick=()=>{if(cardMode==='home')showPanel(null);else openHome().catch(error);};
-$('discover-button').onclick=()=>cardMode==='welcome'?showPanel(null):openWelcome();
-$('welcome-today').onclick=()=>openHome().catch(error);
+$('discover-button').onclick=()=>toggleExplore();
 $('refresh-home').onclick=()=>openHome().catch(error);
-$('settings-button').onclick=()=>cardMode==='settings'?showPanel(null):openSettings().catch(error);
-$('close-card').onclick=()=>showPanel(null);
+$('settings-button').onclick=()=>cardMode==='settings'?panelBack():openSettings().catch(error);
+$('close-card').onclick=panelBack;
+$('ask-input').oninput=()=>{if(cardMode==='welcome'){commandIndex=0;renderCommands();}};
+$('ask-input').onkeydown=e=>{
+ if(cardMode!=='welcome'||!['ArrowDown','ArrowUp','Home','End'].includes(e.key))return;
+ e.preventDefault();const last=commandItems.length-1;selectCommand(e.key==='Home'?0:e.key==='End'?last:e.key==='ArrowDown'?Math.min(last,commandIndex+1):Math.max(0,commandIndex-1));
+};
+$('ask-form').onsubmit=e=>{e.preventDefault();if(cardMode==='welcome')runCommand();else submit($('ask-input').value).catch(error);};
+$('footer-primary').onclick=()=>{if(cardMode==='settings')$('settings-form').requestSubmit();else if(cardMode==='welcome'||$('ask-input').value.trim())$('ask-form').requestSubmit();else $('ask-input').focus();};
+const toggleExplore=()=>cardMode==='welcome'?panelBack():openWelcome();
+$('footer-secondary').onclick=toggleExplore;
 $('hide-button').onclick=()=>{endVoice();api.hide().catch(error);};
 function setTyping(on){$('dock').classList.toggle('typing',on);$('chat-form').inert=!on;$('controls').inert=on;$('shortcut-hint').hidden=on;if(on)setTimeout(()=>$('message').focus(),60);else $('type-button').focus();}
-$('type-button').onclick=()=>setTyping(true);$('type-close').onclick=()=>setTyping(false);
+$('type-button').onclick=()=>{if(cardMode&&!$('ask-form').hidden)$('ask-input').focus();else setTyping(true);};$('type-close').onclick=()=>setTyping(false);
 $('shortcut-hint').onclick=()=>{if(!settings?.shortcutActive)openSettings().catch(error);};
 $('enable-shortcut').onclick=async()=>{try{updateShortcut(await api.enableShortcut());}catch(e){$('settings-error').textContent=e.message;$('settings-error').hidden=false;}};
 $('choose-vault').onclick=async()=>{try{const folder=await api.chooseVault();if(folder)$('vault-path').value=folder;}catch(e){error(e);}};
@@ -258,7 +317,13 @@ api.onActivate(()=>{if(settings&&!connected&&!connecting&&!busy&&cardMode!=='set
 api.onHide(()=>{endVoice();clearToolActivity();showPanel(null);$('error').hidden=true;});
 api.onSettings(()=>openSettings().catch(error));api.onShortcut(updateShortcut);
 window.addEventListener('beforeunload',()=>{microphone?.getTracks().forEach(t=>t.stop());peer?.close();});
-window.addEventListener('keydown',e=>{if(e.key==='Escape'){endVoice();api.hide().catch(error);}});
+window.addEventListener('keydown',e=>{
+ if(e.metaKey&&!e.shiftKey&&!e.altKey&&e.key.toLowerCase()==='k'){e.preventDefault();toggleExplore();return;}
+ if(e.key!=='Escape')return;
+ // Like a search field: the first Escape clears a typed query, the next hides Orb.
+ if(document.activeElement===$('ask-input')&&$('ask-input').value){$('ask-input').value='';$('ask-input').dispatchEvent(new Event('input'));return;}
+ endVoice();api.hide().catch(error);
+});
 async function previewSteps(){
  clearToolActivity();const wait=ms=>new Promise(r=>setTimeout(r,ms));
  for(const [id,label,path,done] of [['a','Searching vault',null,'Searching vault'],['b','Reading note','Notes/Weekly plan.md','Reading note'],['c','Reading sheet','Finance/Savings 2026.xlsx','Reading sheet']]){
@@ -266,7 +331,7 @@ async function previewSteps(){
  }
 }
 async function previewAnswer(text){
- $('message').value='';addMessage('user',text);await previewSteps();
+ $('message').value='';$('ask-input').value='';addMessage('user',text);await previewSteps();
  if(/habit|pull.up|mandarin|heatmap/i.test(text))displayVisual(previewHabits());
  else if(/goal|review/i.test(text))displayVisual(previewGoals(/review/i.test(text)?'review_due':'active'));
  else if(/note/i.test(text))displayVisual({id:'preview',kind:'table',title:'Meeting notes',subtitle:'Fictional preview · 2 notes',columns:['Note','Folder'],rows:[['Example meeting','Notes'],['Example launch options','Notes']],rowPaths:['Notes/Example meeting.md','Notes/Example launch options.md'],sources:[]});

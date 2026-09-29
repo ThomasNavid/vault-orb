@@ -1,5 +1,5 @@
 (() => {
- const palette=['#9ac4d4','#d5ba90','#9fc8b1','#b5accc'];
+ const palette=['#4d9bff','#ffb340','#30d158','#bf5af2'];
  const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
  const svg=(tag,attrs={})=>{const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,String(v));return n;};
  const icon=id=>{const s=svg('svg',{class:'icon','aria-hidden':'true'});s.append(svg('use',{href:'#'+id}));return s;};

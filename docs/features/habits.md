@@ -11,7 +11,7 @@ Habits are actions you repeat and record. Orb shares daily Markdown records with
 | Task | Concrete next action | Choose a lesson and give it a Planned date. |
 | Habit | Repeated action recorded over time | Study Mandarin twice weekly. |
 
-![Vault Orb habit heatmaps with fictional preview data](../images/habits-view.jpg)
+![Vault Orb habit heatmaps with fictional preview data](../images/habits-view.png)
 
 ## Setup
 

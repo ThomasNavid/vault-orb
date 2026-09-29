@@ -205,7 +205,7 @@ class Agent {
     if(typeof sdp!=='string'||sdp.length>100000||!sdp.startsWith('v=0')) throw new Error('Invalid voice connection.');
     const form=new FormData(); form.set('sdp',sdp);
     form.set('session',JSON.stringify({type:'realtime',model:'gpt-realtime-2.1',instructions:instructions(this.vault),output_modalities:['audio'],
-      audio:{input:{transcription:{model:'gpt-4o-mini-transcribe'},noise_reduction:{type:'near_field'},turn_detection:{type:'semantic_vad',eagerness:'auto',create_response:true,interrupt_response:true}},output:{voice:'marin'}},
+      audio:{input:{transcription:{model:'gpt-4o-mini-transcribe'},noise_reduction:{type:'near_field'},turn_detection:{type:'semantic_vad',eagerness:'auto',create_response:true,interrupt_response:true}},output:{voice:'cedar'}},
       tools,tool_choice:'auto',max_output_tokens:4096}));
     return apiFetch('/realtime/calls',this.getKey(),form,{signal,fetchImpl:this.fetchImpl,form:true});
   }

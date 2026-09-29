@@ -45,7 +45,7 @@ The [Things to ask Orb cookbook](docs/things-to-ask.md) has copyable examples an
 
 ## Everyday use
 
-Click the menu-bar Orb, use the Dock icon, or double-tap Control. **⌘⇧Space** is the fallback shortcut. Click the orb to talk or the keyboard icon to type. **Today** opens a read-only daily dashboard, while **Explore** shows useful starting prompts without requiring you to memorize commands. **Escape** or × hides Orb and stops voice and pending work. Settings contains Recent changes and the conversation transcript.
+Click the menu-bar Orb, use the Dock icon, or double-tap Control. **⌘⇧Space** is the fallback shortcut. Click the orb to talk or the keyboard icon to type. **Today** opens a read-only daily dashboard, while **Explore** (⌘K) is a searchable list of views and starting prompts, so you do not need to memorize commands. **Escape** or × hides Orb and stops voice and pending work. Settings contains Recent changes and the conversation transcript.
 
 Today brings together tasks planned or due today, past deadlines, active goals, habit progress, and calendar events. Its sections stay independent, so an unavailable optional integration is reported without hiding the rest of the day. Goals, habits with heatmaps, task lists, calendar agendas, and charts also appear beside the orb as needed. Source links open Markdown notes in Obsidian; spreadsheet links open in the default local application.
 

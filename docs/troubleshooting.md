@@ -33,7 +33,7 @@ Start with the exact error or visible result. A failed tool call is not a succes
 
 **Today looks stale:** click Refresh after external note edits. Calendar feeds can remain cached for up to five minutes. Orb ignores an older overlapping refresh when a newer Today request has started.
 
-**An Explore card cannot run:** Explore cards submit normal assistant requests. Save a working API key and configure any feature-specific folder or calendar source the request needs.
+**An Explore suggestion cannot run:** Explore suggestions submit normal assistant requests. Save a working API key and configure any feature-specific folder or calendar source the request needs.
 
 ## Tasks and goals
 

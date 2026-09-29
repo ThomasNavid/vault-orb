@@ -2,7 +2,7 @@
 
 [Documentation](../README.md) · [Getting started](../getting-started.md) · [Voice and controls](voice-and-controls.md)
 
-The controls beneath the orb provide two direct starting points. **Today** assembles a read-only daily dashboard from configured vault and calendar sources. **Explore** shows example requests so you do not need to memorize features or special wording.
+The controls beneath the orb provide two direct starting points. **Today** assembles a read-only daily dashboard from configured vault and calendar sources. **Explore** is a searchable list of views and example requests, so you do not need to memorize features or special wording.
 
 ## Open Today
 
@@ -28,7 +28,13 @@ Use **Refresh** after changing notes in Obsidian. If two refreshes overlap, Orb 
 
 ## Use Explore
 
-Click **Explore** to see starting points for planning, goals, habits, calendar, notes, and spreadsheets. Selecting a card submits its displayed request exactly as if you had typed it. It is not a privileged shortcut: the same prerequisites, model use, write boundaries, and confirmations apply.
+Click **Explore** or press ⌘K. The list has three groups:
+
+- **Views** open Today, Goals, or Habits directly, without an assistant request.
+- **Try asking** holds starting requests for planning, goals, habits, calendar, notes, and spreadsheets. Selecting one submits its request exactly as if you had typed it. It is not a privileged shortcut: the same prerequisites, model use, write boundaries, and confirmations apply.
+- **Orb** opens Conversation, Recent changes, or Settings.
+
+Type in the field at the top to filter the list. Once you have typed something, the first row becomes **Ask Orb** with your text; press Return to send it. Use the arrow keys to choose another row and Return to open it, or click a row. The action bar at the bottom shows what Return will do.
 
 The Explore screen appears automatically once after initial setup. It remains available from the persistent button afterward. You can always ignore the examples and speak or type your own request.
 
@@ -38,7 +44,7 @@ The Explore screen appears automatically once after initial setup. It remains av
 - Undated tasks are not included. A task needs Planned or Deadline today, or a past Deadline.
 - Calendar tasks are not repeated in the calendar section; task dates already appear in the task section.
 - Today does not prioritize work, schedule free time, or make changes. Ask Orb explicitly when you want a recommendation or edit.
-- Explore examples are fixed starting prompts, not a history of personalized suggestions.
+- Explore examples are fixed starting prompts, not a history of personalized suggestions. Filtering matches row titles and descriptions only; it does not search your vault.
 
 ## Troubleshooting
 

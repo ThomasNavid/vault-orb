@@ -4,7 +4,7 @@
 
 Orb floats above your normal Mac windows. You can speak or type requests and inspect supporting information in a companion panel.
 
-[![Vault Orb listening](../images/orb-listening.png)](../images/orb-listening.png)
+[![Vault Orb voice and navigation controls](../images/orb-controls.png)](../images/orb-controls.png)
 
 ## Setup
 
@@ -17,14 +17,15 @@ By default, summoning Orb starts listening when a key is saved. Turn off **Start
 | Action | How |
 | --- | --- |
 | Summon Orb | Click the menu-bar Orb or Dock icon, double-tap Control, or press ⌘⇧Space. |
-| Hide the focused orb | Double-tap Control again, press Escape, or click ×. |
+| Hide the focused orb | Double-tap Control again, press Escape, or click ×. If you have typed in the panel's top field, the first Escape clears it. |
 | Start voice | Click the orb or microphone button. |
 | End voice | Click the stop button, or hide Orb. |
 | Mute input during voice | Click the mute button; click again to unmute. |
-| Type | Click the keyboard icon, enter a message, and send. |
+| Type | Click the keyboard icon, enter a message, and send. While the panel is open, the keyboard icon focuses the field at the top of the panel instead; press Return to send. |
 | Return to the controls | Click the back button beside typed input. |
 | Review today | Click **Today** beneath the controls to combine today's tasks, past deadlines, active goals, habit progress, and calendar events. See [Today and Explore](today-and-explore.md). |
-| Discover requests | Click **Explore** for starting prompts covering planning, goals, habits, calendar, notes, and spreadsheet data. See [Today and Explore](today-and-explore.md). |
+| Discover requests | Click **Explore** or press ⌘K for a searchable list of views and starting prompts covering planning, goals, habits, calendar, notes, and spreadsheet data. See [Today and Explore](today-and-explore.md). |
+| Go back in the panel | Click the arrow at the top left of the panel. It returns to the view you came from, or closes the panel. |
 | Move the window | Drag the small dots above the orb. |
 | Open Settings | Click the sliders icon, use the menu-bar right-click menu, or ⌘,. |
 | Inspect the last request's tools | Click the steps chip beneath the orb. |
@@ -50,7 +51,7 @@ These requests need the same files and integrations as their feature guides. The
 
 ## What happens
 
-The status below the orb shows listening, thinking, and speaking. Small labeled orbs appear while tools run, with a final check or warning. The steps view distinguishes running, successful, and failed tool calls. A visual panel appears when useful; routine spoken replies summarize its key point rather than reading every row.
+The orb and the status below it show listening, thinking, and speaking: a ring appears while Orb listens, its glasses glance up while it thinks, and it stretches with its voice while it speaks. It also leans towards your pointer and bounces when clicked. With Reduce Motion turned on in macOS, it stays still and only changes colour. Small labeled orbs appear while tools run, with a final check or warning. The steps view distinguishes running, successful, and failed tool calls. A visual panel appears when useful; routine spoken replies summarize its key point rather than reading every row.
 
 While voice is active, typed messages are added to that voice conversation. When voice is not connected, typed messages use the reasoning backend directly. The interface prevents overlapping typed submissions; wait for an answer or interrupt voice by speaking. Muting leaves the connection open so you can still type.
 

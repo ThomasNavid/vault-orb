@@ -36,7 +36,7 @@ The native build script resolves Node headers beside the installed Node binary a
 | [visuals.cjs](../src/visuals.cjs) | Chart/table validation and native task, goal, and calendar visual construction. |
 | [visual-renderer.js](../src/visual-renderer.js) | DOM/SVG presentation, source links, goal filters, and calendar interactions. |
 | [renderer.js](../src/renderer.js) | WebRTC voice session, typed messages, UI state, activity, and preview fixtures. |
-| [orb.js](../src/orb.js) | Orb canvas animation. |
+| [orb.js](../src/orb.js) | Jelly Orb: layered SVG, spring motion, pointer attraction, and per-state looks behind `window.orbVisual.setState/setLevel`. |
 | [index.html](../src/index.html), [style.css](../src/style.css) | Interface structure and styling. |
 | [native/shortcut.cc](../native/shortcut.cc) | Native Control gesture listener. |
 
@@ -73,7 +73,7 @@ For a UI-only preview, serve `src` from the repository root:
 python3 -m http.server 8765 --bind 127.0.0.1 --directory src
 ```
 
-Open `http://127.0.0.1:8765` in a browser. The preview starts on Explore. Open Today to test the fictional daily aggregation, then use **Open habits** for in-memory logging and heatmaps. Discovery cards route through fictional preview answers. You can also type “Show my goals”, “Show my calendar”, or “Chart my savings”. The preview does not connect to your vault, call the assistant, save settings, or test voice. It is not an implementation of all cookbook prompts. Stop the server with Control-C when finished.
+Open `http://127.0.0.1:8765` in a browser. The preview starts on Explore. Open Today to test the fictional daily aggregation, then use **Open habits** for in-memory logging and heatmaps. Explore suggestions route through fictional preview answers. You can also type “Show my goals”, “Show my calendar”, or “Chart my savings”. The preview does not connect to your vault, call the assistant, save settings, or test voice. It is not an implementation of all cookbook prompts. Stop the server with Control-C when finished.
 
 The expanded app is normally 870 × 560, reduced to fit smaller screens. Check overflow, keyboard access, source links, filter states, warning/empty states, and readable chart values. Reload static previews after source changes.
 

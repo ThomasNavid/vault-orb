@@ -1,101 +1,125 @@
 (() => {
-  const canvas=document.getElementById('orb-canvas');
-  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let phase='idle',level=0,smooth=0;
-  window.orbVisual={setState:s=>{phase=s;},setLevel:l=>{level=Math.min(1.4,l);}};
+  // Jelly Orb: layered SVG driven by damped springs so it can lean, stretch and bounce without blurring.
+  const stage=document.querySelector('.orb-stage'),button=document.getElementById('orb-button');
+  const motionQuery=matchMedia('(prefers-reduced-motion: reduce)');
+  let reduced=motionQuery.matches,phase='idle',level=0,smooth=0;
+  const R=74,NS='http://www.w3.org/2000/svg';
+  const make=(tag,attrs={},parent)=>{const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));parent?.append(n);return n;};
 
-  // Per-state look: body colours, rim, outer glow, flow speed, brightness and whether the listening ring shows.
-  const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255);
+  // Per-state look: body gradient, halo tint, spin of the inner light, ring visibility and where the glasses rest.
+  const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
   const looks={
-    idle:     {deep:'#122436',mid:'#4a7392',light:'#e2c9a2',rim:'#a9c3d3',glow:'#6f95b2',swirl:.45,intensity:.8,ring:0},
-    listening:{deep:'#0d3342',mid:'#3f9aae',light:'#d6f2ef',rim:'#b8ecef',glow:'#6fcbd6',swirl:.8,intensity:1,ring:1},
-    thinking: {deep:'#4a2d12',mid:'#d08d4c',light:'#f6ddb0',rim:'#f0d4a2',glow:'#e0a664',swirl:1.7,intensity:.96,ring:0},
-    speaking: {deep:'#172a4d',mid:'#6d8fd4',light:'#f2e4c6',rim:'#e6e1d6',glow:'#a2b9e8',swirl:1.05,intensity:1,ring:1}
+    idle:     {light:'#62d0ff',mid:'#1f86ff',deep:'#0a4fe3',halo:.2, spin:.35,ring:0,look:[0,0],   tilt:0},
+    listening:{light:'#7ce6ff',mid:'#16a0ff',deep:'#075fe8',halo:.34,spin:.5, ring:1,look:[0,-3],  tilt:0},
+    thinking: {light:'#9db4ff',mid:'#4f72ff',deep:'#3a2fd8',halo:.3, spin:1.5,ring:0,look:[13,-10],tilt:-7},
+    speaking: {light:'#74d8ff',mid:'#2a8eff',deep:'#0b55f0',halo:.36,spin:.8, ring:1,look:[0,0],   tilt:0}
   };
-  for(const look of Object.values(looks))for(const k of ['deep','mid','light','rim','glow'])look[k]=hex(look[k]);
+  for(const look of Object.values(looks))for(const k of ['light','mid','deep'])look[k]=hex(look[k]);
   const current=structuredClone(looks.idle);
-  const ease=(key,target,rate)=>{if(Array.isArray(target))current[key]=current[key].map((v,i)=>v+(target[i]-v)*rate);else current[key]+=(target-current[key])*rate;};
+  const rgb=c=>`rgb(${c.map(Math.round).join(',')})`;
 
-  const gl=canvas.getContext('webgl',{premultipliedAlpha:true,antialias:false,alpha:true});
-  if(!gl)return fallback();
+  const svg=make('svg',{id:'orb-svg',viewBox:'-140 -140 280 280','aria-hidden':'true'});
+  const defs=make('defs',{},svg);
+  const bodyGradient=make('radialGradient',{id:'jelly-body',cx:.7,cy:.26,r:.92,fx:.72,fy:.2},defs);
+  const bodyStops=[0,.48,1].map(offset=>make('stop',{offset},bodyGradient));
+  const rimGradient=make('radialGradient',{id:'jelly-rim'},defs);
+  make('stop',{offset:.72,'stop-color':'#001a66','stop-opacity':0},rimGradient);make('stop',{offset:1,'stop-color':'#001a66','stop-opacity':.32},rimGradient);
+  const haloGradient=make('radialGradient',{id:'jelly-halo'},defs);
+  const haloStops=[[0,.9],[.45,.35],[1,0]].map(([offset,opacity])=>make('stop',{offset,'stop-opacity':opacity},haloGradient));
+  const glowGradient=make('radialGradient',{id:'jelly-glow'},defs);
+  make('stop',{offset:0,'stop-color':'#ffffff','stop-opacity':.85},glowGradient);make('stop',{offset:1,'stop-color':'#ffffff','stop-opacity':0},glowGradient);
+  const soft=make('filter',{id:'jelly-soft',x:'-60%',y:'-200%',width:'220%',height:'500%'},defs);make('feGaussianBlur',{stdDeviation:5},soft);
+  const clip=make('clipPath',{id:'jelly-clip'},defs);make('circle',{r:R},clip);
 
-  const vertex='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
-  const fragment=`precision highp float;
-uniform vec2 res;uniform float t,level,radius,swirl,intensity,ring;
-uniform vec3 cDeep,cMid,cLight,cRim,cGlow;
-float hash(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
-float noise(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);
-  return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
-             mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
-float fbm(vec3 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*noise(p);p=p*2.03+vec3(1.7,9.2,3.1);a*=.5;}return v;}
-void main(){
-  vec2 p=gl_FragCoord.xy/res*2.-1.;
-  float r=length(p),R=radius,aa=3./res.x;
-  // Outer glow and the listening ring, as premultiplied light.
-  float halo=exp(-max(r-R,0.)*10.)*.3*intensity*(1.+level*.9);
-  float ringR=R+.08+level*.05;
-  float ringA=ring*smoothstep(.011,0.,abs(r-ringR))*(.18+level*.55);
-  vec3 outside=cGlow*halo+cRim*ringA;
-  float outsideA=clamp(halo+ringA,0.,1.);
-  // Sphere surface.
-  float inside=smoothstep(R+aa,R-aa,r);
-  vec2 q=p/R;
-  vec3 n=vec3(q,sqrt(max(1.-dot(q,q),0.)));
-  float sw=t*.22*swirl+(1.-n.z)*swirl*1.1;
-  vec3 s=n;s.xy=mat2(cos(sw),-sin(sw),sin(sw),cos(sw))*s.xy;
-  vec3 w=s*1.55+vec3(0.,0.,t*.06*swirl);
-  float f1=fbm(w+vec3(t*.04));
-  float f2=fbm(w*1.35+f1*1.9+vec3(0.,t*.06,0.));
-  vec3 body=mix(cDeep,cMid,smoothstep(.2,.8,f2));
-  body=mix(body,cLight,smoothstep(.56,.95,f2+f1*.22)*.8);
-  vec3 L=normalize(vec3(-.62,.66,.42));
-  body*=.5+.62*clamp(dot(n,L),0.,1.);
-  body+=cGlow*pow(clamp(dot(n,normalize(vec3(.4,-.62,.3))),0.,1.),2.)*.32*(1.+level);
-  body+=cLight*level*.28*pow(n.z,3.);
-  body=mix(body,cRim,pow(1.-n.z,2.8)*.45);
-  float h=clamp(dot(n,normalize(L+vec3(0,0,1))),0.,1.);
-  body+=vec3(pow(h,140.)*.55+pow(h,14.)*.07);
-  body=mix(body,cRim,smoothstep(aa*2.5,0.,R-r)*.22);
-  body*=.86+intensity*.14;
-  gl_FragColor=vec4(mix(outside,body,inside),mix(outsideA,1.,inside));
-}`;
-  const compile=(type,src)=>{const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;};
-  let program;
-  try{program=gl.createProgram();gl.attachShader(program,compile(gl.VERTEX_SHADER,vertex));gl.attachShader(program,compile(gl.FRAGMENT_SHADER,fragment));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(program));}
-  catch(e){console.warn('Orb shader unavailable',e);return;}
-  gl.useProgram(program);
-  gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
-  const loc=gl.getAttribLocation(program,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
-  const u=Object.fromEntries(['res','t','level','radius','swirl','intensity','ring','cDeep','cMid','cLight','cRim','cGlow'].map(k=>[k,gl.getUniformLocation(program,k)]));
-  gl.viewport(0,0,canvas.width,canvas.height);gl.uniform2f(u.res,canvas.width,canvas.height);
-
-  let clock=0,last=performance.now();
-  function draw(now){
-    const dt=Math.min(.1,(now-last)/1000);last=now;
-    smooth+=(level-smooth)*(1-Math.exp(-dt*9));
-    const target=looks[phase]||looks.idle,blend=1-Math.exp(-dt*3);
-    for(const k of ['deep','mid','light','rim','glow','swirl','intensity','ring'])ease(k,target[k],blend);
-    if(!reduced)clock=(clock+dt*(.6+current.swirl*.4))%1000;
-    const breathe=reduced?0:Math.sin(now/1000*.8)*.006;
-    gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.uniform1f(u.t,clock);gl.uniform1f(u.level,smooth);gl.uniform1f(u.radius,.6+breathe+smooth*.035);
-    gl.uniform1f(u.swirl,current.swirl);gl.uniform1f(u.intensity,current.intensity);gl.uniform1f(u.ring,current.ring);
-    gl.uniform3fv(u.cDeep,current.deep);gl.uniform3fv(u.cMid,current.mid);gl.uniform3fv(u.cLight,current.light);gl.uniform3fv(u.cRim,current.rim);gl.uniform3fv(u.cGlow,current.glow);
-    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-    requestAnimationFrame(draw);
+  const shadow=make('ellipse',{cx:0,cy:R+18,rx:R*.66,ry:6,fill:'#000a2e',filter:'url(#jelly-soft)'},svg);
+  const halo=make('circle',{r:R*1.62,fill:'url(#jelly-halo)'},svg);
+  const ring=make('circle',{r:R+13,fill:'none','stroke-width':1.5,opacity:0},svg);
+  const body=make('g',{},svg);
+  const inner=make('g',{'clip-path':'url(#jelly-clip)'},body);
+  make('circle',{r:R,fill:'url(#jelly-body)'},inner);
+  // A soft light that circles inside the jelly: the orb's slow rotation.
+  const glow=make('ellipse',{rx:R*.5,ry:R*.34,fill:'url(#jelly-glow)'},inner);
+  make('circle',{r:R,fill:'url(#jelly-rim)'},inner);
+  make('ellipse',{cx:-R*.5,cy:-R*.6,rx:R*.16,ry:R*.07,fill:'#fff',opacity:.6,transform:`rotate(-38 ${-R*.5} ${-R*.6})`},inner);
+  make('circle',{r:R,fill:'none',stroke:'#fff','stroke-width':2.6,'vector-effect':'non-scaling-stroke'},body);
+  const glasses=make('g',{},body);
+  const lens='M6 -14C6 -21 16 -23 30 -23C44 -23 55 -21 56 -13C57 -2 50 13 34 13C18 13 6 3 6 -14Z';
+  make('path',{d:'M-8 -15Q0 -22 8 -15',fill:'none',stroke:'#0c1233','stroke-width':4.5,'stroke-linecap':'round'},glasses);
+  make('path',{d:lens,fill:'#0c1233'},glasses);
+  make('path',{d:lens,fill:'#0c1233',transform:'scale(-1 1)'},glasses);
+  // Both lenses catch the same light from the upper right.
+  for(const shift of [0,-62]){
+    make('path',{d:`M${38+shift} -17Q${46+shift} -16 ${48+shift} -8`,fill:'none',stroke:'#fff','stroke-width':3,'stroke-linecap':'round'},glasses);
+    make('path',{d:`M${47+shift} -1Q${47+shift} 3 ${45+shift} 6`,fill:'none',stroke:'#58c8ff','stroke-width':2.2,'stroke-linecap':'round',opacity:.85},glasses);
   }
-  requestAnimationFrame(draw);
+  stage.prepend(svg);
+  window.orbVisual={setState:s=>{phase=s;if(reduced)render(1);},setLevel:l=>{level=Math.min(1.4,l);if(reduced)render(1);}};
 
-  // Simple 2D orb for machines without WebGL.
-  function fallback(){
-    const ctx=canvas.getContext('2d');
-    function frame(now){
-      smooth+=(level-smooth)*.12;const look=looks[phase]||looks.idle,rgb=c=>`rgb(${c.map(v=>Math.round(v*255)).join(',')})`;
-      const t=reduced?0:now/1000,radius=228+Math.sin(t*.8)*3+smooth*20;
-      ctx.clearRect(0,0,760,760);ctx.save();ctx.translate(380,380);
-      const g=ctx.createRadialGradient(-80,-100,20,0,0,radius);g.addColorStop(0,rgb(look.light));g.addColorStop(.55,rgb(look.mid));g.addColorStop(1,rgb(look.deep));
-      ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();ctx.restore();requestAnimationFrame(frame);
+  // Damped springs. Low damping gives the jelly overshoot; the glasses use a softer spring so they lag behind the body.
+  const spring=(k,c)=>({x:0,v:0,target:0,k,c});
+  const step=(s,dt)=>{s.v+=(s.k*(s.target-s.x)-s.c*s.v)*dt;s.x+=s.v*dt;};
+  const lean={x:spring(110,9),y:spring(110,9)},stretch={x:spring(120,8),y:spring(120,8)};
+  const squash=spring(190,9),jump=spring(150,11),look={x:spring(60,10),y:spring(60,10)},tilt=spring(50,9);
+  const all=[lean.x,lean.y,stretch.x,stretch.y,squash,jump,look.x,look.y,tilt];
+  let pointer=null,pressed=false,spin=0,clock=0,nextBob=3+Math.random()*4;
+
+  addEventListener('pointermove',e=>{pointer={x:e.clientX,y:e.clientY};});
+  document.documentElement.addEventListener('pointerleave',()=>{pointer=null;});
+  addEventListener('blur',()=>{pointer=null;});
+  button.addEventListener('pointerdown',()=>{pressed=true;});
+  const release=bounce=>{if(!pressed)return;pressed=false;if(bounce&&!reduced){squash.v-=3.2;jump.v-=190;}};
+  button.addEventListener('pointerup',()=>release(true));
+  button.addEventListener('pointercancel',()=>release(false));
+  button.addEventListener('pointerleave',()=>release(true));
+  button.addEventListener('click',e=>{if(e.detail===0&&!reduced){squash.v+=2.4;jump.v-=150;}});
+
+  function render(dt){
+    const target=looks[phase]||looks.idle,blend=reduced?1:1-Math.exp(-dt*3);
+    for(const k of ['light','mid','deep'])current[k]=current[k].map((v,i)=>v+(target[k][i]-v)*blend);
+    for(const k of ['halo','spin','ring','tilt'])current[k]+=(target[k]-current[k])*blend;
+    smooth+=(level-smooth)*(reduced?1:1-Math.exp(-dt*9));
+    if(!reduced){clock+=dt;spin+=dt*current.spin;}
+
+    // Lean and stretch towards the pointer, easing off when it is over the orb itself.
+    let dir=[0,0],pull=0,near=1,gaze=0;
+    if(pointer&&!reduced){
+      const box=svg.getBoundingClientRect(),dx=pointer.x-(box.left+box.width/2),dy=pointer.y-(box.top+box.height/2),dist=Math.hypot(dx,dy)||1;
+      dir=[dx/dist,dy/dist];pull=dist/(dist+150);near=Math.min(1,Math.max(0,(dist-R*.3)/(R*.7)));gaze=Math.min(1,dist/170);
     }
-    requestAnimationFrame(frame);
+    lean.x.target=dir[0]*8*pull*near;lean.y.target=dir[1]*8*pull*near;
+    stretch.x.target=dir[0]*.07*pull*near;stretch.y.target=dir[1]*.07*pull*near;
+    // Glasses follow the gaze, drift with the rotation, and rest where the current state puts them.
+    look.x.target=dir[0]*R*.26*gaze+Math.sin(spin)*3+target.look[0];
+    look.y.target=dir[1]*R*.2*gaze+target.look[1];
+    tilt.target=current.tilt+dir[0]*4*gaze;
+    const voice=phase==='speaking'?smooth:0;
+    squash.target=pressed?.13:-voice*.09+Math.sin(clock*9)*voice*.025;
+    if(!reduced&&clock>nextBob){look.y.v-=55;nextBob=clock+4+Math.random()*5;}
+    if(reduced)for(const s of all){s.x=s.target;s.v=0;}else for(const s of all)step(s,dt);
+
+    const breathe=reduced?1:1+Math.sin(clock*1.25)*.012+(phase==='listening'?.015:0);
+    const s=Math.min(.16,Math.hypot(stretch.x.x,stretch.y.x)),angle=Math.atan2(stretch.y.x,stretch.x.x)*180/Math.PI;
+    const q=Math.max(-.22,Math.min(.25,squash.x)),qx=1+q*.75,qy=1-q,lift=Math.min(0,jump.x);
+    body.setAttribute('transform',`translate(${lean.x.x.toFixed(2)} ${(lean.y.x+jump.x).toFixed(2)}) translate(0 ${R}) scale(${qx.toFixed(4)} ${qy.toFixed(4)}) translate(0 ${-R}) rotate(${angle.toFixed(2)}) scale(${(1+s).toFixed(4)} ${(1-s*.55).toFixed(4)}) rotate(${(-angle).toFixed(2)}) scale(${breathe.toFixed(4)})`);
+    const gx=look.x.x,gy=look.y.x+R*.03;
+    glasses.setAttribute('transform',`translate(${gx.toFixed(2)} ${gy.toFixed(2)}) rotate(${tilt.x.toFixed(2)}) scale(${(1-Math.abs(gx)/R*.32).toFixed(4)} ${(1-Math.abs(look.y.x)/R*.28).toFixed(4)})`);
+    const z=Math.cos(spin);
+    glow.setAttribute('cx',(Math.sin(spin)*R*.55).toFixed(2));glow.setAttribute('cy',(R*.28+z*R*.08).toFixed(2));glow.setAttribute('opacity',(.1+.2*(z*.5+.5)+voice*.15).toFixed(3));
+
+    // Shadow shrinks as the orb leaves the ground; halo and ring answer the voice level.
+    const air=Math.max(0,1+lift/110);
+    shadow.setAttribute('transform',`translate(${(lean.x.x*.5).toFixed(2)} 0) scale(${(air*qx).toFixed(4)} 1)`);shadow.setAttribute('opacity',(.55*air).toFixed(3));
+    const [light,mid,deep]=[current.light,current.mid,current.deep].map(rgb);
+    bodyStops[0].setAttribute('stop-color',light);bodyStops[1].setAttribute('stop-color',mid);bodyStops[2].setAttribute('stop-color',deep);
+    for(const stop of haloStops)stop.setAttribute('stop-color',mid);
+    halo.setAttribute('opacity',Math.min(1,current.halo+smooth*.35).toFixed(3));
+    halo.setAttribute('transform',`translate(${lean.x.x.toFixed(2)} ${(lean.y.x+jump.x).toFixed(2)})`);
+    ring.setAttribute('stroke',light);ring.setAttribute('r',(R+13+smooth*7).toFixed(2));ring.setAttribute('opacity',(current.ring*(.3+smooth*.5)).toFixed(3));
   }
+
+  let last=performance.now(),frame=0;
+  function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;render(dt);frame=requestAnimationFrame(loop);}
+  function start(){cancelAnimationFrame(frame);if(reduced)render(1);else{last=performance.now();frame=requestAnimationFrame(loop);}}
+  motionQuery.addEventListener('change',e=>{reduced=e.matches;start();});
+  start();
 })();
