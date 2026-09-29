@@ -16,9 +16,11 @@
    item.append(el('span','task-ring'));
    const title=v.rowPaths?.[i]?el('button','source-link task-title',row[0]??'—'):el('span','task-title',row[0]??'—');if(v.rowPaths?.[i])title.onclick=()=>open(v.rowPaths[i]);main.append(title);
    if(area>=0&&row[area]){if(!tags.has(row[area]))tags.set(row[area],tags.size%palette.length);main.append(el('span',`tag tag-${tags.get(row[area])}`,row[area]));}
-   const when=el('div','task-when');if(completed)when.append(el('span','task-status','Completed'));if(planned>=0&&row[planned])when.append(el('span',null,row[planned]));if(due>=0&&row[due])when.append(el('span','due','Due '+row[due]));
+   if(v.taskRepeat?.[i])main.append(el('span','tag',v.taskRepeat[i]));
+   const when=el('div','task-when');if(completed)when.append(el('span','task-status','Completed'));if(v.taskBlocks?.[i])when.append(el('span','task-status',v.taskBlocks[i].state==='linked'&&!v.taskWarnings?.some(w=>w.path===v.rowPaths?.[i])?'Calendar linked':'Calendar needs repair'));if(planned>=0&&row[planned])when.append(el('span',null,row[planned]));if(due>=0&&row[due])when.append(el('span','due','Due '+row[due]));
    item.append(main,when);list.append(item);
   });
+  for(const w of v.taskWarnings||[])list.append(el('li','calendar-warning',`${w.path?w.path.split('/').pop()+': ':''}${w.error||'Task data needs attention.'}`));
   return list;
  }
  function calendar(v,open,selectedDate){
@@ -26,7 +28,7 @@
   const keys=[...months.keys()],wrap=el('div','calendar-view'),warningCount=v.warnings?.length||0;
   if(warningCount){
    const names=v.warnings.map(w=>w.calendar||w.path?.split('/').pop()).filter(Boolean);
-   const warning=el('div','calendar-warning',`Some calendar data could not be read${names.length?': '+names.join(', '):''}. This view may be incomplete.`);
+   const warning=el('div','calendar-warning',`Calendar needs attention${names.length?': '+names.join(', '):''}. ${v.warnings.map(w=>w.error).filter(Boolean).join(' ')}`);
    warning.setAttribute('role','status');wrap.append(warning);
   }
   if(v.truncated)wrap.append(el('div','calendar-warning',`Showing the first ${v.shown} of ${v.total} results. Try a shorter date range.`));
@@ -50,11 +52,11 @@
    if(!day?.items.length){agenda.append(el('p','calendar-empty','Nothing scheduled for this day.'));return;}
    const list=el('ul','calendar-entries');
    day.items.forEach((item,i)=>{
-    const row=stagger(el('li',`calendar-entry calendar-${item.kind}`),i),body=el('div','calendar-entry-body');
-    const title=item.kind==='task'&&item.path?el('button','source-link calendar-entry-title',item.title):el('strong','calendar-entry-title',item.title);
-    if(item.kind==='task'&&item.path)title.onclick=()=>open(item.path);
+    const row=stagger(el('li',`calendar-entry calendar-${item.kind}${item.taskCompleted?' is-completed':''}`),i),body=el('div','calendar-entry-body');
+    const title=(item.taskPath||item.kind==='task'&&item.path)?el('button','source-link calendar-entry-title',item.title):el('strong','calendar-entry-title',item.title);
+    if(item.taskPath||item.kind==='task'&&item.path)title.onclick=()=>open(item.taskPath||item.path);
     body.append(title);
-    const detail=[timeLabel(item),item.kind==='event'?item.calendar:item.list,item.kind==='event'?item.location:null].filter(Boolean).join(' · ');
+    const detail=[timeLabel(item),item.kind==='event'?item.calendar:item.list,item.kind==='event'?item.location:null,item.taskPath?(item.taskCompleted?'Task completed':item.linkState==='linked'?'Linked task':'Task link needs repair'):null].filter(Boolean).join(' · ');
     body.append(el('span','calendar-entry-detail',detail));row.append(el('span','calendar-entry-mark'),body);list.append(row);
    });agenda.append(list);
   };
@@ -115,7 +117,7 @@
    if(goal.task){const next=el('div','goal-next');next.append(el('span','goal-label','Next action'));
     const task=el('button','source-link',goal.task.title);task.onclick=()=>open(goal.task.path);next.append(task);
     const timing=[goal.task.completed?'Completed':null,goal.task.planned?'Planned '+goal.task.planned.replace('T',' · '):'Unscheduled',goal.task.due?'Deadline '+goal.task.due.replace('T',' · '):null].filter(Boolean);
-    next.append(el('span','goal-task-dates',timing.join(' · ')));card.append(next);
+    next.append(el('span','goal-task-dates',timing.join(' · ')));if(goal.task.repeat_label)next.append(el('span','goal-task-dates',goal.task.repeat_label));const last=goal.task.last_completion;if(last)next.append(el('span','goal-task-dates','Last recorded completion '+last.date+' · recurring series'));card.append(next);
    }
    if(goal.check_ins){const history=el('details','goal-check-ins');history.append(el('summary',null,'Recorded check-ins'),el('p',null,goal.check_ins));card.append(history);}
    const review=el('button','data-toggle','Review this goal');review.type='button';review.onclick=()=>actions.request?.(`Help me review the goal note at this exact vault path: ${JSON.stringify(goal.path)}. Read its current state and ask about progress, obstacles and the next action.`);card.append(review);
@@ -177,6 +179,8 @@
   return wrap;
  }
  window.renderVisual=(host,v,openSource,actions={})=>{
+  if(v?.kind==='recurring'){const api=window.orb||window.orbRecurringPreview;window.OrbRecurring.ui.mount(host,{list:()=>api.recurring(),...(api.recurringInstall?{install:()=>api.recurringInstall()}:{}),write:args=>api.recurringWrite(args),create:args=>api.recurringCreate(args),open:path=>api.openNote(path)});return;}
+  if(v?.kind==='trading212'){window.trading212UI.render(host,v,actions);return;}
   const habitFocus=document.activeElement?.dataset.focus,habitScroll=host.scrollTop;
   const selectedDate=host.querySelector('.calendar-day[aria-pressed="true"]')?.dataset.date;
   host.replaceChildren();host.append(el('h1',null,v.title),el('p','subtitle',v.subtitle||''));

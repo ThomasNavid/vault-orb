@@ -125,8 +125,7 @@ test('goal tools are exposed to both models with explicit completion and review 
 test('public examples are parseable, linked, fictional and inactive by default',t=>{
   const state=fs.mkdtempSync(path.join(os.tmpdir(),'orb-goal-template-'));t.after(()=>fs.rmSync(state,{recursive:true,force:true}));
   const vault=new Vault(path.join(__dirname,'../vault-template'),state);vault.validateTaskFolders();
-  const result=listGoals(vault,{scope:'all'});assert.deepEqual(result.warnings,[]);assert.equal(result.goals.length,1);assert.equal(result.active_count,0);assert.equal(result.goals[0].next_task_state,'ready');
-  assert.match(vault.read(result.goals[0].path).content,/fictional sample content/);
+  const result=listGoals(vault,{scope:'all'});assert.deepEqual(result.warnings,[]);assert.equal(result.goals.length,0);assert.equal(result.active_count,0);
   const YAML=require('yaml'),base=YAML.parse(fs.readFileSync(path.join(vault.root,'0. Home/Goals.base'),'utf8'));
   assert.deepEqual(base.views.map(v=>v.name),['Active','Review due','Other']);
 });

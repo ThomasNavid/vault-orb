@@ -81,7 +81,7 @@ test('agent routes habit writes and undo to the native panel and clears state on
 test('sample vault shares parseable definitions and starts without any habit completions',t=>{
  const state=fs.mkdtempSync(path.join(os.tmpdir(),'orb-habit-sample-'));t.after(()=>fs.rmSync(state,{recursive:true,force:true}));
  const v=new Vault(path.join(__dirname,'../vault-template'),state);v.validateTaskFolders();const r=listHabits(v);
- assert.equal(r.setup,undefined);assert.deepEqual(r.warnings,[]);assert.equal(r.records.length,0);assert.equal(r.habits.length,2);assert.equal(r.selected.version,null);
+ assert.match(r.setup,/Choose your habits/);assert.deepEqual(r.warnings,[]);assert.equal(r.records.length,0);assert.equal(r.habits.length,0);assert.equal(r.selected,null);
 });
 test('habit record symlinks, oversized notes and definition scripts cannot bypass vault boundaries',t=>{
  const v=fixture(t),date=localDate();fs.symlinkSync(path.join(v.root,HABIT_SCRIPT),path.join(v.root,v.habitFolder,`${date}.md`));

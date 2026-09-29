@@ -16,12 +16,14 @@ Every guide covers purpose, setup, things to ask, expected results, a walkthroug
 
 | Guide | What you can do |
 | --- | --- |
-| [Today and Explore](features/today-and-explore.md) | Open a read-only daily overview or choose a discoverable starting request. |
+| [Today and Explore](features/today-and-explore.md) | Open a daily overview, refresh linked task times, or choose a starting request. |
 | [Tasks](features/tasks.md) | Read, create, plan, categorize, complete, and reopen task notes. |
 | [Goals and weekly reviews](features/goals.md) | Define outcomes, link next actions, review progress, and change status. |
 | [Habits and heatmaps](features/habits.md) | Log repeated actions, inspect annual history, and review weekly totals. |
-| [Calendar](features/calendar.md) | Read calendars, include task dates, and create Google Calendar events. |
+| [Task scheduling](features/task-scheduling.md) | Find free time, book linked blocks, move them, and reflect task completion. |
+| [Calendar](features/calendar.md) | Read calendars, include task dates, and create/edit single Google Calendar events. |
 | [Finding and updating notes](features/notes.md) | Search, read, summarize, compare, and append to existing notes. |
+| [Trading 212](features/trading212.md) | Connect a read-only investment account, browse holdings and history, and ask Orb about retrieved data. |
 | [Spreadsheets and visuals](features/spreadsheets-and-visuals.md) | Inspect supported files and display sourced tables and charts. |
 | [Planning across notes](features/planning.md) | Compare evidence and propose actions using goals, tasks, and notes. |
 | [Voice and controls](features/voice-and-controls.md) | Talk, type, interrupt, inspect activity, and manage the floating window. |
@@ -33,6 +35,16 @@ Every guide covers purpose, setup, things to ask, expected results, a walkthroug
 - [Development](development.md): architecture, tool map, tests, packaging, installation, and previews.
 - [Goals internals](goals.md): parser, linked tasks, review writes, and feature-specific tests.
 - [Habits internals](habits.md): shared definitions, daily records, heatmaps, and tests.
-- [Sample vault](../vault-template/): fictional notes and data for learning and reproductions.
+- [Sample vault](../vault-template/): the clean, empty knowledge and planning system.
 
 Start with the user guide for a feature, then follow its implementation links when working on code.
+
+## Your vault, with or without Orb
+
+- [Obsidian-only setup](obsidian-only.md): plugins, folder templates, daily use, and leaving Orb.
+- [Knowledge system](features/knowledge.md): capture, browse, learn, develop Portfolio work, and explore an expandable graph.
+- [Clean starter](../vault-template/): empty records, reusable templates, and self-contained guides.
+
+- [Models and providers](providers.md): OpenRouter, voice modes, separate reasoning, and encrypted provider keys.
+
+- [Recurring tasks](features/recurring-tasks.md): manage repeats in desktop Obsidian alone or through Orb.

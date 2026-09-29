@@ -21,7 +21,7 @@ function definitions(vault) {
   const parsed=YAML.parseDocument(literal,{uniqueKeys:true});
   if(parsed.errors.length)throw new Error('Habit definitions must contain plain literal data.');
   const data=parsed.toJS({maxAliasCount:0}),keys=new Set();
-  if(!Array.isArray(data)||!data.length||data.length>12)throw new Error('Define between 1 and 12 habits.');
+  if(!Array.isArray(data)||data.length>12)throw new Error('Define up to 12 habits.');
   const habits=data.map(h=>{
     if(!h||typeof h.key!=='string'||! /^[a-z][a-z0-9_]{0,63}$/.test(h.key)||['type','date','constructor','prototype','__proto__'].includes(h.key)||keys.has(h.key))throw new Error('Habit keys must be unique lowercase property names, excluding reserved fields.');
     keys.add(h.key);
@@ -54,6 +54,7 @@ function listHabits(vault,{date=null,year=null}={}) {
   if(!vault.habitFolder)return {...base,setup:'Habits are disabled. Set a Habit log folder in Settings.'};
   let config;
   try {config=definitions(vault);folder(vault);} catch(e) {return {...base,setup:e.message};}
+  if(!config.habits.length)return {...base,...config,setup:"Choose your habits using 99. System/Habit Setup.md. No activity has been recorded."};
   const records=new Map(),warnings=[],badDates=new Set();
   const first=`${year}-01-01`,last=`${year}-12-31`,historyStart=addDays(base.week_start,-49),historyEnd=addDays(base.week_start,6);
   // Read only the selected year, recent weeks, and selected record, never bodies of unrelated notes.

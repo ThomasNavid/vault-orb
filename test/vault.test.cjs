@@ -5,7 +5,7 @@ test('public vault template has readable task folders and conventions',t=>{
   const state=fs.mkdtempSync(path.join(os.tmpdir(),'orb-template-state-'));
   t.after(()=>fs.rmSync(state,{recursive:true,force:true}));
   const vault=new Vault(path.join(__dirname,'../vault-template'),state);
-  assert.deepEqual(vault.tasks().tasks.map(task=>task.list).sort(),['business','life']);
+  assert.deepEqual(vault.tasks().tasks,[]);vault.validateTaskFolders();
   assert.match(vault.read('0. Home/Task Rules.md').content,/planned/);
 });
 function fixture(t){const root=fs.mkdtempSync(path.join(os.tmpdir(),'orb-test-'));const notes=path.join(root,'vault');fs.mkdirSync(path.join(notes,'0. Home/Life Tasks'),{recursive:true});fs.mkdirSync(path.join(notes,'0. Home/Business Tasks'),{recursive:true});t.after(()=>fs.rmSync(root,{recursive:true,force:true}));return new Vault(notes,path.join(root,'state'));}
@@ -37,6 +37,24 @@ test('task creation, duplicate names, updates and exact undo preserve Obsidian p
   const second=vault.createTask({title:'Dentist',list:'life'});assert.notEqual(created.path,second.path);
   const edit=vault.updateTask({path:created.path,version:created.version,completed:true});assert.match(vault.read(created.path).content,/completed: true/);
   vault.undo(edit.change_id);assert.equal(vault.read(created.path).content,original);vault.undo(created.change_id);assert.throws(()=>vault.read(created.path),/Not found/);
+});
+test('task writes respect another editor lock and release the lock after errors and nested writes',t=>{
+  const vault=fixture(t),{acquire,NAME}=require('../src/task-lock.cjs');
+  const lock=path.join(vault.root,NAME),release=acquire(fs,vault.root);
+  try {assert.throws(()=>vault.createTask({title:'Blocked',list:'life'}),/Another task edit/);}
+  finally {release();}
+  assert.equal(vault.tasks().tasks.length,0);
+  assert.throws(()=>vault.createTask({title:'Invalid',list:'life',planned:'2026-02-30'}),/Invalid calendar/);
+  assert.equal(fs.existsSync(lock),false);
+  const other=new Vault(vault.root,path.join(vault.stateDir,'other'));
+  vault.withTaskLock(()=>{
+    vault.createTask({title:'Nested',list:'life'});
+    assert.equal(fs.existsSync(lock),true);
+    assert.throws(()=>other.createTask({title:'Blocked',list:'life'}),/Another task edit/);
+  });
+  assert.equal(fs.existsSync(lock),false);
+  other.createTask({title:'After release',list:'life'});
+  assert.equal(vault.tasks().tasks.length,2);
 });
 test('today matches planned OR due; overdue and completed are separate',t=>{
   const vault=fixture(t);

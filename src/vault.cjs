@@ -2,6 +2,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const YAML = require('yaml');
+const recurrence=require('./recurrence.cjs');
+const {acquire}=require('./task-lock.cjs');
 
 const FOLDERS = { life: '0. Home/Life Tasks', business: '0. Home/Business Tasks' };
 const RULES_PATH = '0. Home/Task Rules.md';
@@ -65,6 +67,13 @@ class Vault {
     this.stateDir = stateDir;
     fs.mkdirSync(stateDir,{recursive:true,mode:0o700});
     this.journalFile = path.join(stateDir,`history-${hash(this.root).slice(0,16)}.json`);
+  }
+  withTaskLock(fn) {
+    if(this.taskLockHeld) return fn();
+    const release=acquire(fs,this.root);
+    this.taskLockHeld=true;
+    try {return fn();}
+    finally {this.taskLockHeld=false;release();}
   }
   validateTaskFolders() {
     for(const [list,folder] of Object.entries(this.folders)) {
@@ -154,12 +163,13 @@ class Vault {
       for(const relative of this.walk(folder)) {
         try {
           const note=this.read(relative), {data}=parseNote(note.content);
-          if(data.type!=='task' || (!include_completed && data.completed===true)) continue;
+          if(data.type!=='task' || (!include_completed && data.completed===true&&!data.recurrence)) continue;
+          let repeat={};if(data.recurrence||data.recurrence_history){repeat=recurrence.inspect(note.content,day);if(repeat.recurrence_error)warnings.push({path:relative,error:repeat.recurrence_error});}
           const planned=typeof data.planned==='string'?data.planned:null, due=typeof data.due==='string'?data.due:null;
           const today=planned?.slice(0,10)===day || due?.slice(0,10)===day;
           const overdue=!!due && due.slice(0,10)<day;
           if(scope==='today'&&!today || scope==='overdue'&&!overdue || ['life','business'].includes(scope)&&scope!==list) continue;
-          tasks.push({path:relative,title:path.basename(relative,'.md'),list,category:data.category||'Inbox',venture:data.venture||null,planned,due,completed:data.completed===true,today,overdue,version:note.version});
+          tasks.push({task_id:data.task_id||null,calendar_block:data.calendar_block||null,path:relative,title:path.basename(relative,'.md'),list,category:data.category||'Inbox',venture:data.venture||null,planned,due,completed:data.completed===true,today,overdue,version:note.version,...repeat});
         } catch(e) {warnings.push({path:relative,error:e.message});}
       }
     }
@@ -176,12 +186,13 @@ class Vault {
     }
     return entries;
   }
-  publicHistory() {return this.history().slice(-30).reverse().map(({id,path,action,at,status})=>({id,path,action,at,status}));}
-  commit(relative,before,after,action) {
+  publicHistory() {return this.history().slice(-30).reverse().map(({id,path,action,at,status,calendar})=>({id,path,action,at,status,undoable:!calendar}));}
+  commit(relative,before,after,action,options={}) {return this.withTaskLock(()=>this._commit(relative,before,after,action,options));}
+  _commit(relative,before,after,action,{calendar=false}={}) {
     const file=this.resolve(relative,{missing:before===null});
     if(before!==null && fs.readFileSync(file,'utf8')!==before) throw new Error('Note changed since it was read. Read it again before editing.');
     const entries=this.history();
-    const entry={id:crypto.randomUUID(),path:relative,action,at:new Date().toISOString(),before,afterHash:hash(after),status:'pending'};
+    const entry={id:crypto.randomUUID(),path:relative,action,at:new Date().toISOString(),before,afterHash:hash(after),calendar,status:'pending'};
     entries.push(entry); atomicWrite(this.journalFile,JSON.stringify(entries,null,2));
     try {
       if(before===null) fs.writeFileSync(file,after,{flag:'wx',mode:0o600});
@@ -190,7 +201,8 @@ class Vault {
     entry.status='applied'; atomicWrite(this.journalFile,JSON.stringify(entries,null,2));
     return {path:relative,version:entry.afterHash,change_id:entry.id,action};
   }
-  createTask(args) {
+  createTask(args) {return this.withTaskLock(()=>this._createTask(args));}
+  _createTask(args) {
     const title=string(args.title,'Title',180);
     if(/[\r\n]/.test(title)) throw new Error('Title must be a single line.');
     const folder=this.folders[args.list]; if(!folder) throw new Error('Choose life or business.');
@@ -202,13 +214,26 @@ class Vault {
     const data={type:'task',category:args.category ? string(args.category,'Category',100):'Inbox',planned:dateValue(args.planned??null),due:dateValue(args.due??null),completed:false};
     if(args.list==='business') data.venture=args.venture?string(args.venture,'Venture',100):null;
     const body=args.details ? string(args.details,'Details',20000) : '';
-    return this.commit(relative,null,`---\n${YAML.stringify(data)}---\n\n# ${title}\n${body?'\n'+body+'\n':''}`,'Task added');
+    let content=`---\n${YAML.stringify(data)}---\n\n# ${title}\n${body?'\n'+body+'\n':''}`;
+    if(args.recurrence)content=recurrence.transform(content,{action:'configure',rule:args.recurrence,operation_id:crypto.randomUUID()},{today:localDate()}).text;
+    return this.commit(relative,null,content,'Task added');
   }
-  updateTask({path:relative,version,...changes}) {
+  updateTask(args) {return this.withTaskLock(()=>this._updateTask(args));}
+  _updateTask({path:relative,version,...changes}) {
     if(!Object.values(this.folders).some(f=>relative.startsWith(f+'/'))) throw new Error('Only task notes in the task folders can be updated.');
     const note=this.read(relative);
     if(version!==note.version) throw new Error('Task changed. Read it again before editing.');
-    const parsed=parseNote(note.content); if(parsed.data.type!=='task') throw new Error('This is not a task note.');
+    const parsed=parseNote(note.content); if(parsed.data.calendar_block&&changes.planned!=null)throw new Error('This task has a linked calendar block. Move or remove the block instead of editing Planned separately.'); if(parsed.data.type!=='task') throw new Error('This is not a task note.');
+    if(parsed.data.recurrence&&changes.completed===true){
+      if(Object.entries(changes).some(([k,v])=>k!=='completed'&&v!==null&&v!==undefined))throw new Error('Complete a recurring occurrence separately from other changes.');
+      return this.recurringTask({path:relative,version,action:'complete',occurrence:parsed.data.recurrence.occurrence,operation_id:crypto.randomUUID()});
+    }
+    if(parsed.data.recurrence&&changes.completed===false)throw new Error('Use recurring cancel for an external completion or undo for the previous occurrence.');
+    if(parsed.data.recurrence&&['planned','due'].some(k=>changes[k]!==null&&changes[k]!==undefined)){
+      const r=recurrence.rule(parsed.data.recurrence);
+      for(const k of ['planned','due'])if(changes[k])recurrence.day(changes[k]);
+      if(changes[r.date_field]==='')throw new Error('Stop repeating before clearing the repeat date.');
+    }
     let changed=false;
     for(const [key,value] of Object.entries(changes)) {
       if(!['planned','due','completed','category','venture'].includes(key)) throw new Error(`Unsupported task field: ${key}`);
@@ -222,14 +247,28 @@ class Vault {
     if(!changed) throw new Error('No fields to update.');
     return this.commit(relative,note.content,`---\n${parsed.doc.toString()}---\n${parsed.body}`,'Task updated');
   }
+  recurringTask(args) {
+    return this.withTaskLock(()=>{
+      if(!Object.values(this.folders).some(f=>args.path?.startsWith(f+'/')))throw new Error('Choose a note in a task folder.');
+      const note=this.read(args.path),result=recurrence.transform(note.content,args,{today:localDate()});
+      if(result.duplicate)return {path:args.path,version:note.version,duplicate:true,action:result.action,next:result.next};
+      if(args.version!==note.version)throw new Error('Task changed. Refresh before editing.');
+      const saved=this.commit(args.path,note.content,result.text,'Recurring task '+args.action);
+      return {...saved,next:result.next,occurrence:result.entry?.after.recurrence?.occurrence||null};
+    });
+  }
   appendNote({path:relative,version,text}) {
     const note=this.read(relative); if(version!==note.version) throw new Error('Note changed. Read it again before appending.');
     return this.commit(relative,note.content,note.content.trimEnd()+'\n\n'+string(text,'Text',20000)+'\n','Note appended');
   }
-  undo(id) {
+  undo(id) {return this.withTaskLock(()=>this._undo(id));}
+  _undo(id) {
     const entries=this.history(), entry=id?entries.find(e=>e.id===id):entries.findLast(e=>e.status==='applied');
     if(!entry || entry.status!=='applied') throw new Error('No change available to undo.');
     const file=this.resolve(entry.path), current=this.read(entry.path);
+    if(entry.calendar)throw new Error('This change is linked to a calendar write. Move the block back, remove it, or repair its link instead of note undo.');
+    const nowData=parseNote(current.content).data,oldData=entry.before?parseNote(entry.before).data:{};
+    if((nowData.calendar_block||oldData.calendar_block)&&(JSON.stringify(nowData.calendar_block)!==JSON.stringify(oldData.calendar_block)||nowData.planned!==oldData.planned))throw new Error('Undo would disconnect the calendar block. Repair the link first.');
     if(current.version!==entry.afterHash) throw new Error('This note has changed since that action. Undo newer edits first, or review it in Obsidian.');
     if(entry.before===null) fs.unlinkSync(file); else atomicWrite(file,entry.before);
     entry.status='undone'; atomicWrite(this.journalFile,JSON.stringify(entries,null,2));

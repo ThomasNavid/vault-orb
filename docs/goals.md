@@ -6,7 +6,7 @@ Goals use the same Markdown vault, task lists, change journal, and companion pan
 
 ## Data and setup
 
-`Vault.goalsFolder` defaults to `0. Home/Goals`. An empty string disables the feature. When an older configuration has no goal setting and its task folders overlap the default goal path, goals start disabled instead of preventing startup. Explicitly configured overlapping paths are rejected. Settings accept an absent folder so an existing installation can upgrade without changing its vault; creating a goal requires the folder to exist. Paths must be visible, relative, within the vault, and separate from both task folders. Existing ancestors are checked for symlinks. Goals never alter Home, Bases, templates, or plugin settings in an existing vault.
+`Vault.goalsFolder` defaults to `0. Home/Goals`. An empty string disables the feature. When an older configuration has no goal setting and its task folders overlap the default goal path, goals start disabled instead of preventing startup. Explicitly configured overlapping paths are rejected. Saved legacy layouts may have an absent goal folder; new connections use the complete standard structure. Creating a goal requires the folder to exist. Paths must be visible, relative, within the vault, and separate from both task folders. Existing ancestors are checked for symlinks. Goals never alter Home, Bases, templates, or plugin settings in an existing vault.
 
 The parser recognizes `.md` notes under this folder with `type: goal`, a supported `status`, and optional `target`, `review`, and `next_task`. Unknown frontmatter is preserved. Invalid notes produce warnings, rather than disappearing without explanation. Dates are local calendar days; `target` is never mapped to task `due`.
 
@@ -21,7 +21,7 @@ Goal titles come from filenames. The four level-two body headings are `Finish li
 | `update_goal` | Version-checked metadata and narrative changes. Null leaves a field unchanged; empty strings clear optional fields. |
 | `review_goal` | Appends a dated progress/obstacle/decision entry and changes goal metadata in a single journaled write. |
 
-Both Realtime and the deeper reasoning model receive these tools and the goal interaction instructions in `src/agent.cjs`. Those instructions distinguish read-only planning from authorized edits, require explicit achievement, and prohibit fabricated progress. A user's completed review conversation authorizes saving its check-in; simply asking to see or begin a review does not.
+The selected chat/tools and optional deeper reasoning models receive these tools; Realtime delegates vault work to them and the goal interaction instructions in `src/agent.cjs`. Those instructions distinguish read-only planning from authorized edits, require explicit achievement, and prohibit fabricated progress. A user's completed review conversation authorizes saving its check-in; simply asking to see or begin a review does not.
 
 `src/goals.cjs` implements parsing, validation, link resolution, and writes through `Vault.commit`. `src/visuals.cjs` constructs the `goals` visual directly from parsed source records. `src/visual-renderer.js` renders text with DOM text nodes, with no Markdown HTML execution. Status filters use a read-only IPC handler and need no model request. New goal and review controls submit ordinary conversational requests. `show_visual` cannot fabricate a native goal panel.
 

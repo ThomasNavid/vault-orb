@@ -9,7 +9,7 @@ const {todaySnapshot}=require('../src/today.cjs');
 function fixture(t) {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'orb-today-'));
   t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
-  for(const folder of ['Life','Work','Goals','Habit Log','Scripts','.obsidian/plugins/full-calendar-remastered'])fs.mkdirSync(path.join(root,folder),{recursive:true});
+  for(const folder of ['1. Portfolio','2. Hubs','3. Topics','4. Knowledge Library','Life','Work','Goals','Habit Log','Scripts','.obsidian/plugins/full-calendar-remastered'])fs.mkdirSync(path.join(root,folder),{recursive:true});
   fs.writeFileSync(path.join(root,'Scripts/habits.js'),'const habits = [{ key: "study", label: "Study", target: 3, cadence: "Three days", color: "#6387db" }];\n');
   return new Vault(root,path.join(root,'.state'),{folders:{life:'Life',business:'Work'},goalsFolder:'Goals',habitFolder:'Habit Log',habitScript:'Scripts/habits.js',rulesPath:''});
 }
@@ -78,4 +78,9 @@ test('Today reports configured Google calendars without a readable token',async 
   assert.equal(result.calendar.items.length,0);
   assert.match(result.calendar.setup,/access token/);
   assert.ok(result.calendar.warnings.some(w=>w.calendar==='Google Calendar'));
+});
+
+test('Today resurfaces only explicitly dated knowledge without advancing dates or editing notes',async t=>{
+ const v=fixture(t);note(v,'1. Portfolio/Draft.md','---\ntags: [portfolio]\nrevisit: 2026-09-28\n---\nDraft.');note(v,'4. Knowledge Library/Later.md','---\ntags: [knowledge]\nrevisit: 2026-10-02\n---\nLater.');note(v,'4. Knowledge Library/Undated.md','---\ntags: [knowledge]\n---\n');
+ const result=await todaySnapshot(v,{date:'2026-09-29'});assert.deepEqual(result.knowledge.notes.map(n=>n.title),['Draft']);assert.equal(fs.existsSync(v.journalFile),false);
 });

@@ -1,0 +1,7 @@
+.home-overview .home-date { color: var(--text-muted); margin: 12px 0; }
+.home-overview .home-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.home-overview a.home-card { display: flex; flex-direction: column; gap: 6px; padding: 18px; border: 1px solid var(--background-modifier-border); border-radius: 12px; background: var(--background-secondary); color: var(--text-normal); text-decoration: none; }
+.home-overview .home-card strong { font-size: 2em; line-height: 1.1; }
+.home-overview .home-card span, .home-overview .home-hint { font-size: 0.85em; color: var(--text-muted); }
+.home-overview .home-hint { margin-top: 10px; }
+.home-overview a.home-card:hover, .home-overview a.home-card:focus-visible { border-color: var(--interactive-accent); }

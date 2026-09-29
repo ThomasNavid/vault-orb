@@ -2,7 +2,7 @@
 
 [Documentation](../README.md) · [Getting started](../getting-started.md) · [Voice and controls](voice-and-controls.md)
 
-The controls beneath the orb provide two direct starting points. **Today** assembles a read-only daily dashboard from configured vault and calendar sources. **Explore** is a searchable list of views and example requests, so you do not need to memorize features or special wording.
+The controls beneath the orb provide two direct starting points. **Today** assembles a daily dashboard from configured vault and calendar sources. **Explore** is a searchable list of views and example requests, so you do not need to memorize features or special wording.
 
 ## Open Today
 
@@ -16,13 +16,13 @@ Click **Today** beneath the orb. The dashboard can contain:
 
 The task list removes duplicate rows when a task is both planned today and past its deadline. It still labels that task as a past deadline. A future Deadline does not turn a task planned today into “Due today.”
 
-Today is read-only. Opening or refreshing it does not create notes, record habits, edit goals, or add calendar events. Source titles open their Markdown notes. Section actions either open an existing native view or submit the displayed request through the normal assistant flow.
+Opening or refreshing Today reconciles existing calendar-linked task times. It does not create notes, record habits, edit goals, or add calendar events. Source titles open their Markdown notes. Section actions either open an existing native view or submit the displayed request through the normal assistant flow.
 
 ## Independent sections and warnings
 
 Each section is read independently. A missing Goals folder, invalid habit definition, unavailable calendar feed, or absent Google token is shown in that section without hiding successfully read task data. An empty section is only described as empty when its sources were read successfully; warnings mean the result may be incomplete.
 
-Calendar data follows the normal [Calendar](calendar.md) connection and privacy rules. Today may fetch configured calendar sources, but it does not send the dashboard to OpenAI. Selecting an assistant action does send that request and any subsequently retrieved relevant content under the normal [privacy rules](../privacy.md).
+Calendar data follows the normal [Calendar](calendar.md) connection and privacy rules. Today may fetch configured calendar sources, but it does not send the dashboard to an AI provider. Selecting an assistant action does send that request and any subsequently retrieved relevant content under the normal [privacy rules](../privacy.md).
 
 Use **Refresh** after changing notes in Obsidian. If two refreshes overlap, Orb keeps the newest result and ignores the older response.
 
@@ -30,13 +30,19 @@ Use **Refresh** after changing notes in Obsidian. If two refreshes overlap, Orb 
 
 Click **Explore** or press ⌘K. The list has three groups:
 
-- **Views** open Today, Goals, or Habits directly, without an assistant request.
+- **Views** open Today, Trading 212, Knowledge, Portfolio, Knowledge graph, Goals, or Habits directly, without an assistant request. Trading 212 contacts its API using the saved connection.
 - **Try asking** holds starting requests for planning, goals, habits, calendar, notes, and spreadsheets. Selecting one submits its request exactly as if you had typed it. It is not a privileged shortcut: the same prerequisites, model use, write boundaries, and confirmations apply.
-- **Orb** opens Conversation, Recent changes, or Settings.
+- **Orb** opens Chats, Conversation, Recent changes, or Settings.
 
 Type in the field at the top to filter the list. Once you have typed something, the first row becomes **Ask Orb** with your text; press Return to send it. Use the arrow keys to choose another row and Return to open it, or click a row. The action bar at the bottom shows what Return will do.
 
 The Explore screen appears automatically once after initial setup. It remains available from the persistent button afterward. You can always ignore the examples and speak or type your own request.
+
+## Trading 212 investments
+
+Choose **Trading 212** in Views after connecting a read-only API key and secret in Settings → Integrations. Browse account totals, holdings and allocation, dividends, trade history, cash movements and pending orders. This does not need an AI-provider key. **Ask Orb about my investments** starts an assistant request and shares relevant retrieved financial data with the selected provider.
+
+**Portfolio** in Explore opens your knowledge notes and working drafts; **Trading 212** opens your financial portfolio. Trading 212 is a separate view and is not included in Today. History starts with up to 50 records; load older records before treating a total as complete. See [Trading 212](trading212.md) for the full setup and limits.
 
 ## Limits
 
@@ -57,3 +63,13 @@ The Explore screen appears automatically once after initial setup. It remains av
 **A discovery request cannot run:** conversational prompts require a saved API key and the same feature prerequisites as a manually typed request.
 
 Implementation: [today.cjs](../../src/today.cjs), [renderer.js](../../src/renderer.js), and [Today tests](../../test/today.test.cjs).
+
+## Knowledge and revisits
+
+Explore includes direct **Knowledge**, **Portfolio**, and **Knowledge graph** views. The small graph in the bottom-right corner is available across other panels and chats; expand it to inspect connections and collapse it to return. It is hidden while viewing the Trading 212 dashboard or a chat containing a financial card so it does not cover account data.
+
+Today also shows Library or Portfolio notes whose explicit `revisit` date is today or earlier. Set or clear that date in a note's Knowledge view. Merely viewing a note changes nothing; no background reminders are scheduled. See [Knowledge](knowledge.md) for the complete capture, learning and creation workflow.
+
+## Linked task blocks
+
+Opening or refreshing Today reconciles existing calendar links before collecting task dates. Once Full Calendar has loaded an external move, Planned follows the block. The calendar section links back to the task and shows completion while retaining the scheduled block. Missing or conflicting links produce warnings. See [Task scheduling](task-scheduling.md).

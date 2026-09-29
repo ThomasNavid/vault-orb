@@ -8,28 +8,28 @@ Inspect spreadsheet data stored in the vault and ask Orb to show a sourced table
 
 Put a supported `.xlsx`, `.csv`, or `.tsv` file inside the selected vault. No external spreadsheet account is needed. Each file must be at most **20 MB**. Workbooks are inspected for sheet names before a bounded range is read.
 
-The sample vault includes [Finance/Example savings.csv](../../vault-template/Finance/Example%20savings.csv), a small fictional dataset in GBP. It is suitable for trying the examples without uploading personal finances.
+The starter includes no datasets or finance features. The examples below assume you provide a small CSV at `Data/Measurements.csv` with date and measurement columns, or substitute your own file and units.
 
 ## Things to ask
 
 | Ask | Expected result | Changes data? |
 | --- | --- | --- |
-| “Find Finance/Example savings.csv and show its data.” | Reads the sample's stored rows and presents them. | No |
-| “Chart the balances in Finance/Example savings.csv in GBP.” | A sourced trend chart with currency labels and View data. | No |
-| “Read A1:B7 of Finance/Example savings.csv and compare the first and last balances.” | Reads that exact range, then explains the change. | No |
+| “Find Data/Measurements.csv and show its data.” | Reads the file's stored rows and presents them. | No |
+| “Chart the measurements in Data/Measurements.csv in the recorded units.” | A sourced trend chart with unit labels and View data. | No |
+| “Read A1:B7 of Data/Measurements.csv and compare the first and last measurements.” | Reads that exact range, then explains the change. | No |
 | “Show that comparison as a bar chart.” | A bar chart using the previously read values. | No |
 | “Compare the options in Notes/Example launch options.md in a table.” | A non-numeric comparison sourced from a note. | No |
 | “Close the chart.” | Dismisses the companion visual. | No |
 
 For your own workbook, replace the illustrative filename/sheet with real ones:
 
-> “Which sheets are in Finance/Budget.xlsx?”
+> “Which sheets are in Data/Measurements.xlsx?”
 >
-> “Read A1:D25 from the Monthly sheet in Finance/Budget.xlsx and chart the monthly actuals in GBP.”
+> “Read A1:D25 from the Monthly sheet in Data/Measurements.xlsx and chart the monthly actuals in the recorded units.”
 >
 > “Are these values cached formula results? Explain any missing values before comparing them.”
 
-The sample vault does not include Budget.xlsx; those examples require you to supply it. Use a range containing labels as well as the values you want compared.
+The starter does not include Measurements.xlsx; those examples require you to supply it. Use a range containing labels as well as the values you want compared.
 
 ## What happens
 
@@ -43,8 +43,8 @@ Task lists, goal cards, and calendars are built directly from tool results. Gene
 
 ## Walkthrough using the sample data
 
-1. **“Read A1:B7 of Finance/Example savings.csv.”** Expect a header and six monthly balances.
-2. **“Chart those balances over time in GBP.”** Expect January through June in chronological order.
+1. **“Read A1:B7 of Data/Measurements.csv.”** Expect a header and six monthly measurements.
+2. **“Chart those measurements over time in the recorded units.”** Expect January through June in chronological order.
 3. **“How much did the balance change from January to June?”** The fictional source has GBP 3,200 and GBP 5,650, a difference of GBP 2,450.
 4. Use **View data** to inspect the plotted values, then click the source to open the CSV in your default local application.
 

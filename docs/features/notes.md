@@ -8,7 +8,7 @@ Find notes by title or content, ask questions grounded in their text, compare op
 
 Use any visible Markdown notes inside the selected vault. Ordinary notes do not need task or goal frontmatter. The app's two-task-folder setup requirement still applies when saving Settings.
 
-The sample vault contains [Example launch options](../../vault-template/Notes/Example%20launch%20options.md) and [Example meeting](../../vault-template/Notes/Example%20meeting.md), which the examples below use. Plain `.txt` files can also be located by filename and read, but general content search scans Markdown.
+The examples below use illustrative paths. The starter has no meeting or launch notes: create your own notes in Knowledge Library and substitute their paths. Plain `.txt` files can also be located by filename and read, but general content search scans Markdown.
 
 ## Things to ask
 
@@ -44,7 +44,7 @@ Asking for a summary or recommendation does not automatically save it. Asking to
 - Content retrieval is keyword-based Markdown search, not a full semantic index. Related wording may need alternate searches.
 - The filename finder supports `.md`, `.txt`, `.xlsx`, `.csv`, and `.tsv`. Spreadsheet reading has its own [guide](spreadsheets-and-visuals.md).
 - General note reads accept Markdown and plain text up to **512 KB**. The assistant tool returns at most **50,000 characters** of a note with a truncation flag; narrow or split large source material when needed.
-- There is no general-purpose create-note, rename, move, delete, or arbitrary text-replacement tool. Task and goal creation/editing use their dedicated tools. Generic text writes append to existing Markdown notes.
+- Knowledge-system note creation, task creation, and goal creation use dedicated tools. There is no general-purpose rename, move, delete, or arbitrary text-replacement tool. Generic text writes append to existing Markdown notes. The [Portfolio workbench](knowledge.md) can also update its dedicated Working draft and Open questions sections while preserving the rest of the note.
 - PDFs, images, audio attachments, and legacy `.xls` contents are not parsed. Linked notes are not automatically all loaded; ask for the relevant sources.
 - Hidden files and symbolic links are excluded from normal vault tools. Notes outside the selected vault are unavailable.
 

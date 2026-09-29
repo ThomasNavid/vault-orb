@@ -1,0 +1,52 @@
+filters:
+  and:
+    - file.inFolder("0. Home/Business Tasks")
+    - file.ext == "md"
+    - note.type == "task"
+properties:
+  file.name:
+    displayName: Task
+  note.venture:
+    displayName: Venture
+  note.category:
+    displayName: Category
+  note.planned:
+    displayName: Planned
+  note.due:
+    displayName: Deadline
+  note.completed:
+    displayName: Done
+views:
+  - type: table
+    name: Open
+    filters:
+      and:
+        - "!note.recurrence"
+        - completed != true
+    order:
+      - file.name
+      - venture
+      - category
+      - planned
+      - due
+      - completed
+    columnSize:
+      note.venture: 149
+      note.category: 198
+  - type: table
+    name: All
+    order:
+      - file.name
+      - venture
+      - category
+      - planned
+      - due
+  - type: table
+    name: Recurring
+    filters:
+      and:
+        - note.recurrence
+    order:
+      - file.name
+      - planned
+      - due

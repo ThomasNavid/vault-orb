@@ -8,9 +8,11 @@
   "scripts": {
     "build:native": "node scripts/build-native.cjs",
     "start": "electron .",
-    "test": "node --test test/*.test.cjs",
-    "prepackage": "npm run build:native",
-    "package": "electron-packager . 'Vault Orb' --platform=darwin --arch=arm64 --out=dist --overwrite --icon=assets/icon.icns --app-bundle-id=app.vaultorb.desktop --extend-info=assets/Info.plist --ignore='^/(dist|test|screenshots|scripts|vault-template|agent.cjs|package-lock.json)' --extra-resource=native/orb-shortcut.node"
+    "test": "node scripts/build-recurring.cjs --check && node --test test/*.test.cjs",
+    "prepackage": "npm run build:recurring && npm run build:native",
+    "package": "electron-packager . 'Vault Orb' --platform=darwin --arch=arm64 --out=dist --overwrite --icon=assets/icon.icns --app-bundle-id=app.vaultorb.desktop --extend-info=assets/Info.plist --ignore='^/(dist|test|screenshots|scripts|vault-example|.claude|agent.cjs|package-lock.json)' --extra-resource=native/orb-shortcut.node",
+    "build:recurring": "node scripts/build-recurring.cjs",
+    "check:recurring": "node scripts/build-recurring.cjs --check"
   },
   "dependencies": {
     "csv-parse": "^7.0.3",

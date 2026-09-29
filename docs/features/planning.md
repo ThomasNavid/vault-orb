@@ -6,11 +6,13 @@ Ask Orb to bring together relevant goals, tasks, notes, and calendar information
 
 ## Setup
 
+The starter is empty. Any named example notes below are illustrative: create practice records in a disposable vault or substitute your own existing notes.
+
 There is no separate planning integration. Orb uses the vault tools already available, with optional [calendar](calendar.md) and [spreadsheet](spreadsheets-and-visuals.md) sources when those are relevant and configured.
 
-During voice conversations, complex requests can be delegated to the deeper reasoning backend. Typed requests already use that backend. Both use the configured OpenAI API key. Planning has access to the app's tools, not unrestricted filesystem, web browsing, or shell access.
+Voice delegates vault requests to the selected chat/tools model; typed requests use it directly. Enable a separate advanced reasoning model for complex work, or leave reasoning with chat/tools. Each selected provider uses its own encrypted key. Planning has access to the app's tools, not unrestricted filesystem, web browsing, or shell access.
 
-The sample [launch options](../../vault-template/Notes/Example%20launch%20options.md) and [meeting](../../vault-template/Notes/Example%20meeting.md) notes provide an immediately usable comparison exercise.
+For a comparison exercise, supply your own options and meeting notes, then give Orb their exact paths.
 
 ## Things to ask
 
@@ -43,7 +45,7 @@ If you only wanted advice, stop after step 2. Nothing needs to be written to mak
 ## Limits
 
 - Recommendations depend on the sources read and the context you provide. Orb has no independent knowledge of unrecorded commitments or progress.
-- There is no automatic calendar-slot booking, continuous monitoring, background follow-up, or autonomous project execution.
+- Explicit [task scheduling](task-scheduling.md) can find and book a free slot. A request only to suggest a plan remains read-only apart from reconciling previously linked blocks on task/calendar refresh. Continuous monitoring, background follow-up, and autonomous project execution are not provided.
 - A complex request may hit the backend's bounded tool loop. Split broad requests by source, decision, or workflow. Completed edits are not rolled back if a later step fails.
 - Conversation context is temporary and bounded. Put durable decisions in notes and recorded progress in goal check-ins.
 - Note content cannot authorize edits. A task list inside a meeting note is not a command to create those tasks.
@@ -57,3 +59,7 @@ If you only wanted advice, stop after step 2. Nothing needs to be written to mak
 **A proposed action was not saved:** a proposal alone is read-only. Explicitly request task creation, note append, goal change, or calendar event creation as appropriate.
 
 Implementation: [agent.cjs](../../src/agent.cjs) and [agent tests](../../test/agent.test.cjs).
+
+## Turn a chosen action into calendar time
+
+“Find me 45 minutes this week for Draft proposal” suggests slots without booking. “Schedule Draft proposal for 45 minutes this week” authorizes finding and booking a linked block. Moving that block updates Planned; completion appears beside it in Orb. See [Task scheduling](task-scheduling.md).

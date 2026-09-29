@@ -1,4 +1,5 @@
 const {localDate,dateValue}=require('./vault.cjs');
+const {knowledgeSnapshot}=require('./knowledge.cjs');
 const {listGoals}=require('./goals.cjs');
 const {listHabits}=require('./habits.cjs');
 const {queryCalendar}=require('./calendar.cjs');
@@ -18,19 +19,22 @@ async function todaySnapshot(vault,{date=localDate(),getCalendarAccess=()=>({}),
     try{return collect(section,fn());}
     catch(e){const error=e.message||String(e);warnings.push({section,error});return {...fallback,error};}
   };
+  let google={};
+  try{google=getCalendarAccess()||{};}catch(e){warnings.push({section:'calendar',error:e.message||String(e)});}
+  const sync=await require('./scheduling.cjs').syncTaskBlocks(vault,{...google,fetchImpl});
+  for(const warning of sync.warnings)warnings.push({section:'calendar',...warning});
   const taskFallback={date,tasks:[],warnings:[]};
   const today=read('today',taskFallback,()=>vault.tasks({scope:'today',date}));
   const overdue=read('overdue',taskFallback,()=>vault.tasks({scope:'overdue',date}));
+  const recurring=read('recurring',taskFallback,()=>{const all=vault.tasks({date,include_completed:true});return {...all,tasks:all.tasks.filter(t=>t.recurrence&&(t.advance_needed||t.recurrence_error||t.earlier_planned))};});
   const goals=read('goals',{date,scope:'active',goals:[],warnings:[],active_count:0},()=>listGoals(vault,{scope:'active',date}));
   const habits=read('habits',{today:date,date,year:Number(date.slice(0,4)),week_start:null,habits:[],selected:null,weeks:[],records:[],warnings:[]},()=>listHabits(vault,{date}));
 
-  let google={};
-  try{google=getCalendarAccess()||{};}
-  catch(e){warnings.push({section:'calendar',error:e.message||String(e)});}
   const calendarFallback={start:date,end:date,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,items:[],total:0,truncated:false,warnings:[],calendars:[]};
   let calendar;
   try {
-    calendar=collect('calendar',await queryCalendar(vault,{start:date,end:date,include_tasks:false},{google,fetchImpl}));
+    calendar=collect('calendar',await queryCalendar(vault,{start:date,end:date,include_tasks:false},{google,fetchImpl,skipSync:true}));
+    calendar.warnings.push(...sync.warnings);
     let googleConfigured=false;
     try{googleConfigured=pluginSettings(vault).calendars.length>0;}
     catch(e){const warning={calendar:'Google Calendar',error:e.message||String(e)};calendar.warnings.push(warning);warnings.push({section:'calendar',...warning});}
@@ -48,7 +52,8 @@ async function todaySnapshot(vault,{date=localDate(),getCalendarAccess=()=>({}),
     warnings.push({section:'calendar',error});
     calendar={...calendarFallback,error};
   }
-  return {date,today,overdue,goals,habits,calendar,warnings};
+  const knowledge=read('knowledge',{notes:[],warnings:[]},()=>{const snapshot=knowledgeSnapshot(vault);return {notes:snapshot.notes.filter(n=>n.revisit&&n.revisit<=date),warnings:snapshot.warnings,truncated:snapshot.truncated};});
+  return {date,today,overdue,recurring,goals,habits,calendar,knowledge,warnings};
 }
 
 module.exports={todaySnapshot};

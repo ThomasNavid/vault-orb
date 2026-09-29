@@ -4,7 +4,7 @@
 
 These are copyable examples of supported requests, checked against the app's tools and behavior. They are not fixed commands, exhaustive phrasing rules, or transcripts of live model tests. Orb may ask for missing details or an exact note path. Speech and typing support the same feature requests.
 
-For the examples naming files below, copy the [fictional sample vault](../vault-template/) to a separate folder and configure Orb to use it. Examples that say **writes** change real files or calendar events when submitted. Replace dates with ones you intend to use.
+The [starter](../vault-template/) begins empty. Names below are illustrative, not included records. Create your own tasks, goals, habits, and notes first, or use a disposable vault for practice. Requests marked **writes** change actual records. Substitute existing paths and intended dates.
 
 ## Start without knowing what to ask
 
@@ -60,7 +60,7 @@ Click **Today** beneath the orb for a read-only overview of today's tasks, past 
 >
 > Pause Example portfolio goal.
 
-**Requires:** a configured Goals folder. The sample goal starts in Someday and its linked task is unfinished. **Writes:** activation, linking, target changes, and pausing update the goal. Showing/filtering goals is read-only.
+**Requires:** a configured Goals folder. First create the illustrative goal in Someday and link an unfinished task, or use your own goal. **Writes:** activation, linking, target changes, and pausing update the goal. Showing/filtering goals is read-only.
 
 [Goals guide](features/goals.md)
 
@@ -104,7 +104,7 @@ Orb reads goals needing attention and guides you through one at a time. For a pr
 >
 > Use my habit history to help review my language goal.
 
-**Requires:** a habit log folder and a supported dashboard script. The sample supplies Pull-ups and Study Mandarin; use your own habit names and an existing goal for the last example. **Result:** source-backed heatmaps, current-week cards, and eight recent weeks. **Writes:** only explicit logging/removal changes daily records. Looking at history writes nothing. Undo reverses eligible Orb log edits.
+**Requires:** a habit log folder and a supported dashboard script. No habits are preloaded; first define any habits used in these examples, or use your own habit names and an existing goal for the last example. **Result:** source-backed heatmaps, current-week cards, and eight recent weeks. **Writes:** only explicit logging/removal changes daily records. Looking at history writes nothing. Undo reverses eligible Orb log edits.
 
 From Today, click **Open habits** to log locally without a model request. The manually maintained This Week page is separate from habits and tasks.
 
@@ -156,7 +156,7 @@ From Today, click **Open habits** to log locally without a model request. The ma
 
 ## Read data and show a chart
 
-> Read A1:B7 of Finance/Example savings.csv.
+> Read A1:B7 of Data/Measurements.csv.
 >
 > Chart those balances over time in GBP.
 >
@@ -166,7 +166,7 @@ From Today, click **Open habits** to log locally without a model request. The ma
 
 **Result:** a sourced chart and answer. The fictional January/June values are 3,200 and 5,650, a change of GBP 2,450. The source file is unchanged. Use View data to inspect the plotted numbers.
 
-For a workbook you supply, start with **“Which sheets are in Finance/Budget.xlsx?”**, then request an exact sheet/range. Budget.xlsx is not included in the sample vault.
+For a workbook you supply, start with **“Which sheets are in Data/Measurements.xlsx?”**, then request an exact sheet/range. Measurements.xlsx and Measurements.csv are not included in the starter; supply your own data.
 
 [Spreadsheets and visuals](features/spreadsheets-and-visuals.md)
 
@@ -195,3 +195,40 @@ For a workbook you supply, start with **“Which sheets are in Finance/Budget.xl
 | “Read this PDF or screenshot.” | PDF/image contents are not currently parsed. Supply supported text or spreadsheet sources. |
 
 If a request fails after some edits succeeded, inspect Recent changes before repeating the whole request. See [Troubleshooting](troubleshooting.md).
+
+## Build your knowledge system
+
+“Create a Computing Hub.” Then: “Create a Computer Architecture Topic linked to that Hub.” Save your actual source notes under that Topic and ask for a Portfolio draft when you want to develop an output. “Show my Hubs and Topics” is read-only. See [Knowledge](features/knowledge.md).
+
+## Learn and create from your notes
+
+These examples require your own tagged notes in the knowledge folders. Substitute your actual Topic and Portfolio titles.
+
+| Request | Effect |
+| --- | --- |
+| “Show the knowledge graph for Computer Architecture.” | Opens a local graph; no writes. |
+| “Explain registers using my Computer Architecture notes.” | Reads the subject and linked notes; returns a sourced answer. |
+| “Quiz me on Computer Architecture, one question at a time.” | Starts a learning conversation; no grades or progress are saved. |
+| “Give me a five-minute refresher on Networking.” | Reads linked notes and gives a short recap with a recall question. |
+| “Save an unfiled Library note called Reading idea with this text: [your text].” | Creates an unfiled note; undoable. |
+| “Create a cheat sheet from [exact Library notes], explaining [your angle]. Save it in Portfolio.” | Creates an AI-assisted draft and appends backlinks to the supplied sources; separate undo entries. |
+| “Mark [Portfolio note] Ready.” | Reads its version and updates its explicit stage. |
+| “Revisit [Library note] on 6 October 2026.” | Saves a date for Today; no background notification. |
+
+For a visual workflow, open **Explore → Knowledge → Library**, select notes, and choose **Create from these notes**. Review [Knowledge](features/knowledge.md) for write behavior, source limits, and partial-failure recovery.
+
+## Trading 212 investments
+
+First connect a read-only Invest or Stocks ISA key pair in Settings → Integrations → Trading 212. [Setup, supported data and limits](features/trading212.md).
+
+- “Show my Trading 212 portfolio.”
+- “Which holding is my largest investment exposure?”
+- “Show my dividends and tell me whether more history needs loading.”
+- “Show my recent deposits and cash interest.”
+- “Do I have any pending orders?”
+
+These requests read financial data and share the relevant results with your selected AI provider. The connector cannot trade. For direct viewing without an AI request, open Explore → Trading 212. History totals must be labelled partial until enough pages have been read.
+
+## Put task work on the calendar
+
+With [linked scheduling set up](features/task-scheduling.md), try “Find me 45 minutes this week for Draft proposal,” then “Book the first slot.” To authorize both steps at once, say “Schedule Draft proposal for 45 minutes this week.” Move it with “Move Draft proposal’s block to Thursday at 2pm.” Completion shows alongside the block in Orb. “Remove Draft proposal’s calendar block” deletes that event and keeps the task.

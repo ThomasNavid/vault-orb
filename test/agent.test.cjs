@@ -11,11 +11,11 @@ test('advanced tool uses GPT-6 Sol Responses and carries reasoning through tool 
   assert.ok(requests[1].body.input.some(i=>i.type==='reasoning'&&i.encrypted_content==='encrypted'));assert.ok(requests[1].body.input.some(i=>i.type==='function_call_output'));assert.ok(activity.some(i=>i.kind==='deep'));
   assert.ok(!requests[0].body.tools.some(t=>t.name==='think_deeply'));
 });
-test('Realtime connection keeps the permanent API key in the backend and includes the advanced tool',async()=>{
+test('Realtime connection keeps the permanent API key in the backend and delegates vault requests to the selected tool model',async()=>{
   let captured;
   const agent=new Agent({vault:{read:()=>({content:'Rules'})},getKey:()=> 'test-key',fetchImpl:async(url,options)=>{captured={url,options};return {ok:true,text:async()=> 'sdp-answer'};}});
   const answer=await agent.connect('v=0\r\n');assert.equal(answer,'sdp-answer');assert.match(captured.url,/realtime\/calls$/);
-  const session=JSON.parse(captured.options.body.get('session'));assert.equal(session.model,'gpt-realtime-2.1');assert.equal(session.audio.output.voice,'cedar');assert.ok(session.tools.some(t=>t.name==='think_deeply'));
+  const session=JSON.parse(captured.options.body.get('session'));assert.equal(session.model,'gpt-realtime-2.1');assert.equal(session.audio.output.voice,'cedar');assert.deepEqual(session.tools.map(t=>t.name),['run_task']);
 });
 test('cancellation prevents a model tool response from making further edits',async()=>{
   const controller=new AbortController();let wrote=false;
@@ -39,7 +39,7 @@ test('a task created through a tool refreshes the displayed task list with the s
   const visuals=events.filter(event=>event.kind==='visual').map(event=>event.visual);
   assert.equal(visuals.length,2);
   assert.deepEqual(visuals[1].rows.map(row=>row[0]),['Existing','New task']);
-  assert.deepEqual(queries,[query,query]);
+  assert.deepEqual(queries,[{include_completed:true},query,query]);
 });
 test('completing a task immediately removes it from the displayed list',async()=>{
   const date='2026-09-26',path='0. Home/Life Tasks/Submit draft.md',events=[];
@@ -77,7 +77,7 @@ test('any successful edit refreshes a task list already in view',async()=>{
   const query={scope:'today',date,include_completed:false};
   await agent.execute('list_tasks',query);
   await agent.execute('append_note',{path:'Notes/Meeting.md',version:'v1',text:'Update'});
-  assert.deepEqual(queries,[query,query]);
+  assert.deepEqual(queries,[{include_completed:true},query,query]);
   assert.equal(events.filter(event=>event.kind==='visual').length,2);
 });
 test('adding a task opens a fresh task view even when no list was previously shown',async()=>{

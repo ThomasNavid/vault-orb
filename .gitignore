@@ -11,3 +11,6 @@ native/*.node
 **/.obsidian/
 __pycache__/
 *.pyc
+
+# Private reference vault used locally to design the public starter.
+/vault-example/

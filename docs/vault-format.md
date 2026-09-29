@@ -6,39 +6,23 @@ Orb reads files from the chosen vault. Task, goal, and habit features recognize 
 
 ## Folder layout
 
-The sample layout is:
+New vaults use the fixed starter layout:
 
 ```text
-0. Home/
-  Life Tasks/
-    Example errand.md
-  Business Tasks/
-    Example project task.md
-  Goals/
-    Example portfolio goal.md
-  Habit Log/
-    README.md
-  Habits.md
-  This Week.md
-  Goals.md
-  Goals.base
-  Task Rules.md
-Notes/
-  Welcome.md
-  Example launch options.md
-  Example meeting.md
-Finance/
-  Example savings.csv
-99. System/99.4 Scripts/habits/
-  view.js
-  view.css
-Templates/
-  Goal Template.md
+0. Home/                 Home, Today, Life Tasks, Business Tasks, Goals, Habit Log
+1. Portfolio/            Your thinking and outputs
+2. Hubs/                 Broad maps of interests
+3. Topics/               Focused subjects
+4. Knowledge Library/    Source and learning notes, with source-type subfolders
+5. Archives/             Inactive material
+6. Life Admin/           Non-financial career documents and certificates
+99. System/              Templates, scripts, setup guides, assistant guidance
+README.md                Standalone vault guide
 ```
 
-Only the two task folders must exist to save a vault configuration. Set their vault-relative paths in Settings; they must be separate, neither containing the other. If a Task rules note is configured, it must exist and be Markdown. Blank disables that note.
+**Create new…** creates all required folders and view files automatically. **Connect existing…** validates the standard structure without modifying it. The paths shown in Settings are read-only. Existing saved installations retain their previous folder configuration, including any disabled optional features; there is no automatic relocation or conversion of those notes. Missing files in an older vault can still produce feature-specific setup guidance.
 
-Goals folder defaults to `0. Home/Goals`, can be customized, and must be separate from task folders. It may be absent while other features are used, but must exist before goal creation. Blank disables goals. Existing configurations whose task folders overlap the default goal location start with goals disabled.
+The starter has no tasks, goals, habit definitions, or completed knowledge notes. Folder placeholder files only preserve empty directories in source control and are omitted when Orb creates a vault. See [Knowledge](features/knowledge.md) and the [Obsidian guide](obsidian-only.md) for the knowledge properties, links, and plugin setup.
 
 General tools do not traverse outside the vault, hidden paths, or symbolic links. They skip common generated directories such as `node_modules` and `dist`. Calendar integration has a specific reader for its Full Calendar plugin settings; this does not make hidden files generally searchable.
 
@@ -145,9 +129,9 @@ const habits = [
 ];
 ```
 
-Use this plain literal syntax with quoted text/colors and spaces after colons. Orb parses it as data and **never executes vault JavaScript**. Computed definitions, expressions, functions, and spread syntax are unsupported. It accepts 1–12 habits, unique lowercase keys (letters/digits/underscores, starting with a letter, up to 64 characters), nonempty labels up to 80 characters, integer targets from 1–7 days/week, cadence text up to 80 characters, and six-digit hex colors. Reserved metadata/prototype keys are rejected. The file limit is 128 KB. Invalid definitions show setup guidance; Orb does not guess a substitute.
+Use this plain literal syntax with quoted text/colors and spaces after colons. Orb parses it as data and **never executes vault JavaScript**. Computed definitions, expressions, functions, and spread syntax are unsupported. It accepts 0–12 habits (zero is the empty starter state), unique lowercase keys (letters/digits/underscores, starting with a letter, up to 64 characters), nonempty labels up to 80 characters, integer targets from 1–7 days/week, cadence text up to 80 characters, and six-digit hex colors. Reserved metadata/prototype keys are rejected. The file limit is 128 KB. Invalid definitions show setup guidance; Orb does not guess a substitute.
 
-Keep keys stable: changing `study_mandarin` does not migrate old records, even if the label stays the same. Targets are not versioned historically; changing a target changes past-week comparisons. Orb generates all controls and new record properties from this array. If extending an older Obsidian dashboard, also update any hard-coded record defaults and table headings there. The sample dashboard generates both from the array.
+Keep keys stable: changing `study_mandarin` does not migrate old records, even if the label stays the same. Targets are not versioned historically; changing a target changes past-week comparisons. Orb generates all controls and new record properties from this array. If extending an older Obsidian dashboard, also update any hard-coded record defaults and table headings there. The starter dashboard generates both from the array.
 
 The script's own `ROOT` path controls Obsidian's record lookup, while Orb uses Settings. Keep those paths aligned when customizing. Dataview and JavaScript query enablement are needed for Obsidian rendering only; Orb does not change those settings.
 
@@ -168,3 +152,66 @@ Markdown content search scans `.md` notes. Filename discovery also supports `.tx
 Task/goal parse errors are returned as warnings. Do not assume a list is complete if some notes could not be read. A goal with unsupported status or invalid dates needs correction in its source note.
 
 Implementation: [vault.cjs](../src/vault.cjs), [goals.cjs](../src/goals.cjs), [habits.cjs](../src/habits.cjs), and [spreadsheet.cjs](../src/spreadsheet.cjs).
+
+## Knowledge relationships and workbench fields
+
+The [Knowledge guide](features/knowledge.md) describes the browser, capture, Portfolio workbench and graph. Each note needs its matching `hub`, `topic`, `knowledge` or `portfolio` tag in the corresponding numbered folder. Quote wikilinks in YAML. A Topic's `hub` points to a Hub; a Library note's `topic` points to its main Topic. An unfiled Library capture has `topic: null`. Additional body links are relationships, not primary filing.
+
+Optional fields used by Orb:
+
+```yaml
+tags: [portfolio]
+hub: "[[2. Hubs/Computing]]"
+topic: "[[3. Topics/Computer Architecture]]"
+stage: Developing # Idea | Developing | Ready
+reason: Explain the basics clearly
+revisit: 2026-10-06 # user-chosen date, never automatically advanced
+```
+
+Library notes can also have `source` (http/https URL), `reason`, and `revisit`. An absent Portfolio `stage` displays as Idea without changing the file. The workbench uses `<!-- orb:Working draft -->` / `<!-- /orb:Working draft -->` and equivalent `Open questions` markers for the sections it edits, preserving original content outside them.
+
+Creating a Portfolio note with supporting Library paths writes outgoing citations and appends a `Supports: [[1. Portfolio/Title]]` backlink to each source. These are separate undoable writes. This maintains the template's incoming-link Dataview list. Linking a Library source to an existing Portfolio note can also populate that list.
+
+## Calendar-linked task fields
+
+[Task scheduling](features/task-scheduling.md) adds optional `task_id` (UUID) and `calendar_block` YAML to a non-recurring task. Unlinked notes need no migration. Preserve these fields when renaming a task; do not duplicate the UUID when copying one.
+
+```yaml
+task_id: 11111111-1111-4111-8111-111111111111
+calendar_block:
+  id: 22222222-2222-4222-8222-222222222222
+  calendar_id: connected-provider-id
+  remote_calendar_id: google-calendar-id
+  event_id: plugin-event-id
+  state: linked
+  start: 2030-01-07T10:00:00
+  end: 2030-01-07T10:45:00
+  timezone: Europe/London
+  previous_planned: null
+  planned: 2030-01-07T10:00:00
+```
+
+`start`/`end` are event-zone wall times; `planned` is the last synchronized value in the Mac's local timezone. `previous_planned` is restored when the block is removed. Recovery states are `creating`, `moving`, and `removing`; a creating block can have a null event ID, and a moving block also carries `target_start`/`target_end`. Orb owns these fields and preserves unrelated YAML/body content. The opaque block UUID also appears in the event description to recover identity after uncertain writes or a plugin cache reload. No token, feed URL, task body, or vault path is stored in the event marker.
+
+## Recurring task properties
+
+Optional `recurrence` (version 1) and `recurrence_history` extend the existing task note. One note represents a series; current dates stay in `planned`/`due`. The full behaviour and UI are documented in [Recurring tasks](features/recurring-tasks.md).
+
+```yaml
+recurrence:
+  version: 1
+  mode: fixed
+  unit: week
+  interval: 1
+  weekdays: [monday]
+  date_field: planned
+  anchor: 2026-10-05
+  occurrence: 2026-10-05
+recurrence_history: []
+```
+
+`mode` is `fixed` or `completion`; `unit` is `day`, `week`, `month`, or `year`; `interval` is an integer 1–1000. `weekdays` is nonempty only for fixed weekly schedules. Dates are local date-only values. `anchor` retains the fixed cadence, and `occurrence` identifies the nominal current slot even when its actual date is postponed. Completion-relative rules update both to their next slot. Linked `calendar_block` metadata and recurrence cannot be used together.
+
+Each history entry has an operation `id`, action, request fingerprint, effective local `date`, UTC `recorded_at`, and before/after snapshots of the occurrence state and dates. An `undo` entry references the reversed operation. Both Obsidian and Orb use these records for portable undo and duplicate prevention; this is independent of Orb's private Activity journal. Preserve history and its identifiers when editing notes manually.
+
+Desktop Obsidian assets are in `99. System/99.4 Scripts/recurring-tasks`; its `config.md` holds the task folders. Dataview JavaScript provides controls; plain Bases checkboxes do not calculate recurrence. A direct completed mark on an active rule is pending reconciliation, never an inferred completion date. No read operation advances recurrence.

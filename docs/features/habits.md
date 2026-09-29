@@ -15,9 +15,9 @@ Habits are actions you repeat and record. Orb shares daily Markdown records with
 
 ## Setup
 
-Use your existing habits dashboard, or copy the fictional [sample vault](../../vault-template/) to a separate folder. The sample has Pull-ups (7 days/week) and Study Mandarin (2 days/week), and **no recorded completions**.
+New vaults include the tracker but start with **no habit definitions or recorded completions**. Follow `99. System/Habit Setup.md` in your vault to add your chosen definitions. Existing installations keep their current habits.
 
-In Settings, the defaults are:
+The standard paths, shown in Settings, are:
 
 - **Habit log folder:** `0. Home/Habit Log`. Create it first. It must be separate from goal and task folders. Blank disables habits.
 - **Habit dashboard script:** `99. System/99.4 Scripts/habits/view.js`. Orb reads the literal `const habits = [...];` definitions from this file as data; it never executes the JavaScript. This keeps names, keys, colors, and targets aligned with Obsidian.
@@ -55,7 +55,7 @@ Use the actual labels in your own dashboard. These examples describe supported r
 
 ## A complete practice walkthrough
 
-In a disposable copy of the sample vault:
+In a disposable starter copy, first define the habits named in these illustrative requests (or substitute your own):
 
 1. Open Today and click Open habits. Expect empty heatmaps and zero recorded days.
 2. Check Pull-ups for today. Expect a green square, one recorded day, and a daily Markdown record.
@@ -77,7 +77,7 @@ Records use `YYYY-MM-DD.md` filenames in the configured log folder. Only the YAM
 
 Viewing, date selection, and year navigation write nothing. Checkbox edits preserve other properties, comments, and body text. Orb journals edits and checks both record and definition versions before writing. If another app changes the record or definitions, refresh before retrying. Undo refuses to overwrite later external edits. Obsidian's own writes do not enter Orb's journal.
 
-Names and weekly targets come from the script, with 1–12 habits and targets from 1–7 days. Orb has no habit-definition editor, reminders, repetitions, duration tracking, streak scoring, automatic scheduling, or background file watcher. Keep property keys stable; renaming a key does not migrate old activity. Changing a target changes comparisons for older weeks too. See the [definition contract](../vault-format.md#habit-definitions).
+Names and weekly targets come from the script, with 0–12 habits (zero means none chosen yet) and targets from 1–7 days. Orb has no habit-definition editor, reminders, repetitions, duration tracking, streak scoring, automatic scheduling, or background file watcher. Keep property keys stable; renaming a key does not migrate old activity. Changing a target changes comparisons for older weeks too. See the [definition contract](../vault-format.md#habit-definitions).
 
 ## Troubleshooting
 

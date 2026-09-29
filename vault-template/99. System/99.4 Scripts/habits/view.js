@@ -1,10 +1,7 @@
 // Dataview view. Records are ordinary Markdown notes; no separate database.
 const ROOT = "0. Home/Habit Log";
 const compact = input?.compact === true;
-const habits = [
-  { key: "pull_ups", label: "Pull-ups", target: 7, cadence: "Daily", color: "#31995b" },
-  { key: "study_mandarin", label: "Study Mandarin", target: 2, cadence: "Twice a week", color: "#6387db" }
-];
+const habits = [];
 const today = dv.luxon.DateTime.local().startOf("day");
 const iso = d => d.toISODate();
 const parse = s => dv.luxon.DateTime.fromISO(s).startOf("day");
@@ -180,3 +177,8 @@ function render() {
   }
 }
 render();
+
+if (!habits.length) {
+  picker.hidden = true;
+  dv.paragraph("No habits chosen yet. Follow the habit setup guide in 99. System to add your own definitions.");
+}

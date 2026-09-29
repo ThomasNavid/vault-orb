@@ -1,12 +1,31 @@
-# Task rules
+# Task Rules
 
-This file is read by Vault Orb as the task conventions for this vault. Edit it to match how you work.
+## One task, one record
 
-- In this sample vault, put personal tasks in `0. Home/Life Tasks` and work tasks in `0. Home/Business Tasks`. Other vaults can set both paths in Orb Settings.
-- Use one Markdown note per task. The file name is the task title.
-- Use `planned` for when you intend to work and `due` for a deadline. Leave either as `null` if unset.
-- Dates use `YYYY-MM-DD`. Times, when needed, use local `YYYY-MM-DDTHH:mm:ss`.
-- `category` is an optional grouping label. Work tasks can also have a `venture` label.
-- Treat a task as complete only when `completed: true` is explicitly requested.
+- Personal tasks belong in `0. Home/Life Tasks`; work and business tasks belong in `0. Home/Business Tasks`.
+- Each task is one Markdown note with `type: task`. Do not duplicate it as a checkbox elsewhere.
+- New tasks start with `category: Inbox`. Choose your own categories during review; business tasks can have a `venture` label.
+- Keep supporting details and links in the task note.
 
-The app reads this note into its assistant instructions. Keep only conventions you want the assistant to follow.
+## Dates and completion
+
+- `planned` is when you intend to act; `due` is a genuine deadline. Either can be empty.
+- Use local `YYYY-MM-DD` or `YYYY-MM-DDTHH:mm:ss`. Do not invent times or deadlines.
+- Only `completed: true` means complete. Completed records stay in the All table.
+- Today includes open tasks planned OR due today. A past planned date is not overdue.
+- Dates do not send notifications or create calendar events.
+
+## Reviews and assistants
+
+- Add, change, or complete tasks only when the user requests it. Do not infer completion.
+- Do not automatically import historical unchecked items as current commitments.
+- Review Inbox tasks regularly. Keep goals, tasks, habits, and knowledge as distinct records linked where useful.
+- See [[99. System/Assistant Guide|Assistant Guide]] for knowledge filing and source handling.
+
+## Recurring tasks
+
+- Manage repeats in [[Recurring Tasks]] using desktop Obsidian and Dataview JavaScript, or through Orb. The same notes and history work with Orb closed or uninstalled.
+- Use its Complete/Skip controls instead of the ordinary Done checkbox. Completion advances the same note and records history; the next occurrence remains open.
+- Planned and Deadline remain distinct. Repetition uses one explicitly selected field and moves the other date by the same calendar-day offset if present.
+- Read-only views never advance recurrence. An external Done mark needs a chosen completion date in the recurring dashboard.
+- Use Undo last occurrence for portable reversal and Stop repeating to keep the current task without future repeats. See [[99. System/Recurring Tasks Setup]].

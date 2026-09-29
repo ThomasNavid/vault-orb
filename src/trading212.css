@@ -1,0 +1,36 @@
+.t212-icon{background:#b5e840;color:#182306;font-size:14px;font-weight:800;letter-spacing:-1px}
+.t212-actions{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px}
+.t212-panel{min-width:0}
+.t212-heading{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.t212-heading>div{flex:1}
+.t212-heading h1{margin:0;font-size:21px}
+.t212-note{color:var(--text-3);font-size:11px;line-height:1.55;margin:8px 0}
+.t212-heading .t212-note{margin:2px 0 0}
+.t212-tabs{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0}
+.t212-tabs button{flex:1;padding:7px 9px}
+.t212-tabs button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent-text)}
+.t212-subtabs button{flex:initial;font-size:11px}
+.t212-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0}
+.t212-metric{padding:12px;background:var(--surface-2);border:1px solid var(--line-1);border-radius:10px;min-width:0}
+.t212-metric span{display:block;color:var(--text-2);font-size:11px}
+.t212-metric strong{display:block;font-size:21px;font-weight:550;letter-spacing:-.5px;margin-top:4px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.t212-allocation{margin:20px 0}
+.t212-allocation h2{font-size:13px;margin:0}
+.t212-allocation-row{margin:10px 0}
+.t212-allocation-row>div{display:flex;justify-content:space-between;gap:12px;font-size:12px}
+.t212-allocation-row strong{font-variant-numeric:tabular-nums;font-size:11px;color:var(--text-2)}
+.t212-allocation-row progress{display:block;width:100%;height:5px;margin-top:5px;border:0;border-radius:5px;overflow:hidden;background:var(--surface-3)}
+.t212-allocation-row progress::-webkit-progress-bar{background:var(--surface-3)}
+.t212-allocation-row progress::-webkit-progress-value{background:var(--teal);border-radius:5px}
+.t212-panel .table-scroll{margin:14px 0;max-width:100%}
+.t212-panel td,.t212-panel th{white-space:nowrap;font-size:11px;font-variant-numeric:tabular-nums}
+.t212-panel td:first-child{max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.t212-error{padding:10px;border-radius:8px;background:#ff9f0a12;color:var(--thinking);font-size:12px;overflow-wrap:anywhere}
+.t212-year{display:flex;align-items:center;gap:12px;margin:14px 0}
+.t212-year select{width:auto;min-width:150px}
+.t212-panel[aria-busy=true]{opacity:.7}
+@media(max-width:550px){.t212-metric strong{font-size:18px}.t212-heading{flex-wrap:wrap}.t212-tabs button{padding:7px}}
+
+/* Keep the floating knowledge preview clear of the financial dashboard. */
+body:has(#visual-view:not([hidden]) .t212-panel) .graph-dock,
+body.chat-mode:has(.chat-visual .t212-panel) .graph-dock{display:none}

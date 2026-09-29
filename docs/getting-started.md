@@ -6,11 +6,11 @@
 
 - An Apple Silicon Mac. Windows, Linux, and Intel Macs are not currently supported.
 - Node.js 22 or newer, npm, and Xcode Command Line Tools to build and run the source.
-- A local Obsidian vault folder, including a folder synced with iCloud if desired.
-- Your own OpenAI API key with access to `gpt-realtime-2.1` and `gpt-6-sol`, and an internet connection. API charges are separate from ChatGPT subscription charges; no OpenRouter account is used.
+- A location for your Markdown vault; Orb creates it for you, including in an iCloud-synced folder if desired.
+- Your own OpenAI or OpenRouter API key, a compatible tool model, and an internet connection. API charges are separate from consumer chat subscriptions. See [Models and providers](providers.md) for independent voice setup.
 - Obsidian installed if you want source-note buttons to open Markdown notes there.
 
-The app opens without a key, but conversational requests need one. Typed requests do not need microphone permission. Calendar integration is optional.
+The app opens without an AI-provider key, but conversational requests need one. Typed requests do not need microphone permission. Calendar and Trading 212 integrations are optional; Trading 212 dashboard browsing needs only its own key pair.
 
 ## Install from source
 
@@ -24,56 +24,33 @@ npm start
 
 For a packaged Mac app, see [Build and install](development.md#build-and-install). A packaged build and an installed app are separate copies; rebuilding does not update the installed copy automatically.
 
-## Prepare a vault
+## Create and connect your vault
 
-For an isolated first try, copy the entire [vault-template](../vault-template/) directory to a separate folder, then open that folder as a vault in Obsidian. The sample contains fictional tasks, a Someday goal, meeting and planning notes, a small CSV, and goal templates/Bases. These examples have no connection to your real plans.
+1. Open Settings and click **Create new…**. Choose a location and a new folder name. Orb refuses existing destinations so it cannot overwrite your files.
+2. Orb creates the complete system and fills its paths automatically. Click **Save settings** to connect it. If you close Settings before saving, the folder remains available to connect later.
+3. Choose a chat/tools provider and model, add its API key, and save. OpenRouter-only chat needs no OpenAI key. Configure voice separately if wanted. Today and direct habit controls do not require an AI-provider key. Direct Trading 212 browsing uses its own credentials.
+4. Open the vault's README for the structure and setup instructions. Records start empty: create a Life/Business task, goal, or Hub only when you want one. Choose habits through the included Habit Setup guide.
 
-For your own vault, create two separate task folders first. Their default paths are:
+**Connect existing…** requires the same Orb structure for newly selected vaults. It validates without moving or rewriting files. Existing installations keep their saved paths. For a manual installation, copy the complete [starter](../vault-template/) to a new folder. Do not select the private reference vault or merge the starter over personal files.
 
-```text
-0. Home/Life Tasks
-0. Home/Business Tasks
-```
+## Your knowledge system
 
-Both folders must exist before Settings can be saved, even if you only want general note search. They cannot be the same folder or contain one another. Existing checkbox lists do not become Orb task records automatically; use one Markdown note per task with `type: task`. See [Vault format](vault-format.md).
+Portfolio holds your thinking and outputs; Hubs map broad interests; Topics gather focused subjects; Knowledge Library holds source material. Topic `hub` and Knowledge `topic` properties connect the browsing structure. Portfolio cites supporting Library notes; its automatic incoming list shows Library notes that link back to it.
 
-## Configure Settings
+Try **“Create a Hub called Computing”**, then **“Create a Computer Architecture Topic linked to that Hub.”** Save your actual course notes to the Library and ask for a Portfolio draft only when you want one. These are optional example requests, not pre-created records. See [Knowledge](features/knowledge.md).
 
-| Field | What to enter |
-| --- | --- |
-| Obsidian vault | Choose the vault root folder. |
-| Personal tasks folder | Its path relative to the vault, such as `0. Home/Life Tasks`. |
-| Work tasks folder | A separate relative path, such as `0. Home/Business Tasks`. |
-| Goals folder | Optional; defaults to `0. Home/Goals`. Create it before creating goals, or leave blank to disable. |
-| Habit log folder | Optional; defaults to `0. Home/Habit Log`. Create it before logging, or leave blank to disable. |
-| Habit dashboard script | Defaults to `99. System/99.4 Scripts/habits/view.js`; supplies the actual habit definitions. |
-| Task rules note | Optional existing Markdown note. The default is `0. Home/Task Rules.md`; clear it if absent. |
-| API key | Enter the key here. Leaving the field blank on later saves keeps the saved key. |
-| Start listening when I summon Orb | Enabled by default when a key is saved. Disable if you prefer to start voice manually. |
-
-Click Save settings. Keys are stored encrypted under the app's support directory. Do not put them in notes or example files.
-
-A missing Goals folder does not prevent setup. If an older custom task layout overlaps the default Goals path, goals start disabled until you choose a separate folder. More details are in [Goals](features/goals.md).
-
-## Your first five minutes
-
-Using your copy of the sample vault:
-
-1. Click **Explore** beneath the orb. Inspect the starting requests, then open **Today** for a read-only overview of the sample tasks, goal, habits, and optional calendar state.
-2. Click the keyboard icon and type **“Show my tasks.”** Expect two sample tasks and links to their notes.
-3. Ask **“Show all my goals, including Someday.”** Expect the fictional portfolio goal linked to Example project task.
-4. Ask **“Read Notes/Example launch options.md and compare the two options in a table.”** Expect a comparison citing the note.
-5. Ask **“Chart the balances in Finance/Example savings.csv in GBP.”** Expect a chart and a View data table.
-6. To try an edit, ask **“Plan Example errand for tomorrow.”** Then ask **“Undo your last note edit.”** Check Recent changes for both results.
-
-These examples demonstrate reading, visuals, and reversible note edits. Calendar examples require separate integration setup and can create real external events.
-
-From Today, click **Open habits** to try the sample’s empty heatmaps and local logging controls. See [Habits setup and walkthrough](features/habits.md). Today and the direct habit controls do not require an API key; Explore prompts do.
+To work entirely in Obsidian, follow [Obsidian setup and standalone use](obsidian-only.md). The same guide ships inside every new vault. Dataview, Templater, and Bases power the relevant Obsidian views; calendar integration is optional and Charts is not required.
 
 ## Optional voice and calendar setup
 
 Click the orb to start voice and allow macOS microphone access. Double-tap Control or use ⌘⇧Space to summon it later. The shortcut does not require Input Monitoring or Accessibility permissions. See [Voice and controls](features/voice-and-controls.md).
 
-To read calendar feeds or create Google Calendar events, follow [Calendar setup](features/calendar.md#setup). Setting a task's Planned date does not create a calendar event.
+To read calendar feeds or create Google Calendar events, open **Settings → Integrations → Google Calendar** and follow [Calendar setup](features/calendar.md#setup). Setting a task's Planned date alone does not create an event. To reserve work time, set working hours and follow [linked task scheduling](features/task-scheduling.md).
+
+## Optional Trading 212 setup
+
+Open **Settings → Integrations → Trading 212**. Choose Live or Demo, enter your Trading 212 **API key and API secret** with read-only permissions, and click **Connect & save**. This saves the connection independently of the other Settings fields. The connection test reads the account summary; other views also need their relevant read permissions.
+
+Open **Explore → Trading 212** for Overview, Holdings, Dividends and Activity. The connector supports Invest and Stocks ISA accounts and cannot place trades. This financial portfolio is separate from the knowledge system's **Portfolio** notes. Dashboard browsing makes no AI request; asking Orb about investments shares relevant account data with your selected AI provider. See [Trading 212](features/trading212.md) for key generation, permissions, history loading and disconnect behaviour.
 
 If setup fails, start with [Troubleshooting](troubleshooting.md). For local storage and network use, see [Privacy and data](privacy.md).

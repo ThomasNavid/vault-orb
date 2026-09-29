@@ -8,9 +8,9 @@ Goals describe outcomes. Tasks describe actions that move them forward. Orb help
 
 ## Setup
 
-Set Goals folder in Settings, normally `0. Home/Goals`. It must be separate from both task folders. Create it in Obsidian before creating a goal; leave the setting blank to disable the feature. A missing goal folder does not prevent other features from working. An older custom task layout overlapping the default Goals path starts with goals disabled until a separate folder is selected.
+New vaults include `0. Home/Goals`, the Goals page, Bases views, and `99. System/99.1 Templates/9. Goal Template.md`. Orb reads and creates Markdown records without Bases or Templater. For manual Obsidian creation, see [plugin setup](../obsidian-only.md).
 
-The [sample goal](../../vault-template/0.%20Home/Goals/Example%20portfolio%20goal.md) starts in **Someday**. Ask for all goals to see it. The sample also includes a [Goals page](../../vault-template/0.%20Home/Goals.md), [Bases views](../../vault-template/0.%20Home/Goals.base), and [manual template](../../vault-template/Templates/Goal%20Template.md). Orb reads Markdown notes directly and does not require Bases or Templater.
+The starter has no goals. Before trying the illustrative Example portfolio goal requests below, create a business task called Example project task, then create a Someday goal called Example portfolio goal with an observable finish line and that next-task link. Use a disposable vault for practice, or substitute your own records.
 
 ## Things to ask
 
@@ -40,7 +40,7 @@ Aim for **one to three active goals**, often milestones reachable in **6–12 we
 
 ## A complete weekly review
 
-Starting in the sample vault:
+After creating the practice goal and linked task above:
 
 1. **“Make Example portfolio goal active.”** It already links Example project task. Review defaults to next week.
 2. **“Help me review Example portfolio goal now.”** Orb reads its state and asks about progress, obstacles, and your next decision/action.

@@ -1,0 +1,69 @@
+filters:
+  and:
+    - file.ext == "md"
+    - note.type == "task"
+    - note.completed != true
+    - "!note.recurrence"
+    - or:
+        - file.inFolder("0. Home/Life Tasks")
+        - file.inFolder("0. Home/Business Tasks")
+properties:
+  file.name:
+    displayName: Task
+  note.venture:
+    displayName: Venture
+  note.planned:
+    displayName: Planned
+  note.due:
+    displayName: Deadline
+  note.completed:
+    displayName: Done
+views:
+  - type: table
+    name: Life today
+    filters:
+      and:
+        - file.inFolder("0. Home/Life Tasks")
+        - or:
+            - and:
+                - note.planned >= today()
+                - note.planned < today() + "1d"
+            - and:
+                - note.due >= today()
+                - note.due < today() + "1d"
+    order:
+      - file.name
+      - planned
+      - due
+      - completed
+  - type: table
+    name: Business today
+    filters:
+      and:
+        - file.inFolder("0. Home/Business Tasks")
+        - or:
+            - and:
+                - note.planned >= today()
+                - note.planned < today() + "1d"
+            - and:
+                - note.due >= today()
+                - note.due < today() + "1d"
+    order:
+      - file.name
+      - venture
+      - planned
+      - due
+      - completed
+    columnSize:
+      file.name: 181
+      note.venture: 101
+  - type: table
+    name: Past deadlines
+    filters:
+      and:
+        - note.due < today()
+    order:
+      - file.name
+      - venture
+      - due
+      - completed

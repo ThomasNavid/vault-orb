@@ -30,7 +30,10 @@ views:
     filters:
       and:
         - note.status == "Active"
-        - '!note.review || note.review < today() + "1d"'
+        - or:
+            - 'note.review == null'
+            - 'note.review == ""'
+            - note.review < today() + "1d"
     order:
       - file.name
       - review

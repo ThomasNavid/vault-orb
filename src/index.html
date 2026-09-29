@@ -1,11 +1,10 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://api.openai.com; object-src 'none'; base-uri 'none'"><title>Vault Orb</title><link rel="stylesheet" href="style.css"></head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://api.openai.com; object-src 'none'; base-uri 'none'"><title>Vault Orb</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="knowledge.css"><link rel="stylesheet" href="trading212.css"><link rel="stylesheet" href="recurring.css"></head>
 <body>
 <svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
   <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
   <symbol id="i-mic-off" viewBox="0 0 24 24"><path d="M15 10V6a3 3 0 0 0-5.7-1.3M9 9v3a3 3 0 0 0 4.6 2.5M18.5 11a6.5 6.5 0 0 1-1.1 3.6M5.5 11a6.5 6.5 0 0 0 10 5.5M12 17.5V21M4 4l16 16"/></symbol>
   <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7.5" y="7.5" width="9" height="9" rx="2.2" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M7 10h.01M10.3 10h.01M13.7 10h.01M17 10h.01M8 14h8"/></symbol>
   <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 8h9M17 8h3M4 16h3M11 16h9"/><circle cx="15" cy="8" r="2"/><circle cx="9" cy="16" r="2"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"/></symbol>
   <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 18.5V5.5M6.5 11 12 5.5 17.5 11"/></symbol>
@@ -27,6 +26,16 @@
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M18 6l-1.6 1.6M7.6 16.4 6 18M18 18l-1.6-1.6M7.6 7.6 6 6"/></symbol>
   <symbol id="i-steps" viewBox="0 0 24 24"><circle cx="6" cy="6.5" r="2"/><circle cx="6" cy="17.5" r="2"/><path d="M6 8.5v7M11 6.5h8.5M11 17.5h8.5M11 12h6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13"/></symbol>
+  <symbol id="i-compose" viewBox="0 0 24 24"><path d="M11 5H7.5A2.5 2.5 0 0 0 5 7.5v9A2.5 2.5 0 0 0 7.5 19h9a2.5 2.5 0 0 0 2.5-2.5V13"/><path d="M17.6 4.4a1.9 1.9 0 0 1 2.7 2.7L13 14.4l-3.4.7.7-3.4Z"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="4.5" rx="1.5"/><path d="M5.5 9v8.5A2 2 0 0 0 7.5 19.5h9a2 2 0 0 0 2-2V9M10 13h4"/></symbol>
+  <symbol id="i-unarchive" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="4.5" rx="1.5"/><path d="M5.5 9v8.5A2 2 0 0 0 7.5 19.5h9a2 2 0 0 0 2-2V9M12 17v-5.5M9.5 14 12 11.5l2.5 2.5"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V5.5a1.5 1.5 0 0 1 1.5-1.5h2a1.5 1.5 0 0 1 1.5 1.5V7M6.5 7l.8 11.1A2 2 0 0 0 9.3 20h5.4a2 2 0 0 0 2-1.9L17.5 7"/></symbol>
+  <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="M9.5 5v14"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 4.5 4.5"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="4" y="4.5" width="16" height="15" rx="2.5"/><path d="M4 9.5h16M4 14.5h16M10 9.5v10"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7.5 5 11.5l4 4"/><path d="M5.5 11.5H14a4.5 4.5 0 0 1 0 9h-2"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M15.5 5.5a2.1 2.1 0 0 1 3 3L8.5 18.5 4.5 19.5l1-4Z"/></symbol>
 </svg>
 <main class="shell">
 <section class="orb-home" aria-label="Orb assistant">
@@ -39,11 +48,10 @@
       <button id="voice-button" class="round voice" aria-label="Start voice conversation" title="Talk to Orb"><svg class="icon"><use id="voice-icon" href="#i-mic"/></svg></button>
       <button id="mute-button" class="round" aria-label="Mute microphone" title="Mute microphone" hidden><svg class="icon"><use id="mute-icon" href="#i-mic"/></svg></button>
       <span class="divider" aria-hidden="true"></span>
-      <button id="type-button" class="round" aria-label="Type a message" title="Type a message"><svg class="icon"><use href="#i-keyboard"/></svg></button>
+      <button id="chat-button" class="round" aria-label="Open chats" title="Chat with Orb" aria-keyshortcuts="Meta+J"><svg class="icon"><use href="#i-chat"/></svg></button>
       <button id="settings-button" class="round" aria-label="Settings" title="Settings"><svg class="icon"><use href="#i-sliders"/></svg></button>
       <button id="hide-button" class="round" aria-label="Hide Orb" title="Hide Orb · Escape"><svg class="icon"><use href="#i-close"/></svg></button>
     </div>
-    <form id="chat-form" inert><button type="button" id="type-close" class="round" aria-label="Back to controls" title="Back"><svg class="icon"><use href="#i-back"/></svg></button><label class="sr-only" for="message">Message Orb</label><input id="message" placeholder="A thought, a task…" maxlength="12000" autocomplete="off"><button type="submit" id="send-button" aria-label="Send message"><svg class="icon"><use href="#i-arrow-up"/></svg></button></form>
   </div>
   <nav class="orb-nav" aria-label="Orb views"><button id="home-button" class="orb-nav-button" type="button" aria-label="Open Today dashboard" aria-pressed="false">Today</button><button id="discover-button" class="orb-nav-button" type="button" aria-label="Explore what Orb can do" aria-keyshortcuts="Meta+K" aria-pressed="false">Explore <kbd aria-hidden="true">⌘K</kbd></button></nav>
   <button id="shortcut-hint" class="shortcut-hint"><kbd>⌃</kbd><kbd>⌃</kbd><span>summon Orb</span></button>
@@ -62,40 +70,105 @@
   <div id="steps-view" class="card-body" hidden><h1>Steps</h1><p class="subtitle">What Orb did for your last request.</p><ol id="steps-list" class="steps-list"></ol></div>
   <div id="history-view" class="card-body" hidden><h1>Recent changes</h1><p class="subtitle">Edits made by Orb, with undo.</p><div id="activity-list"></div></div>
   <div id="settings-view" class="card-body" hidden>
-    <h1>A little more yours.</h1><p class="subtitle">Your vault, your key, your shortcut.</p>
+    <h1>A little more yours.</h1><p class="subtitle">Your vault, integrations, and preferences.</p>
     <form id="settings-form">
-      <h2 class="group-title">Vault</h2>
+      <h2 class="group-title">Your knowledge and planning system</h2>
+      <p class="section-intro">One complete system, stored in Markdown files you own. Choose where it lives; Orb sets up the structure.</p>
       <div class="group">
-        <div class="field"><label for="vault-path">Obsidian vault</label><div class="field-row"><input id="vault-path" required readonly><button type="button" id="choose-vault" class="secondary">Choose…</button></div></div>
-        <div class="field"><label for="life-folder">Personal tasks folder</label><input id="life-folder" required spellcheck="false" placeholder="0. Home/Life Tasks"></div>
-        <div class="field"><label for="business-folder">Work tasks folder</label><input id="business-folder" required spellcheck="false" placeholder="0. Home/Business Tasks"></div>
-        <div class="field"><label for="goals-folder">Goals folder <span class="optional">Optional</span></label><input id="goals-folder" spellcheck="false" placeholder="0. Home/Goals"></div>
-        <div class="field"><label for="habit-folder">Habit log folder <span class="optional">Optional</span></label><input id="habit-folder" spellcheck="false" placeholder="0. Home/Habit Log"></div>
-        <div class="field"><label for="habit-script">Habit dashboard script</label><input id="habit-script" required spellcheck="false" placeholder="99. System/99.4 Scripts/habits/view.js"></div>
-        <div class="field"><label for="rules-path">Task rules note <span class="optional">Optional</span></label><input id="rules-path" spellcheck="false" placeholder="0. Home/Task Rules.md"></div>
+        <div class="field"><label for="vault-path">Vault location</label><div class="field-row"><input id="vault-path" required readonly placeholder="Create your vault to get started"><button type="button" id="create-vault" class="secondary">Create new…</button></div></div>
+        <div class="row"><span>Already have an Orb vault?</span><button type="button" id="choose-vault" class="secondary">Connect existing…</button></div>
       </div>
-      <p class="help">Folder paths are relative to the chosen vault. Create the folders in Obsidian first. Leave Goals or Habit log blank to disable that feature. Habit names and targets are read from the dashboard script’s definitions.</p>
+      <p id="vault-setup-status" class="help" role="status">New vaults include Life and Business tasks, goals, habits, Portfolio, Hubs, Topics, and Knowledge Library. No personal records or example commitments.</p>
+      <details class="group vault-structure"><summary>Included structure</summary>
+        <p class="help">Hubs → Topics → Knowledge Library connects what you learn. Portfolio holds your own thinking and outputs. Home brings together tasks, goals, habits, and weekly planning.</p>
+        <div class="field"><label for="life-folder">Life tasks</label><input id="life-folder" readonly></div>
+        <div class="field"><label for="business-folder">Business tasks</label><input id="business-folder" readonly></div>
+        <div class="field"><label for="goals-folder">Goals</label><input id="goals-folder" readonly></div>
+        <div class="field"><label for="habit-folder">Habit records</label><input id="habit-folder" readonly></div>
+        <div class="field"><label for="habit-script">Habit definitions</label><input id="habit-script" readonly></div>
+        <div class="field"><label for="rules-path">Task conventions</label><input id="rules-path" readonly></div>
+        <p class="help">1. Portfolio · 2. Hubs · 3. Topics · 4. Knowledge Library · 5. Archives · 99. System</p>
+      </details>
+      <p class="help">Keep this structure for Orb's features. You can also open the same folder in Obsidian; the vault includes a complete setup guide. Connecting an existing vault never moves or rewrites its notes.</p>
 
-      <h2 class="group-title">Google Calendar</h2>
-      <div class="group">
-        <div class="field"><label for="calendar-id">Calendar for new events</label><select id="calendar-id"><option value="">Choose a Google calendar</option></select></div>
-        <div class="field"><label for="calendar-token">Full Calendar access token</label><input id="calendar-token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste token from Obsidian"></div>
+      <h2 class="group-title">Integrations</h2>
+      <p class="section-intro">Connect the services Orb can read from and act on. Each integration keeps its own settings together.</p>
+      <div class="integration-list">
+        <details id="trading212-integration" class="integration-card">
+          <summary><span class="integration-icon t212-icon" aria-hidden="true">212</span><span class="integration-copy"><strong>Trading 212</strong><small>Investments, dividends and activity · read-only</small></span><span id="t212-status" class="integration-status">Set up</span><svg class="icon integration-chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <div class="integration-details">
+            <div class="field"><label for="t212-environment">Account environment</label><select id="t212-environment"><option value="live">Live · real account</option><option value="demo">Demo · practice account</option></select></div>
+            <div class="field"><label for="t212-key">API key</label><input id="t212-key" type="password" autocomplete="off" spellcheck="false" maxlength="2000" placeholder="API key"></div>
+            <div class="field"><label for="t212-secret">API secret</label><input id="t212-secret" type="password" autocomplete="off" spellcheck="false" maxlength="2000" placeholder="API secret"></div>
+            <p class="integration-help">In Trading 212, open Settings → API (Beta) and generate a key with read permissions for account data, portfolio, history and orders. Invest and Stocks ISA accounts are supported. Orb cannot place trades. Keys are encrypted on this Mac.</p>
+            <div class="t212-actions"><button id="t212-test" class="secondary" type="button">Test connection</button><button id="t212-save" class="secondary" type="button">Connect &amp; save</button><button id="t212-disconnect" class="secondary" type="button" hidden>Disconnect</button></div>
+            <p id="t212-message" class="integration-help" role="status"></p>
+            <p class="integration-help">Connect &amp; save stores this connection separately from the other Settings. Open Explore → Trading 212 to view it. Browsing makes no AI requests; asking Orb shares relevant account data with your selected AI provider.</p>
+          </div>
+        </details>
+        <details id="google-calendar-integration" class="integration-card">
+          <summary>
+            <span class="integration-icon google-calendar-icon" aria-hidden="true"><span>31</span></span>
+            <span class="integration-copy"><strong>Google Calendar</strong><small>Events and availability</small></span>
+            <span id="calendar-status" class="integration-status">Set up</span>
+            <svg class="icon integration-chevron" aria-hidden="true"><use href="#i-chevron"/></svg>
+          </summary>
+          <div class="integration-details">
+            <div class="field"><label for="calendar-id">Calendar for new events</label><select id="calendar-id"><option value="">Choose a Google calendar</option></select></div>
+            <div class="field"><label for="calendar-token">Full Calendar access token</label><input id="calendar-token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste token from Obsidian"></div>
+            <div class="field"><label for="work-start">Working hours (calendar timezone)</label><div class="working-hours"><input id="work-start" type="time" value="09:00" aria-label="Work starts"><span>to</span><input id="work-end" type="time" value="17:00" aria-label="Work ends"></div></div>
+            <fieldset class="working-days"><legend>Days to suggest task blocks</legend><label><input type="checkbox" name="work-day" value="1" checked>Mon</label><label><input type="checkbox" name="work-day" value="2" checked>Tue</label><label><input type="checkbox" name="work-day" value="3" checked>Wed</label><label><input type="checkbox" name="work-day" value="4" checked>Thu</label><label><input type="checkbox" name="work-day" value="5" checked>Fri</label><label><input type="checkbox" name="work-day" value="6">Sat</label><label><input type="checkbox" name="work-day" value="0">Sun</label></fieldset>
+            <p id="calendar-setup" class="integration-help">In Obsidian Full Calendar, connect a Google calendar and enable Local REST Server. Generate a token with Read events, Write events and Read providers, then paste it here. Keep Obsidian open for calendar writes.</p>
+          </div>
+        </details>
       </div>
-      <p id="calendar-setup" class="help">In Obsidian Full Calendar, connect a Google calendar and enable Local REST Server. Generate a token with Read events, Write events and Read providers, then paste it here. Keep Obsidian open for calendar writes.</p>
 
-      <h2 class="group-title">OpenAI</h2>
-      <div class="group">
-        <div class="field"><label for="api-key">API key</label><input id="api-key" type="password" placeholder="sk-…" autocomplete="off" spellcheck="false"></div>
-        <div class="row models"><span>Voice</span><span class="chip">Realtime</span><span>Thinking</span><span class="chip">GPT-6 Sol</span></div>
+      <h2 class="group-title">Models & voice</h2>
+      <div class="group provider-settings">
+        <div class="field"><label for="chat-provider">Chat & tools provider</label><select id="chat-provider"><option value="openai">OpenAI</option><option value="openrouter">OpenRouter</option></select></div>
+        <div class="field"><label for="chat-model">Chat & tools model</label><input id="chat-model" list="chat-models" placeholder="Search models or enter a model ID" autocomplete="off"><datalist id="chat-models"></datalist></div>
+        <div class="provider-actions"><button type="button" class="secondary" id="chat-model-refresh">Find models</button><button type="button" class="secondary" id="chat-model-test">Test model · small API charge</button></div>
+        <div class="field"><label for="voice-mode">Voice mode</label><select id="voice-mode"><option value="realtime">OpenAI Realtime</option><option value="pipeline">Independent · Deepgram + ElevenLabs</option><option value="off">Off · typed chat only</option></select></div>
+        <div id="realtime-settings">
+          <div class="field"><label for="realtime-model">Realtime model</label><input id="realtime-model" list="realtime-models"><datalist id="realtime-models"></datalist></div>
+          <div class="field"><label for="realtime-voice">Speaking voice</label><select id="realtime-voice"><option>cedar</option><option>marin</option><option>alloy</option><option>ash</option><option>ballad</option><option>coral</option><option>echo</option><option>sage</option><option>shimmer</option><option>verse</option></select></div>
+          <div class="field"><label for="transcription-model">Transcript model</label><input id="transcription-model" list="transcription-models"><datalist id="transcription-models"></datalist></div>
+          <div class="provider-actions"><button type="button" class="secondary" id="realtime-refresh">Find voice models</button></div>
+        </div>
+        <div id="pipeline-settings" hidden>
+          <p class="help">Deepgram turns your speech into text. Your chat model handles the request, then ElevenLabs speaks the answer. Pause briefly to finish a turn; speak again to interrupt.</p>
+          <div class="field"><label for="stt-model">Deepgram recognition model</label><input id="stt-model" list="stt-models"><datalist id="stt-models"></datalist></div>
+          <div class="provider-actions"><button type="button" class="secondary" id="stt-refresh">Find recognition models</button></div>
+          <div class="field"><label for="tts-model">ElevenLabs speech model</label><input id="tts-model" list="tts-models"><datalist id="tts-models"></datalist></div>
+          <div class="field"><label for="tts-voice">ElevenLabs voice</label><input id="tts-voice" list="tts-voices" placeholder="Choose a voice or enter its ID"><datalist id="tts-voices"></datalist></div>
+          <div class="provider-actions"><button type="button" class="secondary" id="tts-refresh">Find speech models & voices</button></div>
+        </div>
+        <details class="model-advanced"><summary>Advanced reasoning</summary>
+          <label class="row"><input type="checkbox" id="reasoning-enabled"> Use a separate model for complex planning</label>
+          <p class="help">Otherwise, chat and tools handle reasoning too.</p>
+          <div id="reasoning-settings" hidden>
+            <div class="field"><label for="reasoning-provider">Reasoning provider</label><select id="reasoning-provider"><option value="openai">OpenAI</option><option value="openrouter">OpenRouter</option></select></div>
+            <div class="field"><label for="reasoning-model">Reasoning model</label><input id="reasoning-model" list="reasoning-models"><datalist id="reasoning-models"></datalist></div>
+            <div class="provider-actions"><button type="button" class="secondary" id="reasoning-model-refresh">Find models</button><button type="button" class="secondary" id="reasoning-model-test">Test model · small API charge</button></div>
+          </div>
+        </details>
+        <p id="provider-status" class="help" role="status" aria-live="polite"></p>
       </div>
-      <p class="help">Encrypted on this Mac. Leave blank to keep your saved key.</p>
+      <h2 class="group-title">Provider keys</h2>
+      <div class="group provider-settings">
+        <div class="field"><label for="api-key">OpenAI</label><input id="api-key" type="password" autocomplete="off" spellcheck="false"><label class="key-remove"><input id="remove-openai" type="checkbox"> Remove saved key</label></div>
+        <div class="field"><label for="openrouter-key">OpenRouter</label><input id="openrouter-key" type="password" autocomplete="off" spellcheck="false"><label class="key-remove"><input id="remove-openrouter" type="checkbox"> Remove saved key</label></div>
+        <div class="field"><label for="deepgram-key">Deepgram · independent voice input</label><input id="deepgram-key" type="password" autocomplete="off" spellcheck="false"><label class="key-remove"><input id="remove-deepgram" type="checkbox"> Remove saved key</label></div>
+        <div class="field"><label for="elevenlabs-key">ElevenLabs · independent voice output</label><input id="elevenlabs-key" type="password" autocomplete="off" spellcheck="false"><label class="key-remove"><input id="remove-elevenlabs" type="checkbox"> Remove saved key</label></div>
+      </div>
+      <p class="help">Encrypted on this Mac. Leave blank to keep a saved key. Only your chosen providers need keys. Model tests send a short test prompt, without vault data.</p>
 
       <h2 class="group-title">Behaviour</h2>
       <div class="group">
         <div class="row shortcut-setting"><div><strong>Double-tap Control</strong><p id="shortcut-status">Double-tap Control from any app. No keyboard permission needed.</p></div><button id="enable-shortcut" type="button" class="secondary">Enable</button></div>
         <label class="row switch-row" for="auto-start"><span>Start listening when I summon Orb</span><input type="checkbox" id="auto-start" class="switch" checked></label>
       </div>
-      <p class="help">While connected, audio goes to OpenAI. Relevant notes and spreadsheet ranges are sent when read. Closing Orb stops the microphone. The Control shortcut checks modifier state only; typed text is never recorded.</p>
+      <p class="help">Audio goes to the selected voice providers. Requests and relevant retrieved notes go to the selected chat and reasoning providers; OpenRouter routes them to a model host. Spoken answers go to the speech provider. Closing Orb stops the microphone. The Control shortcut checks modifier state only; typed text is never recorded.</p>
 
       <div class="settings-links group">
         <button type="button" id="history-button" class="row link-row"><span>Recent changes</span><svg class="icon"><use href="#i-chevron"/></svg></button>
@@ -115,4 +188,29 @@
     </div>
   </footer>
 </aside>
-</main><script src="orb.js"></script><script src="visual-renderer.js"></script><script src="renderer.js"></script></body></html>
+<section id="chat-app" class="chat-app" hidden aria-label="Chats">
+  <aside id="chat-sidebar" class="chat-sidebar" aria-label="Chat list">
+    <div class="chat-sidebar-head"><span class="chat-sidebar-title">Chats</span><button id="chat-new" class="chat-icon-button" type="button" aria-label="New chat" title="New chat · ⌘N"><svg class="icon" aria-hidden="true"><use href="#i-compose"/></svg></button></div>
+    <label class="chat-search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><span class="sr-only">Search chats</span><input id="chat-search" type="search" placeholder="Search" autocomplete="off" spellcheck="false"></label>
+    <div class="chat-tabs" role="tablist" aria-label="Chat filter"><button id="chat-tab-recent" type="button" role="tab" aria-selected="true">Recent</button><button id="chat-tab-archived" type="button" role="tab" aria-selected="false">Archived</button></div>
+    <p class="chat-retention-note">Recent chats expire after 90 days of inactivity. Archive to keep.</p>
+    <nav id="chat-list" class="chat-list" aria-label="Chats"></nav>
+  </aside>
+  <div class="chat-main">
+    <header class="chat-header">
+      <button id="chat-back" class="chat-icon-button" type="button" aria-label="Back to Orb" title="Back to Orb"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
+      <div class="chat-heading"><h1 id="chat-title">New chat</h1><span id="chat-subtitle">Auto</span></div>
+      <button id="chat-archive" class="chat-icon-button" type="button" aria-label="Archive chat" title="Archive chat"><svg class="icon" aria-hidden="true"><use id="chat-archive-icon" href="#i-archive"/></svg></button>
+      <button id="chat-sidebar-toggle" class="chat-icon-button" type="button" aria-label="Hide chat list" aria-pressed="true" title="Chat list"><svg class="icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    </header>
+    <div id="chat-scroll" class="chat-scroll"><div id="chat-thread" class="chat-thread" role="log" aria-label="Messages"></div></div>
+    <div id="chat-toast" class="chat-toast" role="alert" hidden><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><span></span></div>
+    <form id="chat-composer" class="chat-composer">
+      <div id="chat-menu" class="chat-menu" role="listbox" aria-label="Tools and commands" hidden></div>
+      <button type="button" id="chat-plus" class="composer-round" aria-label="Tools and commands" aria-haspopup="listbox" aria-expanded="false" title="Tools and commands"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button>
+      <div class="composer-field"><label class="sr-only" for="chat-input">Message Orb</label><textarea id="chat-input" rows="1" maxlength="12000" placeholder="Ask anything, @ tools, or / for commands…" autocomplete="off" aria-controls="chat-menu"></textarea></div>
+      <button type="submit" id="chat-send" class="composer-round send" aria-label="Send message" title="Send · Return"><svg class="icon" aria-hidden="true"><use id="chat-send-icon" href="#i-arrow-up"/></svg></button>
+    </form>
+  </div>
+</section>
+</main><script src="orb.js"></script><script src="recurring-bundle.js"></script><script src="visual-renderer.js"></script><script src="provider-settings.js"></script><script src="speech-client.js"></script><script src="trading212-ui.js"></script><script src="renderer.js"></script><script src="chat.js"></script><script src="knowledge-graph.js"></script><script src="knowledge-ui.js"></script></body></html>

@@ -30,7 +30,8 @@ End the active voice conversation and wait for typed work to finish before using
 | Append to an existing Markdown note | Yes. |
 | Create a Google Calendar event | **No.** Manage it in Google Calendar or Obsidian. |
 | Edit a note directly in Obsidian or another application | No; it was not an Orb journaled change. |
-| Change Orb Settings | No; use Settings to change them again. |
+| Change Orb Settings, including the Trading 212 connection | No; use Settings to change them again. |
+| View or refresh Trading 212 data | No change to undo; the connector only reads. |
 
 There is no redo tool. Undo of an older change on the same note usually requires undoing newer changes first so the expected version matches.
 
@@ -76,3 +77,15 @@ Implementation: [vault.cjs](../../src/vault.cjs), [agent.cjs](../../src/agent.cj
 ## Habit logging
 
 Habit checkbox/voice edits and explicit creation of a missing daily record use the same journal. Undo restores all original note bytes, or removes a newly created record if it has not changed since. Date selection and heatmap browsing make no edit. External Obsidian edits are not in Orb’s history; they can block undo until reviewed. See [Habits](habits.md).
+
+## Knowledge and Portfolio
+
+Captures, stages, Topic filing, revisit dates, managed Portfolio draft/questions, and accepted connections use the note journal. Creating a Portfolio output with supporting sources saves the output and then one backlink per source as separate changes. Undo backlinks first, then the creation, when reversing the whole workflow. A partial backlink failure leaves the output and successful links intact; use the saved output path when retrying. Dismissing a suggestion is a local preference, outside note undo. See [Knowledge](knowledge.md).
+
+## Trading 212 reviews
+
+Browsing investments and asking account questions do not edit the vault or the trading account. If you explicitly ask Orb to append a portfolio review to an existing note, that note edit uses the normal version checks and undo journal. Undoing it does not delete the conversation or its saved financial card. Disconnecting the connector is a Settings change, not a journaled note edit, and does not revoke the key or erase saved chats. See [Trading 212](trading212.md) and [Privacy](../privacy.md#trading-212).
+
+## Calendar-linked tasks
+
+Booking, moving, removing, and reconciling task blocks are journaled with calendar protection. Recent changes labels these entries “Use calendar actions” instead of offering note undo. Move a block back to reverse a move, or remove it to reverse booking. Explicit unlinking leaves any event in place. Completion/reopening and unrelated note changes remain undoable if the note version matches. See [Task scheduling recovery](task-scheduling.md#partial-writes-and-recovery).

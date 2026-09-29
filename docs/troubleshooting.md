@@ -9,13 +9,13 @@ Start with the exact error or visible result. A failed tool call is not a succes
 | Symptom | Check or action |
 | --- | --- |
 | Native build fails | Use Apple Silicon macOS, Node.js 22+, and Xcode Command Line Tools. The build needs Node headers next to the installed Node distribution. See [Development](development.md). |
-| Cannot save the vault | Both task folders must exist, be relative to the chosen vault, and be separate. A configured rules note must exist; clear it if unused. |
+| Cannot save the vault | Use Create new for an automatically prepared vault, or connect a complete Orb starter. New connections require the standard task and knowledge folders, Home, templates, and habit script. Existing saved layouts retain their paths. |
 | General notes work but tasks do not appear | Tasks need one Markdown note each with `type: task` in the configured folders. See [Vault format](vault-format.md). |
 | Goals setup says create a folder | Create the configured Goals folder in Obsidian, then ask again. A missing folder is allowed during setup but not creation. |
-| Goals disabled after upgrading a custom layout | Choose a Goals folder separate from the task folders. The default is disabled when it would overlap an older task layout. |
+| Goals disabled after upgrading a custom layout | This is a preserved legacy setting. Keep the existing vault or create a new standard vault; Orb does not relocate old notes. |
 | The new feature is missing from the app | Verify which app copy is running. `npm run package` writes `dist` and does not replace an installed app. Follow [Build and install](development.md#build-and-install). |
 | Key field looks empty after saving | It deliberately does not display the saved key. A “Key saved” placeholder indicates a saved credential. Blank on a later save preserves it. |
-| API 401 or access error | Check the key, supported model access, account API billing, and network. A ChatGPT subscription does not supply API credit. |
+| AI-provider API 401 or access error | Check the key, supported model access, account API billing, and network. A ChatGPT subscription does not supply API credit. |
 
 ## Voice and window controls
 
@@ -39,7 +39,7 @@ Start with the exact error or visible result. A failed tool call is not a succes
 
 **Missing tasks:** check `type: task`, `completed`, folder, and filter. Today matches Planned or Deadline today, while past deadlines are separate. Checkbox lines do not become task records.
 
-**Missing goals:** check `type: goal`, supported status, valid date-only properties, and filter. The sample goal begins in Someday. Invalid YAML or unsupported status/date values can produce warnings.
+**Missing goals:** check `type: goal`, supported status, valid date-only properties, and filter. The starter contains no goals; create one before expecting cards. Invalid YAML or unsupported status/date values can produce warnings.
 
 **Next task is ambiguous or broken:** give the exact path to an unfinished task in a configured task folder. Repair a renamed link rather than creating a duplicate task.
 
@@ -58,6 +58,23 @@ Start with the exact error or visible result. A failed tool call is not a succes
 **A write timed out:** check Google Calendar before retrying. The event may exist even though Orb did not receive confirmation. Note undo cannot remove it.
 
 **Recurring events or new feed edits are missing:** keep the iCal source for recurring Google events. Feed data is cached for five minutes. Source failures, feed limits, and display timezone can also affect the result.
+
+## Trading 212
+
+| Symptom | Check or action |
+| --- | --- |
+| Cannot find the connector | Open Settings → Integrations → Trading 212. If the card is absent, launch the updated checkout with `npm start` or update the installed app as described above. |
+| Key or secret rejected | Enter both credentials and match the Live/Demo environment where the pair was generated. An AI-provider key does not connect Trading 212. |
+| Connection test passes but a view is denied | The test checks account-summary access only. Enable the relevant read permissions for portfolio, history and orders, and check any IP restrictions. Orb does not need trading permissions. |
+| Entered credentials were not saved | Use **Connect & save** inside the Trading 212 card. **Test connection** does not save; the general **Save settings** button does not save this pair. |
+| Dividend total or year is missing | The year filter and totals use loaded records. Click **Load older records**; pages may take around ten seconds. Different currencies are totalled separately. |
+| “Connection changed” when loading history | Refresh that financial view before loading older records. This prevents mixing an older snapshot with a new connection or app session. |
+| Data looks stale or a refresh is rate-limited | Check the displayed update time and wait before refreshing. The connector briefly caches responses; Trading 212 limits are shared across apps using the same account. There is no background sync. |
+| One Overview section is unavailable | Read its warning. Other sections can still load; a permission or network error does not mean the missing section has no data. |
+| Portfolio opens knowledge notes | Choose **Trading 212** for investments. **Portfolio** is the separate knowledge workspace. |
+| Disconnect did not remove old chat data | Disconnect removes saved credentials and backend caches. It does not delete saved chats/notes or revoke the pair at Trading 212. |
+
+See [Trading 212 setup and limits](features/trading212.md). Browser preview data is fictional and cannot connect to an account.
 
 ## Notes, spreadsheets, and visuals
 
@@ -90,3 +107,11 @@ Do not attach credentials, private feeds, a real vault, or the app support direc
 ## Habits are missing or show the wrong totals
 
 Check the Habit log folder and Habit dashboard script in Settings. The folder must exist, and the script must contain supported literal definitions. Orb never guesses missing habit names. Click Refresh after changing records or definitions in Obsidian. Only boolean true in an exact date filename counts. Current-week cards stay on this week while browsing old dates. See [Habits troubleshooting](features/habits.md#troubleshooting).
+
+## Linked task blocks
+
+**Free time cannot be confirmed:** add matching Google HTTPS iCal feeds for every connected Google calendar so recurring events are covered. Resolve source warnings and use a shorter range if results are truncated. Availability uses the calendars actually configured.
+
+**A moved block has not updated Planned:** refresh Full Calendar in Obsidian first, then ask for tasks/calendar or refresh Today. A separately edited Planned value requires explicit repair. Missing blocks are not assumed deleted.
+
+**Booking, moving, or removal is pending:** inspect the event, refresh the task, and follow [task scheduling recovery](features/task-scheduling.md#partial-writes-and-recovery). Never create another copy merely because a write timed out. Calendar-linked changes require calendar actions instead of note undo.

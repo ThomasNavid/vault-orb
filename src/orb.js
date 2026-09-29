@@ -42,18 +42,41 @@
   make('circle',{r:R,fill:'url(#jelly-rim)'},inner);
   make('ellipse',{cx:-R*.5,cy:-R*.6,rx:R*.16,ry:R*.07,fill:'#fff',opacity:.6,transform:`rotate(-38 ${-R*.5} ${-R*.6})`},inner);
   make('circle',{r:R,fill:'none',stroke:'#fff','stroke-width':2.6,'vector-effect':'non-scaling-stroke'},body);
-  const glasses=make('g',{},body);
   const lens='M6 -14C6 -21 16 -23 30 -23C44 -23 55 -21 56 -13C57 -2 50 13 34 13C18 13 6 3 6 -14Z';
-  make('path',{d:'M-8 -15Q0 -22 8 -15',fill:'none',stroke:'#0c1233','stroke-width':4.5,'stroke-linecap':'round'},glasses);
-  make('path',{d:lens,fill:'#0c1233'},glasses);
-  make('path',{d:lens,fill:'#0c1233',transform:'scale(-1 1)'},glasses);
-  // Both lenses catch the same light from the upper right.
-  for(const shift of [0,-62]){
-    make('path',{d:`M${38+shift} -17Q${46+shift} -16 ${48+shift} -8`,fill:'none',stroke:'#fff','stroke-width':3,'stroke-linecap':'round'},glasses);
-    make('path',{d:`M${47+shift} -1Q${47+shift} 3 ${45+shift} 6`,fill:'none',stroke:'#58c8ff','stroke-width':2.2,'stroke-linecap':'round',opacity:.85},glasses);
-  }
+  const drawGlasses=parent=>{
+    const g=make('g',{},parent);
+    make('path',{d:'M-8 -15Q0 -22 8 -15',fill:'none',stroke:'#0c1233','stroke-width':4.5,'stroke-linecap':'round'},g);
+    make('path',{d:lens,fill:'#0c1233'},g);
+    make('path',{d:lens,fill:'#0c1233',transform:'scale(-1 1)'},g);
+    // Both lenses catch the same light from the upper right.
+    for(const shift of [0,-62]){
+      make('path',{d:`M${38+shift} -17Q${46+shift} -16 ${48+shift} -8`,fill:'none',stroke:'#fff','stroke-width':3,'stroke-linecap':'round'},g);
+      make('path',{d:`M${47+shift} -1Q${47+shift} 3 ${45+shift} 6`,fill:'none',stroke:'#58c8ff','stroke-width':2.2,'stroke-linecap':'round',opacity:.85},g);
+    }
+    return g;
+  };
+  const glasses=drawGlasses(body);
   stage.prepend(svg);
   window.orbVisual={setState:s=>{phase=s;if(reduced)render(1);},setLevel:l=>{level=Math.min(1.4,l);if(reduced)render(1);}};
+
+  // A still copy of the idle orb, glasses and all, for places like the chat window where the live orb is hidden.
+  // Each copy owns its gradients: the live orb's defs stop resolving once its SVG is display:none.
+  let marks=0;
+  window.orbMark=className=>{
+    const id=`orb-mark-${++marks}`,idle=looks.idle;
+    const mark=make('svg',{class:className,viewBox:`${-R-4} ${-R-4} ${2*R+8} ${2*R+8}`,'aria-hidden':'true'});
+    const markDefs=make('defs',{},mark);
+    const fill=make('radialGradient',{id:`${id}-body`,cx:.7,cy:.26,r:.92,fx:.72,fy:.2},markDefs);
+    [idle.light,idle.mid,idle.deep].forEach((c,i)=>make('stop',{offset:[0,.48,1][i],'stop-color':rgb(c)},fill));
+    const rim=make('radialGradient',{id:`${id}-rim`},markDefs);
+    make('stop',{offset:.72,'stop-color':'#001a66','stop-opacity':0},rim);make('stop',{offset:1,'stop-color':'#001a66','stop-opacity':.32},rim);
+    make('circle',{r:R,fill:`url(#${id}-body)`},mark);
+    make('circle',{r:R,fill:`url(#${id}-rim)`},mark);
+    make('ellipse',{cx:-R*.5,cy:-R*.6,rx:R*.16,ry:R*.07,fill:'#fff',opacity:.6,transform:`rotate(-38 ${-R*.5} ${-R*.6})`},mark);
+    make('circle',{r:R,fill:'none',stroke:'#fff','stroke-width':2.6},mark);
+    drawGlasses(mark).setAttribute('transform',`translate(0 ${R*.03})`);
+    return mark;
+  };
 
   // Damped springs. Low damping gives the jelly overshoot; the glasses use a softer spring so they lag behind the body.
   const spring=(k,c)=>({x:0,v:0,target:0,k,c});

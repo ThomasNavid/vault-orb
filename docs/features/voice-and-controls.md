@@ -8,7 +8,7 @@ Orb floats above your normal Mac windows. You can speak or type requests and ins
 
 ## Setup
 
-Save a working OpenAI API key in Settings. Voice also needs macOS microphone permission, requested when you start a conversation. Typed requests work without microphone access. The native shortcut is built with `npm run build:native` and included in packaged builds.
+Choose your chat/tools model and voice mode in Settings. OpenAI Realtime needs an OpenAI key; independent voice needs Deepgram and ElevenLabs keys plus the key for your selected chat model. See [Models and providers](../providers.md). Voice also needs macOS microphone permission, requested when you start a conversation. Typed requests work without microphone access. The native shortcut is built with `npm run build:native` and included in packaged builds.
 
 By default, summoning Orb starts listening when a key is saved. Turn off **Start listening when I summon Orb** in Settings if you prefer to click Talk manually.
 
@@ -21,10 +21,13 @@ By default, summoning Orb starts listening when a key is saved. Turn off **Start
 | Start voice | Click the orb or microphone button. |
 | End voice | Click the stop button, or hide Orb. |
 | Mute input during voice | Click the mute button; click again to unmute. |
-| Type | Click the keyboard icon, enter a message, and send. While the panel is open, the keyboard icon focuses the field at the top of the panel instead; press Return to send. |
-| Return to the controls | Click the back button beside typed input. |
+| Chat | Click the chat icon or press ⌘J. The orb folds away and the chat window opens. Return sends; Shift-Return adds a line. |
+| Switch, start, or archive chats | Use the chat list on the left: ⌘N starts a new chat, the archive icon on a row or in the header moves it to **Archived**, and archived rows can be restored or deleted (click Delete twice). |
+| Tools and commands in chat | Type `@` to point Orb at a tool (Trading212, Calendar, Tasks, Goals, Habits, Notes, Sheets), `/` for commands (`/new`, `/archive`, `/today`, `/trading212`, `/settings`, `/orb`), or click + (⌘K) for both. |
+| Return to the orb | Click the back arrow at the top left of the chat window, or type `/orb`. |
 | Review today | Click **Today** beneath the controls to combine today's tasks, past deadlines, active goals, habit progress, and calendar events. See [Today and Explore](today-and-explore.md). |
-| Discover requests | Click **Explore** or press ⌘K for a searchable list of views and starting prompts covering planning, goals, habits, calendar, notes, and spreadsheet data. See [Today and Explore](today-and-explore.md). |
+| Discover requests | Click **Explore** or press ⌘K for a searchable list of views and starting prompts covering planning, goals, habits, calendar, knowledge, Trading 212 investments, notes, and spreadsheet data. See [Today and Explore](today-and-explore.md). |
+| View investments | Open **Explore → Trading 212**, or choose `/trading212` in chat. This directly opens the read-only dashboard; `@Trading212` points a conversational request at the connector. See [Trading 212](trading212.md). |
 | Go back in the panel | Click the arrow at the top left of the panel. It returns to the view you came from, or closes the panel. |
 | Move the window | Drag the small dots above the orb. |
 | Open Settings | Click the sliders icon, use the menu-bar right-click menu, or ⌘,. |
@@ -35,7 +38,7 @@ By default, summoning Orb starts listening when a key is saved. Turn off **Start
 
 Double-tap Control reads public modifier state and rejects gestures mixed with other keys or mouse buttons. It does not record typed text and needs neither Input Monitoring nor Accessibility permission. ⌘⇧Space is a fallback if the native listener fails.
 
-The Today dashboard is read-only. Each section reports its own setup or source warning, so a missing calendar connection or disabled optional feature does not prevent available task, goal, or habit data from appearing. Discovery prompts are ordinary assistant requests: selecting one uses the same voice/text tools, permissions, and write rules as typing it yourself.
+Today reconciles previously linked task blocks when refreshed; other dashboard sections are read-only. Each section reports its own setup or source warning, so a missing calendar connection or disabled optional feature does not prevent available task, goal, or habit data from appearing. Discovery prompts are ordinary assistant requests: selecting one uses the same voice/text tools, permissions, and write rules as typing it yourself.
 
 ## Things to ask
 
@@ -51,9 +54,9 @@ These requests need the same files and integrations as their feature guides. The
 
 ## What happens
 
-The orb and the status below it show listening, thinking, and speaking: a ring appears while Orb listens, its glasses glance up while it thinks, and it stretches with its voice while it speaks. It also leans towards your pointer and bounces when clicked. With Reduce Motion turned on in macOS, it stays still and only changes colour. Small labeled orbs appear while tools run, with a final check or warning. The steps view distinguishes running, successful, and failed tool calls. A visual panel appears when useful; routine spoken replies summarize its key point rather than reading every row.
+The orb and the status below it show listening, thinking, and speaking: a ring appears while Orb listens, its glasses glance up while it thinks, and it stretches with its voice while it speaks. It also leans towards your pointer and bounces when clicked. With Reduce Motion turned on in macOS, it stays still and only changes colour. Small labeled orbs appear while tools run, with a final check or warning. In the chat window each tool appears as a small app icon that deals into a stack while it works (a calendar page flips, a search glass wanders, a pencil writes), with a shimmering label and a step count. Click the finished row to see every step, its details, and how long it took. Visuals open inline beneath the answer. The steps view distinguishes running, successful, and failed tool calls. A visual panel appears when useful; routine spoken replies summarize its key point rather than reading every row.
 
-While voice is active, typed messages are added to that voice conversation. When voice is not connected, typed messages use the reasoning backend directly. The interface prevents overlapping typed submissions; wait for an answer or interrupt voice by speaking. Muting leaves the connection open so you can still type.
+While voice is active, typed messages from the orb panel are added to that voice conversation. When voice is not connected, typed messages use the reasoning backend directly and are saved as a chat, so you can continue them in the chat window. Opening the chat window ends voice. Typed chats are stored in `~/Library/Application Support/Vault Orb/chats/`; see [Privacy and data](../privacy.md) for retention details. Hiding Orb stops any request in progress; the chat records it as stopped. The interface prevents overlapping typed submissions; wait for an answer or interrupt voice by speaking. Muting leaves the connection open so you can still type.
 
 ## Walkthrough
 
@@ -69,8 +72,8 @@ An operation that already succeeded remains saved when you stop. Use [Recent cha
 
 - Voice and typed assistant requests require network access and API billing; they are not covered by a ChatGPT subscription.
 - Five quiet minutes end a connected voice conversation automatically. A failed/disconnected voice connection also needs reconnecting.
-- Transcripts are kept in memory, not saved as permanent conversation history. Do not rely on them to retain a decision after restarting.
-- The current UI does not expose a voice/model picker; it uses the models configured in the app source.
+- Voice transcripts are kept in memory for the session. Recent typed chats expire after 90 days of inactivity; archiving keeps them. Save decisions in notes or goal reviews if they need to remain available outside chat history.
+- Settings exposes chat/tools, realtime voice, and optional reasoning models. Independent voice exposes recognition and speech models plus your ElevenLabs voice. It accepts turns up to 30 seconds (longer turns end voice with an error) and sends each after a brief pause; speech interrupts a pending answer. Audio is held only in memory. It is a turn-based pipeline, with more latency than native realtime voice.
 - A browser preview demonstrates visuals with fictional data; it cannot use the real microphone/backend or save app settings.
 
 ## Troubleshooting
