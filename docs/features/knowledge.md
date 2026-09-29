@@ -6,7 +6,15 @@ Orb connects **Capture → Explore → Create** using your existing Markdown fil
 
 ## Open and browse
 
-Choose **Explore → Knowledge**, **Portfolio**, or **Knowledge graph**. In Knowledge, follow a Hub to its Topics and a Topic to linked Library and Portfolio notes. Tabs also let you browse each type directly, search titles, and review connection suggestions. Notes have a readable preview, source URL and reason when supplied, and **Open in Obsidian**. Dataview blocks are omitted from previews; their underlying relationships appear as linked-note lists.
+Choose **Explore → Knowledge**, **Portfolio**, or **Knowledge graph**. In Knowledge, follow a Hub to its Topics and a Topic to linked Library and Portfolio notes. Tabs also let you browse each type directly, search titles, and review connection suggestions. Opening a note turns the panel into a reading page: the window grows, the Orb steps aside, and the note is shown in a centred column formatted like Obsidian's reading view. The page shows:
+
+- Headings, emphasis, ==highlights==, strikethrough, code blocks, tables, footnotes and horizontal rules.
+- `#tags` as pills.
+- Callouts, including foldable `[!type]-` callouts.
+- Nested lists and task checkboxes (read-only).
+- Frontmatter as a Properties block.
+
+`[[Wikilinks]]` to knowledge notes open in the reader. Other links open in Obsidian, and web links open in your browser. Embeds (`![[…]]`) appear as cards that open in Obsidian. Dataview and Tasks queries appear as folded query blocks; their underlying relationships appear as linked-note lists at the foot of the page. Topic and revisit controls sit in a folded **Organise** section. Going back to a list returns the panel to its normal size.
 
 The numbered folders and matching tags identify records:
 
@@ -18,6 +26,10 @@ The numbered folders and matching tags identify records:
 | `4. Knowledge Library` | `knowledge` | Source material and learning |
 
 Nested folders are included. Untagged folder guides are excluded. Existing notes are never moved or retagged automatically. General note search remains available outside this structure.
+
+## Search saved web content
+
+Choose **Web Clippings →** in Library, or **Explore → Web Clippings**, to search the full saved content of articles, videos and posts. It has source/category/Topic/date filters and matching passages, and includes untagged clippings without changing their eligibility for the Knowledge graph. See [Web Clippings](web-clippings.md).
 
 ## Capture
 

@@ -215,3 +215,13 @@ recurrence_history: []
 Each history entry has an operation `id`, action, request fingerprint, effective local `date`, UTC `recorded_at`, and before/after snapshots of the occurrence state and dates. An `undo` entry references the reversed operation. Both Obsidian and Orb use these records for portable undo and duplicate prevention; this is independent of Orb's private Activity journal. Preserve history and its identifiers when editing notes manually.
 
 Desktop Obsidian assets are in `99. System/99.4 Scripts/recurring-tasks`; its `config.md` holds the task folders. Dataview JavaScript provides controls; plain Bases checkboxes do not calculate recurrence. A direct completed mark on an active rule is pending reconciliation, never an inferred completion date. No read operation advances recurrence.
+
+## Web clipping search
+
+Orb searches visible Markdown recursively within `4. Knowledge Library/Web Clippings`, including untagged notes. The starter dashboard is excluded. Keep captures in Websites, Videos, or X Posts and preserve `source`, optional `author`/`type`/`topic`/`tags`, and `created` as the capture date. A `title` property overrides the display filename, and a valid HTTP(S) `url` property is accepted when `source` is unavailable. These are read-time conventions; browsing never migrates existing notes. See [Web Clippings](features/web-clippings.md) for accepted dates, aliases, missing-metadata behaviour, and limits.
+
+## Daily planning
+
+Task notes may include optional `estimated_minutes`, a whole number from 1 to 10080 representing estimated remaining work. Missing values remain unknown. Planner edits stay in a draft until the user chooses to save an estimate; AI suggestions are labelled. Other task properties and note bodies are preserved.
+
+Saved plans live in optional `0. Home/Daily Plans/YYYY-MM-DD.md` notes with `type: day-plan`, `plan_schema: 1`, `plan_id`, `plan_revision`, `date`, and `timezone`. A managed section between `<!-- orb-day-plan:v1 -->` and `<!-- /orb-day-plan -->` contains the readable plan; text outside it is preserved. Its proposed times do not imply calendar bookings or completed work. The folder is created on first save and is not required to connect an existing vault. See [AI daily planner](features/daily-planner.md).

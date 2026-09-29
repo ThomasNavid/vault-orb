@@ -179,6 +179,7 @@
   return wrap;
  }
  window.renderVisual=(host,v,openSource,actions={})=>{
+  if(v?.kind==='day-planner'){window.dayPlannerUI.render(host,v);return;}
   if(v?.kind==='recurring'){const api=window.orb||window.orbRecurringPreview;window.OrbRecurring.ui.mount(host,{list:()=>api.recurring(),...(api.recurringInstall?{install:()=>api.recurringInstall()}:{}),write:args=>api.recurringWrite(args),create:args=>api.recurringCreate(args),open:path=>api.openNote(path)});return;}
   if(v?.kind==='trading212'){window.trading212UI.render(host,v,actions);return;}
   const habitFocus=document.activeElement?.dataset.focus,habitScroll=host.scrollTop;

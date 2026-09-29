@@ -44,6 +44,7 @@ These are natural-language examples, not fixed commands. Orb uses current vault 
 | Notes | “Find my notes about pricing.” | [Finding and updating notes](docs/features/notes.md) |
 | Trading 212 | “Show my Trading 212 portfolio.” | [Trading 212](docs/features/trading212.md) |
 | Data and charts | “Find my CSV and help me chart it.” | [Spreadsheets and visuals](docs/features/spreadsheets-and-visuals.md) |
+| AI daily planner | “Help me plan today; finish by three.” | [Plan my day](docs/features/daily-planner.md) |
 | Planning | “What can I do today to move my goals forward?” | [Planning across notes](docs/features/planning.md) |
 | Voice and controls | Double-tap Control to summon Orb. | [Voice and controls](docs/features/voice-and-controls.md) |
 | Change history | “Undo your last note edit.” | [Changes and undo](docs/features/changes-and-undo.md) |
@@ -52,7 +53,7 @@ The [Things to ask Orb cookbook](docs/things-to-ask.md) has copyable examples an
 
 ## Everyday use
 
-Click the menu-bar Orb, use the Dock icon, or double-tap Control. **⌘⇧Space** is the fallback shortcut. Click the orb to talk or the keyboard icon to type. **Today** opens a daily dashboard (refreshing existing calendar links), while **Explore** (⌘K) is a searchable list of views and starting prompts, so you do not need to memorize commands. **Escape** or × hides Orb and stops voice and pending work. Settings contains Recent changes and the conversation transcript.
+Click the menu-bar Orb, use the Dock icon, or double-tap Control. **⌘⇧Space** is the fallback shortcut. Click the orb to talk or the keyboard icon to type. **Today** opens a daily dashboard (refreshing existing calendar links), while **Explore** (⌘K) is a searchable list of views and starting prompts, so you do not need to memorize commands. **Escape** or × hides Orb and stops voice and pending work. Settings contains Recent changes and the conversation transcript. **Settings → Appearance** offers colour presets and a custom picker, with live preview and a choice saved on this Mac; see [colour controls](docs/features/voice-and-controls.md#choose-your-orb-colour).
 
 Today brings together tasks planned or due today, past deadlines, active goals, habit progress, calendar events, and knowledge notes you chose to revisit. Knowledge adds Hub/Topic browsing, capture, source-based learning, Portfolio drafts, and connection review. A corner graph expands into an interactive view of your linked notes. Its sections stay independent, so an unavailable optional integration is reported without hiding the rest of the day. Goals, habits with heatmaps, task lists, calendar agendas, and charts also appear beside the orb as needed. Source links open Markdown notes in Obsidian; spreadsheet links open in the default local application.
 
@@ -60,7 +61,7 @@ Today brings together tasks planned or due today, past deadlines, active goals, 
 
 Your provider keys, optional calendar token, and Trading 212 credentials are encrypted locally. During use, audio goes to your chosen voice providers and relevant retrieved vault content and requested Trading 212 data go to the selected chat/reasoning providers. Opening the investment dashboard directly makes no AI request. OpenRouter routes requests to a model host. This is not an offline assistant. The app does not store recorded audio. Typed chats are saved locally; voice conversation transcripts remain in memory for the session. See [Privacy and data](docs/privacy.md) for local files, chat retention, the edit journal, calendar connections, and sharing precautions.
 
-Task support requires one Markdown note per task in two configured folders. Orb can create/edit single Google Calendar events and book linked task blocks after setup. Linked blocks can be removed; calendar writes cannot use ordinary note undo. Spreadsheets and the Trading 212 connector are read-only. Trading 212 supports one Invest or Stocks ISA account at a time, with no trading actions or background portfolio sync. Goals have a weekly review workflow, but no background reminder scheduler. Feature guides describe the precise limits.
+Task support requires one Markdown note per task in two configured folders. Orb can create/edit single Google Calendar events and book linked task blocks after setup. Linked blocks can be removed; calendar writes cannot use ordinary note undo. Spreadsheets and the Trading 212 connector are read-only. Trading 212 supports one Invest or Stocks ISA account at a time, with no trading actions; optional encrypted local history is collected while Orb runs and the Mac is awake. Goals have a weekly review workflow, but no background reminder scheduler. Feature guides describe the precise limits.
 
 ## Contributing and development
 

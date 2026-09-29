@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://api.openai.com; object-src 'none'; base-uri 'none'"><title>Vault Orb</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="knowledge.css"><link rel="stylesheet" href="trading212.css"><link rel="stylesheet" href="recurring.css"></head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://api.openai.com; object-src 'none'; base-uri 'none'"><title>Vault Orb</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="knowledge.css"><link rel="stylesheet" href="markdown.css"><link rel="stylesheet" href="clippings.css"><link rel="stylesheet" href="trading212.css"><link rel="stylesheet" href="recurring.css"><link rel="stylesheet" href="day-planner.css"></head>
 <body>
 <svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
   <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
@@ -35,6 +35,9 @@
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 4.5 4.5"/></symbol>
   <symbol id="i-table" viewBox="0 0 24 24"><rect x="4" y="4.5" width="16" height="15" rx="2.5"/><path d="M4 9.5h16M4 14.5h16M10 9.5v10"/></symbol>
   <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7.5 5 11.5l4 4"/><path d="M5.5 11.5H14a4.5 4.5 0 0 1 0 9h-2"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3L19.5 9"/><path d="M19.5 4.5V9H15"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15"/></symbol>
   <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M15.5 5.5a2.1 2.1 0 0 1 3 3L8.5 18.5 4.5 19.5l1-4Z"/></symbol>
 </svg>
 <main class="shell">
@@ -65,13 +68,21 @@
   </header>
   <div id="visual-view" class="card-body" hidden></div>
   <div id="home-view" class="card-body" hidden><div class="home-heading"><div><h1>Today</h1><p id="home-date" class="subtitle"></p></div><button id="refresh-home" class="secondary" type="button">Refresh</button></div><div id="home-content" aria-live="polite"></div></div>
-  <div id="welcome-view" class="card-body command-body" hidden><h1 class="sr-only">Explore Orb</h1><ul id="command-list" class="command-list" role="listbox" aria-label="Views and starting requests"></ul></div>
+  <div id="welcome-view" class="card-body command-body" hidden><h1 class="sr-only">Explore Orb</h1><div class="command-toolbar"><nav id="command-categories" class="command-categories" aria-label="Explore categories"><button type="button" data-category="All" aria-pressed="true">All</button><button type="button" data-category="Planning" aria-pressed="false">Planning</button><button type="button" data-category="Knowledge" aria-pressed="false">Knowledge</button><button type="button" data-category="Connectors" aria-pressed="false">Connectors</button><button type="button" data-category="Try asking" aria-pressed="false">Try asking</button></nav><p id="command-context" class="command-context" role="status"></p></div><ul id="command-list" class="command-list" role="listbox" aria-label="Views and starting requests"></ul></div>
   <div id="transcript-view" class="card-body" hidden><h1>Conversation</h1><div id="transcript" role="log" aria-label="Conversation"></div></div>
   <div id="steps-view" class="card-body" hidden><h1>Steps</h1><p class="subtitle">What Orb did for your last request.</p><ol id="steps-list" class="steps-list"></ol></div>
   <div id="history-view" class="card-body" hidden><h1>Recent changes</h1><p class="subtitle">Edits made by Orb, with undo.</p><div id="activity-list"></div></div>
   <div id="settings-view" class="card-body" hidden>
     <h1>A little more yours.</h1><p class="subtitle">Your vault, integrations, and preferences.</p>
     <form id="settings-form">
+      <h2 class="group-title">Appearance</h2>
+      <div class="group appearance-settings">
+        <div class="field"><span class="colour-label" id="orb-colour-label">Orb colour</span><div id="orb-colour-presets" class="colour-presets" role="group" aria-labelledby="orb-colour-label"></div></div>
+        <div class="field"><label for="orb-colour-picker">Custom colour</label><div class="field-row colour-custom"><input id="orb-colour-picker" type="color" value="#1f86ff" aria-label="Custom orb colour"><label class="sr-only" for="orb-colour-hex">Hex colour</label><input id="orb-colour-hex" value="#1f86ff" maxlength="7" autocomplete="off" spellcheck="false" aria-describedby="orb-colour-error" placeholder="#RRGGBB"></div><p id="orb-colour-error" class="help colour-error" role="alert" hidden></p></div>
+        <div class="row colour-actions"><button type="button" id="orb-colour-reset" class="secondary">Reset to blue</button><button type="button" id="orb-colour-apply" class="secondary">Apply colour</button></div>
+      </div>
+      <p id="appearance-status" class="help" role="status" aria-live="polite">Your colour is saved on this Mac.</p>
+
       <h2 class="group-title">Your knowledge and planning system</h2>
       <p class="section-intro">One complete system, stored in Markdown files you own. Choose where it lives; Orb sets up the structure.</p>
       <div class="group">
@@ -100,10 +111,20 @@
             <div class="field"><label for="t212-environment">Account environment</label><select id="t212-environment"><option value="live">Live · real account</option><option value="demo">Demo · practice account</option></select></div>
             <div class="field"><label for="t212-key">API key</label><input id="t212-key" type="password" autocomplete="off" spellcheck="false" maxlength="2000" placeholder="API key"></div>
             <div class="field"><label for="t212-secret">API secret</label><input id="t212-secret" type="password" autocomplete="off" spellcheck="false" maxlength="2000" placeholder="API secret"></div>
-            <p class="integration-help">In Trading 212, open Settings → API (Beta) and generate a key with read permissions for account data, portfolio, history and orders. Invest and Stocks ISA accounts are supported. Orb cannot place trades. Keys are encrypted on this Mac.</p>
+            <p class="integration-help">In Trading 212, open Settings → API (Beta) and enable Accounts data, History dividends, History orders, History transactions, Orders read and Portfolio. Leave Orders execute and Pies write off. Invest and Stocks ISA accounts are supported. Orb cannot place trades. Keys are encrypted on this Mac.</p>
             <div class="t212-actions"><button id="t212-test" class="secondary" type="button">Test connection</button><button id="t212-save" class="secondary" type="button">Connect &amp; save</button><button id="t212-disconnect" class="secondary" type="button" hidden>Disconnect</button></div>
             <p id="t212-message" class="integration-help" role="status"></p>
-            <p class="integration-help">Connect &amp; save stores this connection separately from the other Settings. Open Explore → Trading 212 to view it. Browsing makes no AI requests; asking Orb shares relevant account data with your selected AI provider.</p>
+            <div id="t212-capabilities" aria-label="Trading 212 capability checks"></div>
+            <section class="t212-tracking">
+              <h3>Track performance on this Mac</h3>
+              <p class="integration-help">Opt in to encrypted local valuations and transaction history. Orb collects while it runs and this Mac is awake, including when its window is hidden. Sleep and closed-app gaps cannot be backfilled. No additional service or write permissions are needed.</p>
+              <div class="field"><label for="t212-timezone">Reporting timezone</label><input id="t212-timezone" value="Europe/London" placeholder="Europe/London" maxlength="100"></div>
+              <div class="t212-actions"><button id="t212-track-enable" class="secondary" type="button">Enable / resume tracking</button><button id="t212-track-pause" class="secondary" type="button">Pause</button><button id="t212-track-rescan" class="secondary" type="button">Rescan all history</button><button id="t212-track-status" class="secondary" type="button">Check sync status</button></div>
+              <p id="t212-tracking-message" class="integration-help" role="status"></p>
+              <div id="t212-history-status"></div>
+              <p class="integration-help">Export writes an unencrypted JSON file that you choose. Delete removes local investment history; saved chats and vault notes have separate retention. Disconnect keeps history and stops tracking.</p>
+            </section>
+            <p class="integration-help">Connect &amp; save stores this connection separately from the other Settings. Open Explore → Connectors → Trading 212 to view it. Browsing makes no AI requests; asking Orb shares relevant account data with your selected AI provider.</p>
           </div>
         </details>
         <details id="google-calendar-integration" class="integration-card">
@@ -213,4 +234,4 @@
     </form>
   </div>
 </section>
-</main><script src="orb.js"></script><script src="recurring-bundle.js"></script><script src="visual-renderer.js"></script><script src="provider-settings.js"></script><script src="speech-client.js"></script><script src="trading212-ui.js"></script><script src="renderer.js"></script><script src="chat.js"></script><script src="knowledge-graph.js"></script><script src="knowledge-ui.js"></script></body></html>
+</main><script src="appearance.js"></script><script src="orb.js"></script><script src="recurring-bundle.js"></script><script src="visual-renderer.js"></script><script src="provider-settings.js"></script><script src="speech-client.js"></script><script src="trading212-ui.js"></script><script src="appearance-settings.js"></script><script src="day-planner-ui.js"></script><script src="explore.js"></script><script src="renderer.js"></script><script src="chat.js"></script><script src="knowledge-graph.js"></script><script src="markdown-view.js"></script><script src="knowledge-ui.js"></script><script src="clippings-ui.js"></script></body></html>

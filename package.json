@@ -1,7 +1,7 @@
 {
   "name": "vault-orb",
   "productName": "Vault Orb",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "A voice companion for your Obsidian vault",
   "private": true,
   "main": "src/main.cjs",
@@ -28,5 +28,8 @@
     "exceljs": {
       "uuid": "^11.1.1"
     }
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

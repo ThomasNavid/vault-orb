@@ -4,6 +4,8 @@
 
 Ask Orb to bring together relevant goals, tasks, notes, and calendar information to propose a plan or compare options. You choose which recommendations to turn into changes.
 
+For a daily timeline, editable estimates, and optional reviewed calendar booking, use [Plan my day](daily-planner.md). The broader comparisons and cross-note planning below remain available.
+
 ## Setup
 
 The starter is empty. Any named example notes below are illustrative: create practice records in a disposable vault or substitute your own existing notes.

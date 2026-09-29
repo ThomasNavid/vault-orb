@@ -33,7 +33,7 @@ App settings, change history, and typed chats live under:
 ~/Library/Application Support/Vault Orb/
 ```
 
-Settings include the vault path, folder configuration, behavior options, and encrypted credentials. The change journal stores paths, timestamps, hashes, and **the previous contents of edited notes** so undo can restore them. The journal is stored as local JSON, not encrypted note storage. Treat it as private vault data and include it in your own device protection and backup decisions.
+Settings include the vault path, folder configuration, behavior options, the orb colour, and encrypted credentials. The orb colour is a local appearance preference in `settings.json`; changing it sends no network request and writes no vault note. The change journal stores paths, timestamps, hashes, and **the previous contents of edited notes** so undo can restore them. The journal is stored as local JSON, not encrypted note storage. Treat it as private vault data and include it in your own device protection and backup decisions.
 
 Typed chats are saved as plain JSON in `chats/`, one file per chat, including messages, recorded tool steps, and any saved visuals. They are not stored in the Markdown vault. Recent chats are deleted after 90 days of inactivity; Archived chats are kept until you restore or delete them. Sending a message, renaming, or restoring a chat restarts its 90-day period. There is no automatic message limit within a chat. You can delete a chat from the Archived list.
 
@@ -77,10 +77,24 @@ Dismissed connection suggestions are stored in a vault-scoped `knowledge-<hash>.
 
 The optional [Trading 212 connector](features/trading212.md) stores its API key and secret encrypted with macOS-backed Electron `safeStorage` in `settings.json`. Decrypted credentials remain in the main process; renderer Settings receives only connection status and environment. New credentials pass from the password fields to trusted IPC for testing/saving and are cleared from the form after saving or leaving Settings. API requests use HTTPS Basic authentication to the fixed Live or Demo Trading 212 host. The connector only allows specific GET endpoints and refuses redirects or history-page links to other resources.
 
-Opening Explore → Trading 212 contacts Trading 212 directly and makes no AI request. Financial responses are briefly cached in backend memory; there is no persistent dashboard cache or background sync. Disconnect removes the saved pair and clears those backend caches. It does not revoke the key at Trading 212, erase previously saved chats or notes, or erase snapshots already present in a conversation.
+Opening Explore → Trading 212 contacts Trading 212 directly and makes no AI request. Ordinary browsing uses memory caches. **Track performance on this Mac** is a separate opt-in: it records account observations, projected events and sync coverage under `app.getPath('userData')/trading212/` (normally `~/Library/Application Support/Vault Orb/trading212/`). Collection continues while Orb runs and the Mac is awake, including while its window is hidden; it stops on pause, disconnect or quit. Sleep gaps are not fabricated.
+
+`history.sqlite` stores financial payloads encrypted with AES-256-GCM and account/record binding. A separate `key` file contains the data key protected by macOS-backed `safeStorage`. Opaque account hashes, record kinds/IDs and timestamps remain in database indexes; this is encrypted payload storage, not whole-file encryption. Summary observations, events (including correction versions) and coverage remain until deleted; detailed holding observations expire after 90 days. Encryption failure does not fall back to plaintext. Restore the database and key together.
+
+Disconnect removes credentials and clears live caches but retains encrypted history. **Delete history** removes the chosen account's local records and stops its collection; it does not delete old chats, notes, exports or backups. **Export JSON** deliberately writes an unencrypted financial file to a location chosen in a save dialog. Neither action revokes the broker key or changes broker data. These local data controls are separate from vault-note undo.
 
 Asking Orb investment questions sends relevant retrieved financial data to the configured AI providers. Typed replies and financial visuals may be stored in local chat files under the normal retention policy; this content is not encrypted by the credential storage mechanism. Saving account information to a vault note is an explicit, separate request. Do not include real account screenshots or financial chat files in public bug reports.
 
 ## Linked task scheduling
 
 Booking sends the task title, chosen times/timezone, and an opaque block UUID in the event description to Google through Full Calendar’s local API. It does not put the task body or vault path into the event. Task/link IDs, block timing, and pending recovery state live in task YAML and the existing local note journal. Reading tasks/calendar or refreshing Today may reconcile already-linked task metadata; no background monitor is installed. Working hours are saved in Orb settings. See [Task scheduling](features/task-scheduling.md).
+
+## Web Clippings
+
+Clipping browsing, filters, and full-content search run locally. The vault-scoped index lives only in memory and is cleared when changing vaults or quitting. No remote images, pages, or transcripts are loaded by previews; Open original explicitly opens the validated source URL in your system browser. Asking Orb sends the relevant retrieved clipping content to the configured AI provider, like other note questions. Browsing and search do not require a provider key and do not change vault files.
+
+## AI daily planner
+
+Opening and manually editing a daily draft runs locally; fetching configured calendars follows the existing calendar rules. Requesting AI planning sends up to 60 candidate task records, relevant excerpts from up to 20 task notes (1,200 characters each), active goal context, planning preferences, and busy intervals to the selected reasoning or chat provider. Event descriptions and private feed URLs are not needed in that request. Suggestions and estimates remain distinct from user-recorded facts.
+
+Drafts, reviewed operations, and per-action recovery outcomes are stored under `changes/day-plans-<vault-hash>/` in Orb’s local application support directory. These files contain task metadata and planning text, not provider credentials. Ordinary caches expire after 30 days without a write; unfinished operations remain available for recovery. Discard removes only the local draft. Explicitly saved Markdown plans stay in the vault. Removing a cache or undoing a note edit does not remove calendar events; use the existing linked-block controls.

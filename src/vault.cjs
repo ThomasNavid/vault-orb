@@ -11,6 +11,11 @@ const GOALS_FOLDER = '0. Home/Goals';
 const HABIT_FOLDER = '0. Home/Habit Log';
 const hash = text => crypto.createHash('sha256').update(text).digest('hex');
 const localDate = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+function estimatedMinutes(value) {
+  if(value===null||value===undefined)return null;
+  if(!Number.isSafeInteger(value)||value<1||value>10080)throw new Error('Estimated minutes must be a whole number from 1 to 10080.');
+  return value;
+}
 function string(value, name, max = 500) {
   if (typeof value !== 'string' || !value.trim() || value.length > max) throw new Error(`${name} must be nonempty text (up to ${max} characters).`);
   return value.trim();
@@ -169,7 +174,8 @@ class Vault {
           const today=planned?.slice(0,10)===day || due?.slice(0,10)===day;
           const overdue=!!due && due.slice(0,10)<day;
           if(scope==='today'&&!today || scope==='overdue'&&!overdue || ['life','business'].includes(scope)&&scope!==list) continue;
-          tasks.push({task_id:data.task_id||null,calendar_block:data.calendar_block||null,path:relative,title:path.basename(relative,'.md'),list,category:data.category||'Inbox',venture:data.venture||null,planned,due,completed:data.completed===true,today,overdue,version:note.version,...repeat});
+          let estimate=null;try{estimate=estimatedMinutes(data.estimated_minutes);}catch(e){warnings.push({path:relative,error:e.message});}
+          tasks.push({task_id:data.task_id||null,calendar_block:data.calendar_block||null,path:relative,title:path.basename(relative,'.md'),list,category:data.category||'Inbox',venture:data.venture||null,planned,due,completed:data.completed===true,today,overdue,version:note.version,estimated_minutes:estimate,...repeat});
         } catch(e) {warnings.push({path:relative,error:e.message});}
       }
     }
@@ -212,6 +218,7 @@ class Vault {
     let relative=`${folder}/${safe}.md`, n=2;
     while(fs.existsSync(path.join(this.root,relative))) relative=`${folder}/${safe} (${n++}).md`;
     const data={type:'task',category:args.category ? string(args.category,'Category',100):'Inbox',planned:dateValue(args.planned??null),due:dateValue(args.due??null),completed:false};
+    if(args.estimated_minutes!=null)data.estimated_minutes=estimatedMinutes(args.estimated_minutes);
     if(args.list==='business') data.venture=args.venture?string(args.venture,'Venture',100):null;
     const body=args.details ? string(args.details,'Details',20000) : '';
     let content=`---\n${YAML.stringify(data)}---\n\n# ${title}\n${body?'\n'+body+'\n':''}`;
@@ -236,10 +243,11 @@ class Vault {
     }
     let changed=false;
     for(const [key,value] of Object.entries(changes)) {
-      if(!['planned','due','completed','category','venture'].includes(key)) throw new Error(`Unsupported task field: ${key}`);
+      if(!['planned','due','completed','category','venture','estimated_minutes'].includes(key)) throw new Error(`Unsupported task field: ${key}`);
       // Null means leave unchanged; empty date string clears a date.
       if(value===null || value===undefined) continue;
-      if(key==='completed') {if(typeof value!=='boolean') throw new Error('Completed must be true or false.');parsed.doc.set(key,value);}
+      if(key==='estimated_minutes'){if(value==='')parsed.doc.delete(key);else parsed.doc.set(key,estimatedMinutes(value));}
+      else if(key==='completed') {if(typeof value!=='boolean') throw new Error('Completed must be true or false.');parsed.doc.set(key,value);}
       else if(['planned','due'].includes(key)) parsed.doc.set(key,dateValue(value));
       else parsed.doc.set(key,string(value,key,100));
       changed=true;
@@ -275,4 +283,4 @@ class Vault {
     return {path:entry.path,action:'Change undone',change_id:entry.id};
   }
 }
-module.exports={Vault,FOLDERS,RULES_PATH,GOALS_FOLDER,HABIT_FOLDER,parseNote,localDate,dateValue,hash,atomicWrite};
+module.exports={Vault,FOLDERS,RULES_PATH,GOALS_FOLDER,HABIT_FOLDER,parseNote,localDate,dateValue,hash,atomicWrite,estimatedMinutes};

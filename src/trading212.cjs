@@ -1,11 +1,11 @@
 // Trading 212 public API. Only the fixed GET endpoints below are reachable.
 const {randomUUID}=require('node:crypto');
+const {SourceNumber,parseJSON,numeric:number,amounts}=require('./trading212-numbers.cjs');
 const {setTimeout:delay}=require('node:timers/promises');
 const BASES={live:'https://live.trading212.com',demo:'https://demo.trading212.com'};
 const PREFIX='/api/v0/equity/';
 const ENDPOINTS={summary:['account/summary',5000],holdings:['positions',1000],pending:['orders',5000],dividends:['history/dividends',10000],trades:['history/orders',10000],cash:['history/transactions',10000]};
 const VIEWS=['overview','holdings','dividends','trades','cash','pending'];
-const number=value=>typeof value==='number'&&Number.isFinite(value)?value:null;
 const text=value=>typeof value==='string'?value.slice(0,300):null;
 const fields=(value,keys,convert=number)=>Object.fromEntries(keys.map(key=>[key,convert(value?.[key])]));
 const instrument=value=>fields(value,['ticker','name','isin','currency'],text);
@@ -33,13 +33,13 @@ function saveCredentials(config,value,storage){
 function project(kind,data){
   if(kind==='summary'){
     if(!data||typeof data!=='object'||Array.isArray(data)||typeof data.currency!=='string'||number(data.totalValue)===null)throw new Error('Trading 212 returned an invalid account summary.');
-    return {currency:text(data.currency),totalValue:number(data.totalValue),cash:fields(data.cash,['availableToTrade','inPies','reservedForOrders']),investments:fields(data.investments,['currentValue','totalCost','realizedProfitLoss','unrealizedProfitLoss'])};
+    return {id:data.id==null?null:String(data.id),currency:text(data.currency),...amounts(data,['totalValue']),cash:amounts(data.cash,['availableToTrade','inPies','reservedForOrders']),investments:amounts(data.investments,['currentValue','totalCost','realizedProfitLoss','unrealizedProfitLoss'])};
   }
-  const order=value=>({...fields(value,['id'],v=>typeof v==='number'||typeof v==='string'?String(v):null),...fields(value,['status','type','side','createdAt','currency','ticker','strategy'],text),...fields(value,['quantity','filledQuantity','limitPrice','stopPrice','value','filledValue']),instrument:instrument(value?.instrument)});
-  const holding=value=>({...fields(value,['quantity','quantityAvailableForTrading','quantityInPies','averagePricePaid','currentPrice']),createdAt:text(value?.createdAt),instrument:instrument(value?.instrument),walletImpact:{currency:text(value?.walletImpact?.currency),...fields(value?.walletImpact,['currentValue','totalCost','unrealizedProfitLoss','fxImpact'])}});
-  const dividend=value=>({...fields(value,['amount','grossAmountPerShare','quantity']),...fields(value,['currency','paidOn','reference','type','ticker','tickerCurrency'],text),instrument:instrument(value?.instrument)});
-  const cash=value=>({amount:number(value?.amount),...fields(value,['currency','dateTime','reference','type'],text)});
-  const trade=value=>({order:order(value?.order),fill:{...fields(value?.fill,['id'],v=>v==null?null:String(v)),...fields(value?.fill,['filledAt','type'],text),...fields(value?.fill,['price','quantity']),walletImpact:{...fields(value?.fill?.walletImpact,['netValue','realisedProfitLoss','fxRate']),currency:text(value?.fill?.walletImpact?.currency)}}});
+  const order=value=>({...fields(value,['id'],v=>typeof v==='number'||typeof v==='string'||v instanceof SourceNumber?String(v):null),...fields(value,['status','type','side','createdAt','currency','ticker','strategy'],text),...fields(value,['quantity','filledQuantity','limitPrice','stopPrice','value','filledValue']),instrument:instrument(value?.instrument)});
+  const holding=value=>({...amounts(value,['quantity','quantityAvailableForTrading','quantityInPies','averagePricePaid','currentPrice']),createdAt:text(value?.createdAt),instrument:instrument(value?.instrument),walletImpact:{currency:text(value?.walletImpact?.currency),...amounts(value?.walletImpact,['currentValue','totalCost','unrealizedProfitLoss','fxImpact'])}});
+  const dividend=value=>({...amounts(value,['amount','grossAmountPerShare','quantity']),...fields(value,['currency','paidOn','reference','type','ticker','tickerCurrency'],text),instrument:instrument(value?.instrument)});
+  const cash=value=>({...amounts(value,['amount']),...fields(value,['currency','dateTime','reference','type'],text)});
+  const trade=value=>({order:order(value?.order),fill:{...fields(value?.fill,['id'],v=>v==null?null:String(v)),...fields(value?.fill,['filledAt','type'],text),...amounts(value?.fill,['price','quantity']),walletImpact:{...amounts(value?.fill?.walletImpact,['netValue','realisedProfitLoss','fxRate']),taxes:Array.isArray(value?.fill?.walletImpact?.taxes)?value.fill.walletImpact.taxes.map(t=>({...amounts(t,['quantity']),...fields(t,['name','currency'],text)})):[],currency:text(value?.fill?.walletImpact?.currency)}}});
   const list=['holdings','pending'].includes(kind)?data:data?.items;
   if(!Array.isArray(list)||list.length>10000||list.some(item=>!item||typeof item!=='object'||Array.isArray(item)))throw new Error('Trading 212 returned an invalid list.');
   const items=list.map(value=>({holdings:holding,pending:order,dividends:dividend,cash,trades:trade}[kind])(value));
@@ -61,7 +61,7 @@ async function readJSON(response){
   const reader=response.body?.getReader();if(!reader)throw new Error('Trading 212 returned an empty response.');
   let size=0;const chunks=[];
   try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>4*1024*1024)throw new Error('Trading 212 response is too large.');chunks.push(Buffer.from(value));}}finally{await reader.cancel().catch(()=>{});}
-  try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new Error('Trading 212 returned an invalid response.');}
+  try{return parseJSON(Buffer.concat(chunks).toString('utf8'));}catch{throw new Error('Trading 212 returned an invalid response.');}
 }
 class Trading212 {
   constructor(credentials,{fetchImpl=fetch,now=Date.now,wait=delay}={}){this.connectionId=randomUUID();this.credentials={environment:environment(credentials.environment),key:credential(credentials.key),secret:credential(credentials.secret)};this.fetchImpl=fetchImpl;this.now=now;this.wait=wait;this.cache=new Map();this.queues=new Map();this.nextAt=new Map();this.lifetime=new AbortController();}
@@ -85,7 +85,7 @@ class Trading212 {
       if(!response.ok){
         if(response.status===429){const reset=Number(response.headers.get('x-ratelimit-reset'))*1000,retry=Number(response.headers.get('retry-after'))*1000;this.nextAt.set(kind,Math.max(this.now()+ttl,Number.isFinite(reset)?reset:0,this.now()+(Number.isFinite(retry)?retry:0)));}
         await response.body?.cancel().catch(()=>{});
-        throw new Error(response.status===401?'Trading 212 rejected the key or secret. Check the credentials and Live/Demo environment.':response.status===403?'Trading 212 denied access. Check the key’s read permissions and IP restrictions.':response.status===429?'Trading 212 rate limit reached. Wait a little before refreshing.':`Trading 212 is unavailable (HTTP ${response.status}). Try again later.`);
+        throw Object.assign(new Error(response.status===401?'Trading 212 rejected the key or secret. Check the credentials and Live/Demo environment.':response.status===403?'Trading 212 denied access. Check the key’s read permissions and IP restrictions.':response.status===429?'Trading 212 rate limit reached. Wait a little before refreshing.':`Trading 212 is unavailable (HTTP ${response.status}). Try again later.`),{status:response.status,retryAt:this.nextAt.get(kind)});
       }
       let data;try{data=project(kind,await readJSON(response));}catch(e){signal.throwIfAborted();if(requestSignal.aborted)throw new Error('Trading 212 timed out. Try again.');throw e;}
       signal.throwIfAborted();
@@ -96,6 +96,11 @@ class Trading212 {
     });
     this.queues.set(kind,run);return run;
   }
+  async capabilities(options={}){
+    const labels={summary:'Accounts data',holdings:'Portfolio',dividends:'History dividends',trades:'History orders',cash:'History transactions',pending:'Orders read'};
+    const entries=await Promise.all(Object.keys(ENDPOINTS).map(async kind=>{try{const result=await this.read(kind,options);return [kind,{state:'available',permission:labels[kind],checkedAt:result.updatedAt}];}catch(e){options.signal?.throwIfAborted();return [kind,{state:e.status===403?'denied':e.status===401?'rejected':e.status===429?'rate_limited':'unavailable',permission:labels[kind],message:e.message,retryAt:e.retryAt||null}];}}));
+    return Object.fromEntries(entries);
+  }
   async view({view='overview',nextPagePath=null,connectionId=null}={},options={}){
     if(!VIEWS.includes(view))throw new Error('Choose a valid Trading 212 view.');
     if(nextPagePath!==null&&!['dividends','trades','cash'].includes(view))throw new Error('This Trading 212 view has no history pages.');
@@ -105,7 +110,7 @@ class Trading212 {
       const values=await Promise.allSettled(['summary','holdings'].map(kind=>this.read(kind,options)));options.signal?.throwIfAborted();
       if(values.every(v=>v.status==='rejected'))throw values[0].reason;
       const result={...base,summary:null,holdings:null,warnings:[],updatedAt:null};
-      values.forEach((value,i)=>{const key=['summary','holdings'][i];if(value.status==='fulfilled'){result[key]=value.value.data;result[key+'UpdatedAt']=value.value.updatedAt;if(!result.updatedAt||value.value.updatedAt<result.updatedAt)result.updatedAt=value.value.updatedAt;}else result.warnings.push(`${key==='summary'?'Account summary':'Holdings'}: ${value.reason.message}`);});
+      values.forEach((value,i)=>{const key=['summary','holdings'][i];if(value.status==='fulfilled'){result[key]=key==='summary'?(({id,...publicSummary})=>publicSummary)(value.value.data):value.value.data;result[key+'UpdatedAt']=value.value.updatedAt;if(!result.updatedAt||value.value.updatedAt<result.updatedAt)result.updatedAt=value.value.updatedAt;}else result.warnings.push(`${key==='summary'?'Account summary':'Holdings'}: ${value.reason.message}`);});
       return result;
     }
     const result=await this.read(view,{...options,nextPagePath});

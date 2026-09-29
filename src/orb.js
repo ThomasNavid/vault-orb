@@ -7,23 +7,30 @@
   const make=(tag,attrs={},parent)=>{const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));parent?.append(n);return n;};
 
   // Per-state look: body gradient, halo tint, spin of the inner light, ring visibility and where the glasses rest.
-  const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+  const A=window.orbAppearance;
+  let colours=A.palette(A.DEFAULT_COLOUR);
   const looks={
-    idle:     {light:'#62d0ff',mid:'#1f86ff',deep:'#0a4fe3',halo:.2, spin:.35,ring:0,look:[0,0],   tilt:0},
-    listening:{light:'#7ce6ff',mid:'#16a0ff',deep:'#075fe8',halo:.34,spin:.5, ring:1,look:[0,-3],  tilt:0},
-    thinking: {light:'#9db4ff',mid:'#4f72ff',deep:'#3a2fd8',halo:.3, spin:1.5,ring:0,look:[13,-10],tilt:-7},
-    speaking: {light:'#74d8ff',mid:'#2a8eff',deep:'#0b55f0',halo:.36,spin:.8, ring:1,look:[0,0],   tilt:0}
+    idle:     {halo:.2, spin:.35,ring:0,look:[0,0],   tilt:0},
+    listening:{halo:.34,spin:.5, ring:1,look:[0,-3],  tilt:0},
+    thinking: {halo:.3, spin:1.5,ring:0,look:[13,-10],tilt:-7},
+    speaking: {halo:.36,spin:.8, ring:1,look:[0,0],   tilt:0}
   };
-  for(const look of Object.values(looks))for(const k of ['light','mid','deep'])look[k]=hex(look[k]);
-  const current=structuredClone(looks.idle);
-  const rgb=c=>`rgb(${c.map(Math.round).join(',')})`;
+  const updatePalette=()=>{
+    for(const [state,tones] of Object.entries(colours.states))Object.assign(looks[state],tones);
+    const style=document.documentElement.style;
+    for(const [name,value] of Object.entries(colours.states.idle))style.setProperty('--orb-idle-'+name,A.rgb(value));
+    for(const name of ['rim','shadow','reflection'])style.setProperty('--orb-'+name,A.rgb(colours[name]));
+    style.setProperty('--orb-glow',colours.glow.join(','));
+  };
+  updatePalette();
+  const current=structuredClone(looks.idle),rgb=A.rgb;
 
   const svg=make('svg',{id:'orb-svg',viewBox:'-140 -140 280 280','aria-hidden':'true'});
   const defs=make('defs',{},svg);
   const bodyGradient=make('radialGradient',{id:'jelly-body',cx:.7,cy:.26,r:.92,fx:.72,fy:.2},defs);
   const bodyStops=[0,.48,1].map(offset=>make('stop',{offset},bodyGradient));
   const rimGradient=make('radialGradient',{id:'jelly-rim'},defs);
-  make('stop',{offset:.72,'stop-color':'#001a66','stop-opacity':0},rimGradient);make('stop',{offset:1,'stop-color':'#001a66','stop-opacity':.32},rimGradient);
+  make('stop',{offset:.72,'stop-color':'var(--orb-rim)','stop-opacity':0},rimGradient);make('stop',{offset:1,'stop-color':'var(--orb-rim)','stop-opacity':.32},rimGradient);
   const haloGradient=make('radialGradient',{id:'jelly-halo'},defs);
   const haloStops=[[0,.9],[.45,.35],[1,0]].map(([offset,opacity])=>make('stop',{offset,'stop-opacity':opacity},haloGradient));
   const glowGradient=make('radialGradient',{id:'jelly-glow'},defs);
@@ -31,7 +38,7 @@
   const soft=make('filter',{id:'jelly-soft',x:'-60%',y:'-200%',width:'220%',height:'500%'},defs);make('feGaussianBlur',{stdDeviation:5},soft);
   const clip=make('clipPath',{id:'jelly-clip'},defs);make('circle',{r:R},clip);
 
-  const shadow=make('ellipse',{cx:0,cy:R+18,rx:R*.66,ry:6,fill:'#000a2e',filter:'url(#jelly-soft)'},svg);
+  const shadow=make('ellipse',{cx:0,cy:R+18,rx:R*.66,ry:6,fill:'var(--orb-shadow)',filter:'url(#jelly-soft)'},svg);
   const halo=make('circle',{r:R*1.62,fill:'url(#jelly-halo)'},svg);
   const ring=make('circle',{r:R+13,fill:'none','stroke-width':1.5,opacity:0},svg);
   const body=make('g',{},svg);
@@ -51,25 +58,25 @@
     // Both lenses catch the same light from the upper right.
     for(const shift of [0,-62]){
       make('path',{d:`M${38+shift} -17Q${46+shift} -16 ${48+shift} -8`,fill:'none',stroke:'#fff','stroke-width':3,'stroke-linecap':'round'},g);
-      make('path',{d:`M${47+shift} -1Q${47+shift} 3 ${45+shift} 6`,fill:'none',stroke:'#58c8ff','stroke-width':2.2,'stroke-linecap':'round',opacity:.85},g);
+      make('path',{d:`M${47+shift} -1Q${47+shift} 3 ${45+shift} 6`,fill:'none',stroke:'var(--orb-reflection)','stroke-width':2.2,'stroke-linecap':'round',opacity:.85},g);
     }
     return g;
   };
   const glasses=drawGlasses(body);
   stage.prepend(svg);
-  window.orbVisual={setState:s=>{phase=s;if(reduced)render(1);},setLevel:l=>{level=Math.min(1.4,l);if(reduced)render(1);}};
+  window.orbVisual={setColour:colour=>{colours=A.palette(colour);updatePalette();if(reduced)render(1);},setState:s=>{phase=s;if(reduced)render(1);},setLevel:l=>{level=Math.min(1.4,l);if(reduced)render(1);}};
 
   // A still copy of the idle orb, glasses and all, for places like the chat window where the live orb is hidden.
   // Each copy owns its gradients: the live orb's defs stop resolving once its SVG is display:none.
   let marks=0;
   window.orbMark=className=>{
-    const id=`orb-mark-${++marks}`,idle=looks.idle;
+    const id=`orb-mark-${++marks}`;
     const mark=make('svg',{class:className,viewBox:`${-R-4} ${-R-4} ${2*R+8} ${2*R+8}`,'aria-hidden':'true'});
     const markDefs=make('defs',{},mark);
     const fill=make('radialGradient',{id:`${id}-body`,cx:.7,cy:.26,r:.92,fx:.72,fy:.2},markDefs);
-    [idle.light,idle.mid,idle.deep].forEach((c,i)=>make('stop',{offset:[0,.48,1][i],'stop-color':rgb(c)},fill));
+    ['light','mid','deep'].forEach((tone,i)=>make('stop',{offset:[0,.48,1][i],'stop-color':`var(--orb-idle-${tone})`},fill));
     const rim=make('radialGradient',{id:`${id}-rim`},markDefs);
-    make('stop',{offset:.72,'stop-color':'#001a66','stop-opacity':0},rim);make('stop',{offset:1,'stop-color':'#001a66','stop-opacity':.32},rim);
+    make('stop',{offset:.72,'stop-color':'var(--orb-rim)','stop-opacity':0},rim);make('stop',{offset:1,'stop-color':'var(--orb-rim)','stop-opacity':.32},rim);
     make('circle',{r:R,fill:`url(#${id}-body)`},mark);
     make('circle',{r:R,fill:`url(#${id}-rim)`},mark);
     make('ellipse',{cx:-R*.5,cy:-R*.6,rx:R*.16,ry:R*.07,fill:'#fff',opacity:.6,transform:`rotate(-38 ${-R*.5} ${-R*.6})`},mark);

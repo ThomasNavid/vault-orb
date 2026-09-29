@@ -83,7 +83,7 @@ test('trade history and pending orders retain signed values and absent fields',a
 });
 test('assistant has one read-only trading tool, emits a data visual, and propagates cancellation',async()=>{
  const schema=tools.find(t=>t.name==='trading212');assert.ok(schema);assert.deepEqual(tools.filter(t=>/trading|order|position/i.test(t.name)).map(t=>t.name),['trading212']);
- const args=validateArguments(schema.parameters,{view:'overview',nextPagePath:null,connectionId:null});const events=[],calls=[];
+ const args=validateArguments(schema.parameters,{view:'overview',nextPagePath:null,connectionId:null,metric:null,period:null,start:null,end:null,instrument:null,groupBy:null});const events=[],calls=[];
  const data={kind:'trading212',view:'overview',summary:project('summary',summary)};
  const agent=new Agent({vault:{},getKey:()=>'',getTrading212:async(a,o)=>{calls.push([a,o]);return data;},onActivity:e=>events.push(e)});
  const controller=new AbortController();assert.deepEqual(await agent.execute('trading212',args,{signal:controller.signal}),data);assert.equal(calls[0][1].signal,controller.signal);assert.deepEqual(events.find(e=>e.kind==='visual').visual,data);

@@ -33,6 +33,10 @@ For a packaged Mac app, see [Build and install](development.md#build-and-install
 
 **Connect existing…** requires the same Orb structure for newly selected vaults. It validates without moving or rewriting files. Existing installations keep their saved paths. For a manual installation, copy the complete [starter](../vault-template/) to a new folder. Do not select the private reference vault or merge the starter over personal files.
 
+## Personalise the orb
+
+In **Settings → Appearance**, choose a named colour or use the custom colour picker/hex field, then click **Apply colour**. You can do this before setting up a vault or API keys. The choice is saved on this Mac and also colours the small orb illustrations in chat. **Reset to blue** restores a preview of the original colour; apply it to save. See [colour controls](features/voice-and-controls.md#choose-your-orb-colour) for preview and save behaviour.
+
 ## Your knowledge system
 
 Portfolio holds your thinking and outputs; Hubs map broad interests; Topics gather focused subjects; Knowledge Library holds source material. Topic `hub` and Knowledge `topic` properties connect the browsing structure. Portfolio cites supporting Library notes; its automatic incoming list shows Library notes that link back to it.

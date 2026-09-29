@@ -222,13 +222,30 @@ For a visual workflow, open **Explore → Knowledge → Library**, select notes,
 First connect a read-only Invest or Stocks ISA key pair in Settings → Integrations → Trading 212. [Setup, supported data and limits](features/trading212.md).
 
 - “Show my Trading 212 portfolio.”
+- “How much am I up today?” — requires local tracking, an opening observation and complete cash/fill history.
+- “What income did I receive this UK tax year?” — uses the local ledger and reports coverage.
+- “Show my performance since tracking began.”
 - “Which holding is my largest investment exposure?”
 - “Show my dividends and tell me whether more history needs loading.”
 - “Show my recent deposits and cash interest.”
 - “Do I have any pending orders?”
 
-These requests read financial data and share the relevant results with your selected AI provider. The connector cannot trade. For direct viewing without an AI request, open Explore → Trading 212. History totals must be labelled partial until enough pages have been read.
+These requests read financial data and share the relevant results with your selected AI provider. The connector cannot trade. For direct viewing without an AI request, open Explore → Trading 212. Enable local tracking for persistent period queries. Metrics report actual observation times and history coverage; incomplete totals remain partial. Missing overnight values cannot be recreated by a broader API key.
 
 ## Put task work on the calendar
 
 With [linked scheduling set up](features/task-scheduling.md), try “Find me 45 minutes this week for Draft proposal,” then “Book the first slot.” To authorize both steps at once, say “Schedule Draft proposal for 45 minutes this week.” Move it with “Move Draft proposal’s block to Thursday at 2pm.” Completion shows alongside the block in Orb. “Remove Draft proposal’s calendar block” deletes that event and keeps the task.
+
+## Search saved web clippings
+
+Save material under `4. Knowledge Library/Web Clippings` using Obsidian Web Clipper, then try:
+
+- “Find my web clippings about local AI models.”
+- “Show videos I saved about photography last month.”
+- “What did the article I clipped about pricing say?”
+
+These requests search and read saved notes without changing them or fetching their URLs. Content questions require captured text, not just a link. [Web Clippings](features/web-clippings.md) explains search, filters, previews, and limits.
+
+## Build a realistic day
+
+Open **Today → Plan my day**, or ask “Help me plan today.” Try “Plan tomorrow and finish by three,” “Keep the proposal first; it needs 90 minutes,” or “Replan the remaining day.” These requests produce drafts. Use the planner’s **Save plan** or reviewed **Apply to tasks…** controls to make the selected note/date/calendar changes. See [AI daily planner](features/daily-planner.md) for estimate provenance, calendar requirements, and recovery.

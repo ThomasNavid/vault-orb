@@ -30,6 +30,7 @@ By default, summoning Orb starts listening when a key is saved. Turn off **Start
 | View investments | Open **Explore → Trading 212**, or choose `/trading212` in chat. This directly opens the read-only dashboard; `@Trading212` points a conversational request at the connector. See [Trading 212](trading212.md). |
 | Go back in the panel | Click the arrow at the top left of the panel. It returns to the view you came from, or closes the panel. |
 | Move the window | Drag the small dots above the orb. |
+| Change orb colour | Settings → Appearance: choose a preset or custom colour, then **Apply colour**. |
 | Open Settings | Click the sliders icon, use the menu-bar right-click menu, or ⌘,. |
 | Inspect the last request's tools | Click the steps chip beneath the orb. |
 | Read the conversation | Settings → Conversation. |
@@ -39,6 +40,16 @@ By default, summoning Orb starts listening when a key is saved. Turn off **Start
 Double-tap Control reads public modifier state and rejects gestures mixed with other keys or mouse buttons. It does not record typed text and needs neither Input Monitoring nor Accessibility permission. ⌘⇧Space is a fallback if the native listener fails.
 
 Today reconciles previously linked task blocks when refreshed; other dashboard sections are read-only. Each section reports its own setup or source warning, so a missing calendar connection or disabled optional feature does not prevent available task, goal, or habit data from appearing. Discovery prompts are ordinary assistant requests: selecting one uses the same voice/text tools, permissions, and write rules as typing it yourself.
+
+## Choose your orb colour
+
+![Appearance settings with the Violet preset and matching orb](../images/orb-appearance.png)
+
+Open **Settings → Appearance** and choose **Blue, Violet, Rose, Amber, Mint, or Teal**. For another colour, use **Custom colour** or enter a six-digit hex value such as `#8b5cf6`. The orb previews valid changes immediately. Its shading, glow, ring, lens reflections, and small chat illustrations follow your choice. Explore, chat suggestions, and command menus use plain icons in the orb’s colour, without coloured background tiles; listening, thinking, and speaking retain their animations and status labels. Very dark and pale colours receive lighter and darker tones so the orb keeps its shape.
+
+Click **Apply colour** to save appearance independently, even before connecting a vault or entering provider keys. **Save settings** also saves the colour along with the rest of the form when those settings are valid. **Reset to blue** previews the original blue; apply or save to keep it. Leaving Settings or hiding Orb discards an unapplied preview. Invalid hex input leaves the last valid preview visible and shows a correction message.
+
+Your choice is stored on this Mac and survives restarts and vault changes. It makes no network request and does not edit vault notes. If saving fails, the previous saved colour remains intact and the draft stays available to retry. Opening Settings ends an active voice session. The browser preview keeps applied colours only until the page reloads.
 
 ## Things to ask
 
@@ -74,7 +85,7 @@ An operation that already succeeded remains saved when you stop. Use [Recent cha
 - Five quiet minutes end a connected voice conversation automatically. A failed/disconnected voice connection also needs reconnecting.
 - Voice transcripts are kept in memory for the session. Recent typed chats expire after 90 days of inactivity; archiving keeps them. Save decisions in notes or goal reviews if they need to remain available outside chat history.
 - Settings exposes chat/tools, realtime voice, and optional reasoning models. Independent voice exposes recognition and speech models plus your ElevenLabs voice. It accepts turns up to 30 seconds (longer turns end voice with an error) and sends each after a brief pause; speech interrupts a pending answer. Audio is held only in memory. It is a turn-based pipeline, with more latency than native realtime voice.
-- A browser preview demonstrates visuals with fictional data; it cannot use the real microphone/backend or save app settings.
+- A browser preview demonstrates visuals with fictional data; it cannot use the real microphone/backend or persist app settings. Applied appearance changes last only for that page session.
 
 ## Troubleshooting
 

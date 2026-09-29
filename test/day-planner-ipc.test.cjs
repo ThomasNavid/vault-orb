@@ -1,0 +1,24 @@
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),vm=require('node:vm');
+const {EventEmitter}=require('node:events'),{createRequire}=require('node:module'),{pathToFileURL}=require('node:url');
+const {Vault,parseNote}=require('../src/vault.cjs');
+const main=path.resolve(__dirname,'../src/main.cjs'),load=createRequire(main);
+test('trusted desktop planner IPC works without an AI key and applies only reviewed choices',async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'orb-planner-ipc-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ const root=path.join(dir,'vault'),userData=path.join(dir,'app');fs.mkdirSync(userData);
+ for(const name of ['Life Tasks','Business Tasks'])fs.mkdirSync(path.join(root,'0. Home',name),{recursive:true});
+ const vault=new Vault(root,path.join(dir,'test-state'),{rulesPath:'',goalsFolder:'',habitFolder:''}),task=vault.createTask({title:'Draft proposal',list:'business',estimated_minutes:60});
+ fs.writeFileSync(path.join(userData,'settings.json'),JSON.stringify({vaultPath:root,rulesPath:'',goalsFolder:'',habitFolder:''}));
+ const handlers=new Map(),webContents=Object.assign(new EventEmitter(),{setWindowOpenHandler(){},send(){}});let ready;
+ const app=Object.assign(new EventEmitter(),{getPath:()=>userData,requestSingleInstanceLock:()=>true,whenReady:()=>({then:fn=>{ready=Promise.resolve().then(fn);}})});
+ const electron={app,powerMonitor:new EventEmitter(),ipcMain:{handle:(n,fn)=>handlers.set(n,fn)},BrowserWindow:class extends EventEmitter{constructor(){super();this.webContents=webContents;}setVisibleOnAllWorkspaces(){}loadFile(){}},Tray:class extends EventEmitter{setToolTip(){}},nativeImage:{createFromPath:()=>({setTemplateImage(){}})},Menu:{buildFromTemplate:x=>x,setApplicationMenu(){}},globalShortcut:{register(){}},session:{defaultSession:{setPermissionRequestHandler(){},setPermissionCheckHandler(){}}},dialog:{showErrorBox:(_title,message)=>assert.fail(message)},safeStorage:{isEncryptionAvailable:()=>true}};
+ const requireMock=name=>name==='electron'?electron:name.endsWith('orb-shortcut.node')?{start:()=>true,status:()=>({})}:name==='./trading212-service.cjs'?{createTradingService:()=>({start(){},resume(){}})}:load(name);
+ vm.runInNewContext(fs.readFileSync(main,'utf8'),{require:requireMock,__dirname:path.dirname(main),Buffer,AbortController,process,setTimeout,clearTimeout,setInterval:()=>({unref(){}}),console},{filename:main});await ready;
+ const handler=handlers.get('day-planner');assert.equal(typeof handler,'function');const event={sender:webContents,senderFrame:{url:pathToFileURL(path.join(path.dirname(main),'index.html')).href}};
+ await assert.rejects(handler({}, {action:'open'}),/Untrusted/);
+ const call=(d,action,extra={})=>handler(event,{action,date:'2030-01-07',...(d?{id:d.id,revision:d.revision}:{}),...extra});
+ let d=await call(null,'open');assert.equal(d.aiReady,false);assert.equal(d.rows[0].minutes,60);
+ d=await call(d,'edit',{patch:{row:{path:task.path,minutes:45}}});assert.equal(parseNote(vault.read(task.path).content).data.estimated_minutes,60);
+ d=await call(d,'review',{choices:[{path:task.path,planDate:true,estimate:true,book:false}]});assert.equal(d.review.actions.length,1);
+ d=await call(d,'apply',{reviewId:d.review.id});assert.equal(d.operation.status,'complete');assert.equal(parseNote(vault.read(task.path).content).data.estimated_minutes,45);assert.equal(parseNote(vault.read(task.path).content).data.planned,'2030-01-07');
+});

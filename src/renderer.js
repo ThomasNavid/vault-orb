@@ -7,16 +7,21 @@ const transcriptItems=new Map();
 const steps=new Map();
 if(preview){
  document.body.classList.add('preview');
- api={settings:async()=>({vaultPath:'/Preview/Main',taskFolders:{life:'0. Home/Life Tasks',business:'0. Home/Business Tasks'},rulesPath:'0. Home/Task Rules.md',goalsFolder:'0. Home/Goals',hasKey:true,chatReady:true,voiceReady:true,googleCalendars:[],hasCalendarToken:false,calendarId:'',fullCalendarServer:false,autoStart:false,shortcutActive:true}),history:async()=>[],chooseVault:async()=>'/Preview/Main',createVault:async()=>{throw new Error('Create a vault in the Mac app. This is a preview.');},saveSettings:async()=>{throw new Error('Preview only. Use Settings in the Mac app.');},openNote:async()=>{},stop:async()=>{},ready:async()=>{},resize:async()=>{},hide:async()=>{},onActivity:()=>{},onActivate:()=>{},onHide:()=>{},onSettings:()=>{},onShortcut:()=>{}};
+ let previewAppearance=window.orbAppearance.readAppearance({});
+ api={saveAppearance:async appearance=>({appearance:previewAppearance=window.orbAppearance.withAppearance({},appearance).appearance}),settings:async()=>({appearance:previewAppearance,vaultPath:'/Preview/Main',taskFolders:{life:'0. Home/Life Tasks',business:'0. Home/Business Tasks'},rulesPath:'0. Home/Task Rules.md',goalsFolder:'0. Home/Goals',hasKey:true,chatReady:true,voiceReady:true,googleCalendars:[],hasCalendarToken:false,calendarId:'',fullCalendarServer:false,autoStart:false,shortcutActive:true}),history:async()=>[],chooseVault:async()=>'/Preview/Main',createVault:async()=>{throw new Error('Create a vault in the Mac app. This is a preview.');},saveSettings:async()=>{throw new Error('Preview only. Use Settings in the Mac app.');},openNote:async()=>{},stop:async()=>{},ready:async()=>{},resize:async()=>{},hide:async()=>{},onActivity:()=>{},onActivate:()=>{},onHide:()=>{},onSettings:()=>{},onShortcut:()=>{}};
  api.goals=async scope=>displayVisual(previewGoals(scope));
 }
+const appearanceEditor=window.orbAppearanceSettings.bind({api,visual,isPreview:preview,onCommit:appearance=>{if(settings)settings.appearance=appearance;}});
 window.trading212UI.init();
+window.dayPlannerUI.init({api,preview,show:()=>displayVisual({kind:'day-planner',title:'Plan my day'})});
 // The panel keeps a short trail of views so the header's back button returns to where you came from.
 let panelTrail=[];
 const panelInfo={home:['i-sun','orange','Today'],welcome:['i-sparkle','blue','Explore'],transcript:['i-chat','blue','Conversation'],settings:['i-gear','gray','Settings'],history:['i-clock','purple','Recent changes'],steps:['i-steps','teal','Steps']};
-const visualInfo={recurring:['i-sun','orange','Recurring tasks'],trading212:['i-chart','teal','Trading 212'],goals:['i-target','red','Goals'],habits:['i-flame','green','Habits'],calendar:['i-calendar','red','Calendar'],table:['i-list','orange','Results'],line:['i-chart','purple','Chart'],area:['i-chart','purple','Chart'],bar:['i-chart','purple','Chart']};
+const visualInfo={'day-planner':['i-sun','orange','Plan my day'],recurring:['i-sun','orange','Recurring tasks'],trading212:['i-chart','teal','Trading 212'],goals:['i-target','red','Goals'],habits:['i-flame','green','Habits'],calendar:['i-calendar','red','Calendar'],table:['i-list','orange','Results'],line:['i-chart','purple','Chart'],area:['i-chart','purple','Chart'],bar:['i-chart','purple','Chart']};
 function showPanel(mode,{back=false}={}){
+ if(cardMode==='settings'&&mode!=='settings')appearanceEditor.close();
  if(mode!=='settings')window.trading212UI?.clearSecrets();
+ window.clippingsUI?.close();
  window.knowledgeUI?.closeWorkspace();
  if(mode!=='home')homeGeneration++;
  if(!mode){panelTrail=[];$('ask-input').value='';}else if(!back&&cardMode&&cardMode!==mode){panelTrail=panelTrail.filter(m=>m!==mode&&m!==cardMode);panelTrail.push(cardMode);}
@@ -24,10 +29,10 @@ function showPanel(mode,{back=false}={}){
  for(const name of ['visual','home','welcome','transcript','settings','history','steps'])$(name+'-view').hidden=name!==mode;
  $('home-button').setAttribute('aria-pressed',String(mode==='home'));$('discover-button').setAttribute('aria-pressed',String(mode==='welcome'));
  const titled=['settings','history'].includes(mode);$('ask-form').hidden=titled;$('card-eyebrow').hidden=!titled;$('card-eyebrow').textContent=panelInfo[mode]?.[2]||'';
- $('ask-input').placeholder=mode==='welcome'?'Ask Orb, or search views and suggestions…':'Ask Orb anything…';$('ask-input').setAttribute('aria-expanded',String(mode==='welcome'));
+ $('ask-input').placeholder=mode==='welcome'?'Search tools, connectors, or ask Orb…':'Ask Orb anything…';$('ask-input').setAttribute('aria-expanded',String(mode==='welcome'));
  const backLabel=panelTrail.length?`Back to ${panelInfo[panelTrail.at(-1)]?.[2]||'previous view'}`:'Close panel';$('close-card').setAttribute('aria-label',backLabel);$('close-card').title=backLabel;
  if(mode!=='settings')$('settings-error').hidden=true;
- if(mode==='welcome')renderCommands();
+ if(mode==='welcome')renderCommands();else $('ask-input').removeAttribute('aria-activedescendant');
  updateFooter();
  if(opening&&mode==='welcome')setTimeout(()=>$('ask-input').focus(),60);
  if(!chatOpen)api.resize(['home','welcome'].includes(mode)?'visual':mode||'compact').catch(()=>{});
@@ -38,7 +43,7 @@ function updateFooter(){
  const [icon,tint,title]=cardMode==='visual'?visualInfo[currentVisual?.kind]||['i-sparkle','blue','In view']:panelInfo[cardMode];
  $('footer-icon').dataset.tint=tint;$('footer-icon').querySelector('use').setAttribute('href','#'+icon);$('footer-title').textContent=title;
  const selected=cardMode==='welcome'?commandItems[commandIndex]:null;
- const primary=cardMode==='settings'?'Save settings':cardMode==='history'?'':selected?.accessory==='Ask'?'Ask Orb':selected?'Open':'Ask Orb';
+ const primary=cardMode==='settings'?'Save settings':cardMode==='history'?'':selected?.accessory==='Ask'?'Ask Orb':selected?.accessory==='Set up'?'Set up':selected?'Open':'Ask Orb';
  $('footer-primary').hidden=!primary;$('footer-primary').firstChild.textContent=primary;
  $('card-footer').querySelector('.action-divider').hidden=!primary;
  $('footer-secondary').firstChild.textContent=cardMode!=='welcome'?'Explore':panelTrail.length?'Back':'Close';
@@ -101,6 +106,7 @@ function liveUI(){
  $('voice-icon').setAttribute('href',connected||connecting?'#i-stop':'#i-mic');$('voice-button').classList.toggle('live',connected||connecting);$('mute-button').hidden=!connected;$('connection-dot').classList.toggle('live',connected);
  const label=connected||connecting?'End voice conversation':'Start voice conversation';$('orb-button').setAttribute('aria-label',label);$('voice-button').setAttribute('aria-label',label);$('voice-button').title=label;
 }
+function openDayPlanner(){displayVisual({kind:'day-planner',title:'Plan my day'});}
 function openRecurring(){currentVisual={kind:'recurring',title:'Recurring tasks'};window.renderVisual($('visual-view'),currentVisual,path=>api.openNote(path));showPanel('visual');}
 function displayVisual(v){if(chatOpen){chatVisual(v);return;}currentVisual=v;if(!v){if(cardMode==='visual')panelBack();return;}window.renderVisual($('visual-view'),v,path=>api.openNote(path).catch(error),{trading212:args=>api.trading212(args),settings:()=>openSettings(),habits:args=>api.habits(args),setHabit:async args=>{await api.setHabit(args);const status=$('visual-view').querySelector('.habit-status');if(status)status.textContent='Saved to your vault.';},openHabitRecord:async args=>{const result=await api.openHabitRecord(args);await api.openNote(result.path);},filterGoals:scope=>api.goals(scope).catch(error),request:text=>submit(text).catch(error)});showPanel('visual');}
 const node=(tag,cls,text)=>{const element=document.createElement(tag);if(cls)element.className=cls;if(text!==undefined)element.textContent=String(text);return element;};
@@ -117,6 +123,7 @@ function renderHome(data){
  $('home-date').textContent=dateText(date)||'A quick look at what is ahead';
  const taskByKey=new Map(),tasks=[];
  for(const task of [...today.map(item=>({item,overdue:false})),...overdue.map(item=>({item,overdue:true}))]){const key=task.item?.path||[task.item?.title,task.item?.planned,task.item?.due].join('|'),existing=taskByKey.get(key);if(existing){existing.overdue||=task.overdue;continue;}taskByKey.set(key,task);tasks.push(task);}
+ const planEntry=node('section','home-plan-entry');planEntry.append(node('div',null,'Make room for what matters.'),action('Plan my day',()=>openDayPlanner()));content.append(planEntry);
  const taskSection=section('Tasks',tasks.length,'task');
  if(!tasks.length)say(taskSection,(data?.today?.warnings?.length||data?.overdue?.warnings?.length||data?.today?.error||data?.overdue?.error)?'Task data may be incomplete.':'Nothing due or planned today.');
  else {const list=node('ul','task-list home-task-list');for(const {item,overdue:isOverdue} of tasks.slice(0,8)){
@@ -158,43 +165,61 @@ const prompts=[
  ['Notes','Find meeting notes','Find notes about meetings in my vault.','i-doc','yellow'],
  ['Numbers','Make sense of data','Find a spreadsheet in my vault and show a useful trend if the data supports one.','i-chart','purple']
 ];
-// Explore is a command list: views open directly, suggestions submit their request exactly as if typed.
-const commands=[
- {group:'Views',icon:'i-sun',tint:'orange',title:'Recurring tasks',subtitle:'Repeat schedules, completion and history',accessory:'View',run:()=>openRecurring()},
- {group:'Views',icon:'i-sun',tint:'orange',title:'Today',subtitle:'Tasks, goals, habits and calendar',accessory:'View',run:()=>openHome()},
- {group:'Views',icon:'i-chart',tint:'teal',title:'Trading 212',subtitle:'Investments, holdings, dividends and activity',accessory:'View',run:()=>window.trading212UI.open()},
- {group:'Views',icon:'i-doc',tint:'blue',title:'Knowledge',subtitle:'Capture, explore and create',accessory:'View',run:()=>window.knowledgeUI.open()},
- {group:'Views',icon:'i-compose',tint:'green',title:'Portfolio',subtitle:'Your ideas and working drafts',accessory:'View',run:()=>window.knowledgeUI.open('portfolio')},
- {group:'Views',icon:'i-steps',tint:'purple',title:'Knowledge graph',subtitle:'Explore connections between notes',accessory:'View',run:()=>window.knowledgeUI.expand()},
- {group:'Views',icon:'i-target',tint:'red',title:'Goals',subtitle:'Active goals and reviews',accessory:'View',run:()=>api.goals('active')},
- {group:'Views',icon:'i-flame',tint:'green',title:'Habits',subtitle:'Log a day and see your year',accessory:'View',run:()=>api.habits({date:null,year:null})},
- ...prompts.map(([category,label,request,icon,tint])=>({group:'Try asking',icon,tint,title:label,subtitle:category,accessory:'Ask',run:()=>submit(request)})),
+// Native tools and connectors stay separate from assistant requests.
+function exploreCommands(){
+ const connections=window.orbExplore.connectorState(settings,preview);
+ return [
+ {group:'Planning',icon:'i-sun',tint:'orange',title:'Today',subtitle:'Your tasks, goals, habits and events at a glance',accessory:'Open',run:()=>openHome()},
+ {group:'Planning',icon:'i-sun',tint:'orange',title:'Plan my day',subtitle:'Build a daily plan with AI',accessory:'Open',run:()=>openDayPlanner()},
+ {group:'Planning',icon:'i-list',tint:'orange',title:'Recurring tasks',subtitle:'Repeat schedules, completion and history',accessory:'Open',keywords:'repeat routines',run:()=>openRecurring()},
+ {group:'Planning',icon:'i-target',tint:'red',title:'Goals',subtitle:'Active goals and reviews',accessory:'Open',run:()=>api.goals('active')},
+ {group:'Planning',icon:'i-flame',tint:'green',title:'Habits',subtitle:'Log a day and see your year',accessory:'Open',run:()=>api.habits({date:null,year:null})},
+ {group:'Knowledge',icon:'i-doc',tint:'teal',title:'Web Clippings',subtitle:'Search saved articles, videos and posts',accessory:'Open',keywords:'snippets clipper websites x posts',run:()=>window.clippingsUI.open()},
+ {group:'Knowledge',icon:'i-doc',tint:'blue',title:'Knowledge',subtitle:'Capture and explore your notes',accessory:'Open',keywords:'library hubs topics',run:()=>window.knowledgeUI.open()},
+ {group:'Knowledge',icon:'i-compose',tint:'green',title:'Writing portfolio',subtitle:'Your ideas and working drafts',accessory:'Open',run:()=>window.knowledgeUI.open('portfolio')},
+ {group:'Knowledge',icon:'i-steps',tint:'purple',title:'Knowledge graph',subtitle:'Explore connections between notes',accessory:'Open',run:()=>window.knowledgeUI.expand()},
+ {group:'Connectors',icon:'i-chart',tint:'teal',title:'Trading 212',subtitle:'Investments, holdings, dividends and activity',status:connections.trading.label,ready:connections.trading.ready,accessory:connections.trading.ready?'Open':'Set up',keywords:'t212 investments financial portfolio integration',run:()=>connections.trading.ready?window.trading212UI.open():openConnectorSettings('trading212-integration')},
+ {group:'Connectors',icon:'i-calendar',tint:'red',title:'Google Calendar',subtitle:connections.calendar.ready?'Upcoming events from your calendar sources':'Connect through Obsidian Full Calendar',status:connections.calendar.label,ready:connections.calendar.ready,accessory:connections.calendar.ready?'Open':'Set up',keywords:'schedule events meetings integration',run:()=>connections.calendar.ready?openCalendar():openConnectorSettings('google-calendar-integration')},
  {group:'Orb',icon:'i-chat',tint:'blue',title:'Chats',subtitle:'Typed conversations and archive',accessory:'Open',run:()=>openChat()},
- {group:'Orb',icon:'i-steps',tint:'teal',title:'Conversation',subtitle:'This session’s voice transcript',accessory:'View',run:()=>showPanel('transcript')},
- {group:'Orb',icon:'i-clock',tint:'purple',title:'Recent changes',subtitle:'Review and undo Orb’s edits',accessory:'View',run:()=>{showPanel('history');return refreshHistory();}},
- {group:'Orb',icon:'i-gear',tint:'gray',title:'Settings',subtitle:'Vault, integrations and preferences',accessory:'View',run:()=>openSettings()}
-];
-let commandItems=[],commandIndex=0;
+ {group:'Orb',icon:'i-steps',tint:'teal',title:'Conversation',subtitle:'This session’s voice transcript',accessory:'Open',run:()=>showPanel('transcript')},
+ {group:'Orb',icon:'i-clock',tint:'purple',title:'Recent changes',subtitle:'Review and undo Orb’s edits',accessory:'Open',run:()=>{showPanel('history');return refreshHistory();}},
+ {group:'Orb',icon:'i-gear',tint:'gray',title:'Settings',subtitle:'Vault, connectors and preferences',accessory:'Open',run:()=>openSettings()},
+ ...prompts.map(([category,label,request,icon,tint])=>({group:'Try asking',icon,tint,title:label,subtitle:category+' · Sends a request to Orb',keywords:request,accessory:'Ask',run:()=>submit(request)}))
+ ];
+}
+async function openConnectorSettings(id){await openSettings();const integration=$(id);integration.open=true;integration.scrollIntoView({block:'start'});integration.querySelector('summary').focus();}
+async function openCalendar(){
+ const loading={kind:'calendar',title:'Calendar'};currentVisual=loading;showPanel('visual');$('visual-view').replaceChildren(node('p','empty','Loading your calendar…'));
+ try{const result=await api.calendar();if(currentVisual===loading&&cardMode==='visual')displayVisual(result);}
+ catch(e){if(currentVisual===loading&&cardMode==='visual'){$('visual-view').replaceChildren(node('p','home-note','Calendar could not be loaded. '+(e?.message||String(e))),action('Calendar settings',()=>openConnectorSettings('google-calendar-integration').catch(error)));}}
+}
+let commandItems=[],commandIndex=0,commandCategory='All';
 const appIcon=(icon,tint)=>{const box=node('span','app-icon');box.dataset.tint=tint;box.setAttribute('aria-hidden','true');const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('class','icon');const use=document.createElementNS('http://www.w3.org/2000/svg','use');use.setAttribute('href','#'+icon);s.append(use);box.append(s);return box;};
 function renderCommands(){
- const query=$('ask-input').value.trim(),words=query.toLowerCase().split(/\s+/).filter(Boolean),list=$('command-list');
- commandItems=commands.filter(c=>words.every(w=>`${c.title} ${c.subtitle} ${c.group}`.toLowerCase().includes(w)));
- if(query)commandItems.unshift({group:'Ask Orb',icon:'i-sparkle',tint:'blue',title:query,subtitle:'Ask Orb',accessory:'Ask',run:()=>submit(query)});
+ const query=$('ask-input').value.trim(),list=$('command-list');
+ commandItems=window.orbExplore.filterCommands(exploreCommands(),query,commandCategory);
+ const matches=commandItems.length;
+ if(query)commandItems.push({group:'Ask Orb',icon:'i-sparkle',tint:'blue',title:query,subtitle:'Send this as a request to Orb',accessory:'Ask',run:()=>submit(query)});
+ $('command-context').textContent=query?(matches?`${matches} ${matches===1?'match':'matches'}${commandCategory==='All'?'':' in '+commandCategory}`:'No matching tools. You can still ask Orb.'):
+  commandCategory==='Try asking'?'Choose a starting request to send to Orb.':commandCategory==='Connectors'?'Your connected services. Choose one to open or set up.':'Open a tool, or choose a category to explore.';
+ $('command-categories').querySelectorAll('button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.category===commandCategory)));
  commandIndex=Math.max(0,Math.min(commandIndex,commandItems.length-1));list.replaceChildren();let group=null;
  commandItems.forEach((c,i)=>{
   if(c.group!==group){group=c.group;const heading=node('li','command-group',group);heading.setAttribute('role','presentation');list.append(heading);}
-  const row=node('li','command');row.id='command-'+i;row.setAttribute('role','option');row.append(appIcon(c.icon,c.tint),node('span','command-title',c.title),node('span','command-subtitle',c.subtitle),node('span','command-accessory',c.accessory));
-  row.onpointermove=()=>{if(commandIndex!==i)selectCommand(i);};row.onclick=()=>runCommand(i);list.append(row);
+  const row=node('li','command'),copy=node('span','command-copy');row.id='command-'+i;row.setAttribute('role','option');copy.append(node('span','command-title',c.title),node('span','command-subtitle',c.subtitle));row.append(appIcon(c.icon,c.tint),copy);
+  if(c.status){const status=node('span','command-status',c.status);status.classList.toggle('is-ready',c.ready);row.append(status);}
+  row.append(node('span','command-accessory',c.accessory));
+  row.onpointermove=()=>{if(commandIndex!==i)selectCommand(i,false);};row.onclick=()=>runCommand(i);list.append(row);
  });
  selectCommand(commandIndex);
 }
-function selectCommand(i){
+function selectCommand(i,scroll=true){
  commandIndex=i;const rows=$('command-list').querySelectorAll('.command');rows.forEach((row,j)=>row.setAttribute('aria-selected',String(j===i)));
- if(rows[i]){$('ask-input').setAttribute('aria-activedescendant',rows[i].id);rows[i].scrollIntoView({block:'nearest'});}else $('ask-input').removeAttribute('aria-activedescendant');
+ if(rows[i]){$('ask-input').setAttribute('aria-activedescendant',rows[i].id);if(scroll)rows[i].scrollIntoView({block:'nearest'});}else $('ask-input').removeAttribute('aria-activedescendant');
  updateFooter();
 }
-function runCommand(i=commandIndex){const command=commandItems[i];if(!command)return;Promise.resolve(command.run()).catch(error);}
-function openWelcome(){showPanel('welcome');$('ask-input').focus();try{localStorage.setItem('orb-welcome-seen','1');}catch{};}
+function runCommand(i=commandIndex){const command=commandItems[i];if(!command)return;if(command.accessory!=='Ask')$('ask-input').value='';Promise.resolve().then(()=>command.run()).catch(error);}
+function openWelcome(){commandCategory='All';commandIndex=0;$('ask-input').value='';showPanel('welcome');$('ask-input').focus();try{localStorage.setItem('orb-welcome-seen','1');}catch{};}
 function updateShortcut(active){if(settings)settings.shortcutActive=active;$('shortcut-hint').querySelector('span').textContent=active?'summon Orb':'set up shortcut';$('shortcut-hint').classList.toggle('needs-setup',!active);$('shortcut-status').textContent=active?'Ready. Double-tap Control from any app.':'The shortcut listener could not start. Try restarting it below.';$('enable-shortcut').textContent=active?'Ready':'Retry';$('enable-shortcut').disabled=active;}
 function touch(){clearTimeout(idleTimer);if(connected)idleTimer=setTimeout(()=>{endVoice();setStatus('idle','Conversation ended after five quiet minutes.');},5*60*1000);}
 function send(event){if(channel?.readyState==='open')channel.send(JSON.stringify(event));}
@@ -301,12 +326,13 @@ async function refreshHistory(){
   if(entry.status==='applied'&&entry.undoable!==false){const undo=document.createElement('button');undo.textContent='Undo';undo.disabled=connected||busy;undo.onclick=async()=>{try{await api.undo(entry.id);await refreshHistory();}catch(e){error(e);}};item.append(undo);}else if(entry.status!=='undone'){const span=document.createElement('span');span.textContent=entry.undoable===false?'Use calendar actions':entry.status;item.append(span);}$('activity-list').append(item);
  }
 }
-async function openSettings(){if(connected||connecting)endVoice();settings=await api.settings();window.orbProviderSettings.load(settings,api,preview);window.trading212UI.loadSettings();$('vault-path').value=settings.vaultPath;$('life-folder').value=settings.taskFolders.life;$('business-folder').value=settings.taskFolders.business;$('rules-path').value=settings.rulesPath;$('goals-folder').value=settings.goalsFolder??'0. Home/Goals';$('habit-folder').value=settings.habitFolder??'0. Home/Habit Log';$('habit-script').value=settings.habitScript??'99. System/99.4 Scripts/habits/view.js';$('auto-start').checked=settings.autoStart;const hours=settings.workingHours||{start:'09:00',end:'17:00',days:[1,2,3,4,5]};$('work-start').value=hours.start;$('work-end').value=hours.end;document.querySelectorAll('[name=work-day]').forEach(input=>input.checked=hours.days.includes(Number(input.value)));$('calendar-token').value='';$('calendar-token').placeholder=settings.hasCalendarToken?'Token saved':'Paste token from Obsidian';const calendars=settings.googleCalendars||[],select=$('calendar-id');select.replaceChildren(new Option('Choose a Google calendar',''));for(const calendar of calendars)select.add(new Option(calendar.name,calendar.id));select.value=settings.calendarId||(calendars.length===1?calendars[0].id:'');const calendarConnected=calendars.length>0&&settings.fullCalendarServer&&settings.hasCalendarToken&&!!settings.calendarId,status=$('calendar-status'),integration=$('google-calendar-integration');status.textContent=calendarConnected?'Connected':calendars.length||settings.hasCalendarToken?'Finish setup':'Set up';status.className='integration-status '+(calendarConnected?'connected':calendars.length||settings.hasCalendarToken?'attention':'');integration.open=!calendarConnected;$('calendar-setup').textContent=!calendars.length?'Connect a Google calendar in Obsidian Full Calendar first. Then reopen Orb Settings.':!settings.fullCalendarServer?'Enable Local REST Server in Obsidian Full Calendar → Integrations. Generate a token with Read events, Write events and Read providers.':!settings.hasCalendarToken?'Paste a Full Calendar token with Read events, Write events and Read providers.':'Choose the default calendar Orb should use when creating events.';$('settings-error').hidden=true;updateShortcut(settings.shortcutActive);showPanel('settings');}
+async function openSettings(){if(connected||connecting)endVoice();settings=await api.settings();appearanceEditor.open(settings.appearance);window.orbProviderSettings.load(settings,api,preview);window.trading212UI.loadSettings();$('vault-path').value=settings.vaultPath;$('life-folder').value=settings.taskFolders.life;$('business-folder').value=settings.taskFolders.business;$('rules-path').value=settings.rulesPath;$('goals-folder').value=settings.goalsFolder??'0. Home/Goals';$('habit-folder').value=settings.habitFolder??'0. Home/Habit Log';$('habit-script').value=settings.habitScript??'99. System/99.4 Scripts/habits/view.js';$('auto-start').checked=settings.autoStart;const hours=settings.workingHours||{start:'09:00',end:'17:00',days:[1,2,3,4,5]};$('work-start').value=hours.start;$('work-end').value=hours.end;document.querySelectorAll('[name=work-day]').forEach(input=>input.checked=hours.days.includes(Number(input.value)));$('calendar-token').value='';$('calendar-token').placeholder=settings.hasCalendarToken?'Token saved':'Paste token from Obsidian';const calendars=settings.googleCalendars||[],select=$('calendar-id');select.replaceChildren(new Option('Choose a Google calendar',''));for(const calendar of calendars)select.add(new Option(calendar.name,calendar.id));select.value=settings.calendarId||(calendars.length===1?calendars[0].id:'');const calendarConnected=calendars.length>0&&settings.fullCalendarServer&&settings.hasCalendarToken&&!!settings.calendarId,status=$('calendar-status'),integration=$('google-calendar-integration');status.textContent=calendarConnected?'Connected':calendars.length||settings.hasCalendarToken?'Finish setup':'Set up';status.className='integration-status '+(calendarConnected?'connected':calendars.length||settings.hasCalendarToken?'attention':'');integration.open=!calendarConnected;$('calendar-setup').textContent=!calendars.length?'Connect a Google calendar in Obsidian Full Calendar first. Then reopen Orb Settings.':!settings.fullCalendarServer?'Enable Local REST Server in Obsidian Full Calendar → Integrations. Generate a token with Read events, Write events and Read providers.':!settings.hasCalendarToken?'Paste a Full Calendar token with Read events, Write events and Read providers.':'Choose the default calendar Orb should use when creating events.';$('settings-error').hidden=true;updateShortcut(settings.shortcutActive);showPanel('settings');}
 $('home-button').onclick=()=>{if(cardMode==='home')showPanel(null);else openHome().catch(error);};
 $('discover-button').onclick=()=>toggleExplore();
 $('refresh-home').onclick=()=>openHome().catch(error);
 $('settings-button').onclick=()=>cardMode==='settings'?panelBack():openSettings().catch(error);
 $('close-card').onclick=panelBack;
+$('command-categories').onclick=e=>{const button=e.target.closest('button[data-category]');if(!button)return;commandCategory=button.dataset.category;commandIndex=0;renderCommands();$('ask-input').focus();};
 $('ask-input').oninput=()=>{if(cardMode==='welcome'){commandIndex=0;renderCommands();}};
 $('ask-input').onkeydown=e=>{
  if(cardMode!=='welcome'||!['ArrowDown','ArrowUp','Home','End'].includes(e.key))return;
@@ -333,7 +359,7 @@ $('create-vault').onclick=async()=>{
  catch(e){$('settings-error').textContent=e.message;$('settings-error').hidden=false;}finally{button.disabled=false;}
 };
 $('choose-vault').onclick=async()=>{try{const folder=await api.chooseVault();if(folder){applyVaultLayout(folder===settings?.vaultPath?settings:{vaultPath:folder});$('vault-setup-status').textContent='Save to validate and connect this vault. It must contain the Orb structure; existing files will not be changed.';}}catch(e){error(e);}};
-$('settings-form').onsubmit=async e=>{e.preventDefault();try{const wasSetup=!settings?.chatReady;settings=await api.saveSettings({vaultPath:$('vault-path').value,taskFolders:{life:$('life-folder').value.trim(),business:$('business-folder').value.trim()},rulesPath:$('rules-path').value.trim(),goalsFolder:$('goals-folder').value.trim(),habitFolder:$('habit-folder').value.trim(),habitScript:$('habit-script').value.trim(),...window.orbProviderSettings.read(),calendarToken:$('calendar-token').value.trim(),calendarId:$('calendar-id').value,workingHours:{start:$('work-start').value,end:$('work-end').value,days:[...document.querySelectorAll('[name=work-day]:checked')].map(input=>Number(input.value))},autoStart:$('auto-start').checked});window.orbProviderSettings.clear();$('calendar-token').value='';if(wasSetup&&settings.chatReady)openWelcome();else showPanel(null);}catch(err){$('settings-error').textContent=err.message;$('settings-error').hidden=false;}};
+$('settings-form').onsubmit=async e=>{e.preventDefault();const revision=appearanceEditor.state().revision;try{const wasSetup=!settings?.chatReady;settings=await appearanceEditor.save(appearance=>api.saveSettings({appearance,vaultPath:$('vault-path').value,taskFolders:{life:$('life-folder').value.trim(),business:$('business-folder').value.trim()},rulesPath:$('rules-path').value.trim(),goalsFolder:$('goals-folder').value.trim(),habitFolder:$('habit-folder').value.trim(),habitScript:$('habit-script').value.trim(),...window.orbProviderSettings.read(),calendarToken:$('calendar-token').value.trim(),calendarId:$('calendar-id').value,workingHours:{start:$('work-start').value,end:$('work-end').value,days:[...document.querySelectorAll('[name=work-day]:checked')].map(input=>Number(input.value))},autoStart:$('auto-start').checked}));if(revision!==appearanceEditor.state().revision)return;window.orbProviderSettings.clear();$('calendar-token').value='';if(wasSetup&&settings.chatReady)openWelcome();else showPanel(null);}catch(err){if(revision!==appearanceEditor.state().revision)return;$('settings-error').textContent=err.message;$('settings-error').hidden=false;}};
 const toggleVoice=()=>connected||connecting?endVoice():startVoice();$('voice-button').onclick=toggleVoice;$('orb-button').onclick=toggleVoice;
 $('mute-button').onclick=()=>{muted=!muted;speechClient?.setMuted(muted);microphone?.getAudioTracks().forEach(t=>t.enabled=!muted);$('mute-icon').setAttribute('href',muted?'#i-mic-off':'#i-mic');$('mute-button').classList.toggle('muted',muted);$('mute-button').setAttribute('aria-label',muted?'Unmute microphone':'Mute microphone');setStatus('listening',muted?'Microphone muted.':'I’m listening.');liveUI();};
 $('steps-chip').onclick=()=>{if(cardMode==='steps')return showPanel(null);showPanel('steps');renderSteps();};
@@ -373,6 +399,7 @@ async function previewAnswer(text){
  $('ask-input').value='';addMessage('user',text);await previewSteps();
  if(/trading\s?212/i.test(text))displayVisual(await api.trading212({view:/dividend/i.test(text)?'dividends':/deposit|interest|cash movement/i.test(text)?'cash':/pending|order/i.test(text)?'pending':'overview'}));
  else if(/recurr|repeat/i.test(text))displayVisual({kind:'recurring',title:'Recurring tasks'});
+ else if(/plan.*(day|today|tomorrow)|replan/i.test(text))openDayPlanner();
  else if(/habit|pull.up|mandarin|heatmap/i.test(text))displayVisual(previewHabits());
  else if(/goal|review/i.test(text))displayVisual(previewGoals(/review/i.test(text)?'review_due':'active'));
  else if(/note/i.test(text))displayVisual({id:'preview',kind:'table',title:'Meeting notes',subtitle:'Fictional preview · 2 notes',columns:['Note','Folder'],rows:[['Example meeting','Notes'],['Example launch options','Notes']],rowPaths:['Notes/Example meeting.md','Notes/Example launch options.md'],sources:[]});
@@ -392,7 +419,7 @@ function previewGoals(scope='active'){
  ];
  return {id:'preview-goals',kind:'goals',title:'Your goals',subtitle:'Example data · 2 active · One next action at a time',date:'2026-09-28',scope,goals:goals.filter(g=>scope==='all'||scope==='active'&&g.status==='Active'||scope==='other'&&g.status!=='Active'||scope==='review_due'&&g.needs_review),active_count:2,warnings:[],sources:[]};
 }
-(async()=>{settings=await api.settings();liveUI();updateShortcut(settings.shortcutActive);await api.ready();if(!settings.chatReady&&!preview)await openSettings();else if(preview)openWelcome();else {let seen=true;try{seen=localStorage.getItem('orb-welcome-seen')==='1';}catch{}if(!seen)openWelcome();}})().catch(error);
+(async()=>{settings=await api.settings();appearanceEditor.initialise(settings.appearance);liveUI();updateShortcut(settings.shortcutActive);await api.ready();if(!settings.chatReady&&!preview)await openSettings();else if(preview)openWelcome();else {let seen=true;try{seen=localStorage.getItem('orb-welcome-seen')==='1';}catch{}if(!seen)openWelcome();}})().catch(error);
 
 // Fictional, in-memory preview. No vault or API calls are made here.
 const previewHabitRecords=new Map();

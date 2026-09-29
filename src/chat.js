@@ -10,7 +10,7 @@ let sidebarShown=true;try{sidebarShown=localStorage.getItem('orb-chat-sidebar')!
 
 // The orb swells, shrinks into itself and fades; the chat then blooms out from the same spot. Closing reverses it.
 async function openChat(id){
- if(chatOpen||chat.moving)return;window.knowledgeUI?.closeWorkspace();chat.moving=true;
+ if(chatOpen||chat.moving)return;window.clippingsUI?.close();window.knowledgeUI?.closeWorkspace();chat.moving=true;
  if(connected||connecting)endVoice();
  if(cardMode)showPanel(null);
  $('error').hidden=true;$('moon-tip').hidden=true;if(id)resumeChat(id);
@@ -27,7 +27,7 @@ async function openChat(id){
  focusComposer();
 }
 async function closeChat(){
- if(!chatOpen||chat.moving)return;window.knowledgeUI?.closeWorkspace();chat.moving=true;closeMenu();
+ if(!chatOpen||chat.moving)return;window.clippingsUI?.close();window.knowledgeUI?.closeWorkspace();chat.moving=true;closeMenu();
  const app=$('chat-app');
  if(!stillMotion()){app.classList.add('leaving');await pause(280);}
  app.hidden=true;app.classList.remove('leaving','entering');document.body.classList.remove('chat-mode');chatOpen=false;
@@ -153,12 +153,12 @@ function messageView(m){
  if(m.steps?.length){const run=toolRun();paintRun(run,m.steps,false);view.append(run);}
  if(m.role==='error'){const stopped=m.text==='Stopped.',box=node('div',stopped?'chat-error stopped':'chat-error');box.append(svgIcon(stopped?'i-stop':'i-alert'),node('span',null,stopped?'Stopped before finishing.':m.text));view.append(box);}
  else view.append(markdown(m.text));
- if(m.visual){const host=node('div','chat-visual');renderChatVisual(host,m.visual);view.append(host);}
+ if(m.visual){const host=node('div','chat-visual');renderChatVisual(host,m.visual,true);view.append(host);}
  return view;
 }
-function renderChatVisual(host,v){
+function renderChatVisual(host,v,saved=false){
  currentVisual=v;
- window.renderVisual(host,v,path=>api.openNote(path).catch(error),{trading212:args=>api.trading212(args),settings:async()=>{await closeChat();await openSettings();},habits:args=>api.habits(args),setHabit:async args=>{await api.setHabit(args);const status=host.querySelector('.habit-status');if(status)status.textContent='Saved to your vault.';},openHabitRecord:async args=>{const result=await api.openHabitRecord(args);await api.openNote(result.path);},filterGoals:scope=>api.goals(scope).catch(error),request:text=>sendChat(text)});
+ window.renderVisual(host,v,path=>api.openNote(path).catch(error),{saved,trading212:args=>api.trading212(args),settings:async()=>{await closeChat();await openSettings();},habits:args=>api.habits(args),setHabit:async args=>{await api.setHabit(args);const status=host.querySelector('.habit-status');if(status)status.textContent='Saved to your vault.';},openHabitRecord:async args=>{const result=await api.openHabitRecord(args);await api.openNote(result.path);},filterGoals:scope=>api.goals(scope).catch(error),request:text=>sendChat(text)});
 }
 // Visuals refreshed by a card's own controls (a goal filter, a habit tick) redraw the latest card in place.
 function chatVisual(v){

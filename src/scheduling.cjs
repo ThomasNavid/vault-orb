@@ -110,6 +110,7 @@ async function checkSlot(vault,start,end,zone,options,ignore) {
   if(busy.some(e=>overlaps(span,occupied(e,result.timezone))))throw new Error('That time now overlaps a calendar commitment. Find another slot.');
 }
 async function scheduleTask(vault,args,options={}) {return exclusive(vault,async()=>{
+  if(options.blockId&&!uuid(options.blockId))throw new Error('Invalid booking operation identity.');
   let n=task(vault,args.path,args.version);
   if(n.parsed.data.recurrence)throw new Error('Calendar blocks currently support non-recurring tasks. Use a separate one-off task.');
   if(n.parsed.data.completed)throw new Error('Reopen the task before scheduling work.');
@@ -119,7 +120,7 @@ async function scheduleTask(vault,args,options={}) {return exclusive(vault,async
   if(input.allDay)throw new Error('Task blocks must have a start and end time.');
   await checkSlot(vault,args.start,args.end,zone,options);
   options.signal?.throwIfAborted();n=task(vault,args.path,args.version);
-  const block={id:crypto.randomUUID(),calendar_id:calendar.id,remote_calendar_id:calendar.remoteId,event_id:null,state:'creating',start:args.start,end:args.end,timezone:zone,previous_planned:n.parsed.data.planned??null,planned:n.parsed.data.planned??null};
+  const block={id:options.blockId||crypto.randomUUID(),calendar_id:calendar.id,remote_calendar_id:calendar.remoteId,event_id:null,state:'creating',start:args.start,end:args.end,timezone:zone,previous_planned:n.parsed.data.planned??null,planned:n.parsed.data.planned??null};
   const changes=[save(vault,n,block,n.parsed.data.planned,'Calendar block pending')];
   try {
     await createLinkedEvent(vault,{calendarId:calendar.id,event:{...input,description:marker(block)}},options);
@@ -159,4 +160,4 @@ async function repairTaskBlock(vault,args,options={}) {return exclusive(vault,as
   if(args.action!=='use_calendar')throw new Error('Choose use_calendar or unlink.');
   const changed=await reconcileOne(vault,n,options,{accept:true});return {path:n.path,changes:changed?[changed]:[],block:task(vault,n.path).block};
 });}
-module.exports={findTaskTime,scheduleTask,moveTaskBlock,removeTaskBlock,repairTaskBlock,syncTaskBlocks,marker};
+module.exports={findTaskTime,scheduleTask,moveTaskBlock,removeTaskBlock,repairTaskBlock,syncTaskBlocks,marker,availability,occupied,overlaps};

@@ -34,3 +34,22 @@
 /* Keep the floating knowledge preview clear of the financial dashboard. */
 body:has(#visual-view:not([hidden]) .t212-panel) .graph-dock,
 body.chat-mode:has(.chat-visual .t212-panel) .graph-dock{display:none}
+
+.t212-filters{display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin:14px 0}
+.t212-filters>input{min-width:160px;flex:1}
+.t212-filter{display:flex;flex:1;min-width:120px;flex-direction:column;gap:5px;color:var(--text-2);font-size:11px}
+.t212-filter select,.t212-filter input{width:100%;min-width:0}
+.t212-result,.t212-detail{border:1px solid var(--line-1);border-radius:12px;padding:12px;margin:14px 0}
+.t212-result h2,.t212-detail h2{font-size:15px;margin:0;text-transform:capitalize}
+.t212-evidence{font-size:10px;overflow:auto;max-height:120px}
+.t212-chart{display:block;width:100%;height:auto;background:var(--surface-2);border-radius:10px;margin-top:12px}
+.t212-chart line{stroke:var(--teal);stroke-width:2}
+.t212-chart circle{fill:var(--teal)}
+.t212-tracking{margin:14px;border-top:1px solid var(--line-1);padding-top:12px}
+.t212-tracking h3{font-size:13px}
+#t212-capabilities{margin:0 14px}
+#t212-history-status{font-size:11px;overflow-wrap:anywhere}
+.t212-panel details{font-size:11px;margin:12px 0}
+.t212-panel td button{font-size:11px;padding:4px 7px;max-width:180px;white-space:normal;text-align:left}
+
+.t212-chart .t212-funding{stroke:var(--text-2);stroke-width:1;stroke-dasharray:3 4;opacity:.7}

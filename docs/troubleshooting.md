@@ -65,14 +65,15 @@ Start with the exact error or visible result. A failed tool call is not a succes
 | --- | --- |
 | Cannot find the connector | Open Settings → Integrations → Trading 212. If the card is absent, launch the updated checkout with `npm start` or update the installed app as described above. |
 | Key or secret rejected | Enter both credentials and match the Live/Demo environment where the pair was generated. An AI-provider key does not connect Trading 212. |
-| Connection test passes but a view is denied | The test checks account-summary access only. Enable the relevant read permissions for portfolio, history and orders, and check any IP restrictions. Orb does not need trading permissions. |
+| Connection test passes but a view is denied | Inspect the per-capability checks. Enable the named read permission and check IP restrictions; one successful capability does not imply all views work. Orb does not need trading permissions. |
 | Entered credentials were not saved | Use **Connect & save** inside the Trading 212 card. **Test connection** does not save; the general **Save settings** button does not save this pair. |
-| Dividend total or year is missing | The year filter and totals use loaded records. Click **Load older records**; pages may take around ten seconds. Different currencies are totalled separately. |
+| Dividend total or year is missing | Use Income for period queries over tracked history; inspect sync coverage in Settings. Raw payment filters only use manually loaded records. Different currencies stay separate. |
 | “Connection changed” when loading history | Refresh that financial view before loading older records. This prevents mixing an older snapshot with a new connection or app session. |
-| Data looks stale or a refresh is rate-limited | Check the displayed update time and wait before refreshing. The connector briefly caches responses; Trading 212 limits are shared across apps using the same account. There is no background sync. |
+| Data looks stale or a refresh is rate-limited | Check the displayed update time and wait before refreshing. The connector briefly caches responses; Trading 212 limits are shared across apps using the same account. Opt-in background tracking only runs while Orb and the Mac are awake. Large scans can lag current values; check history coverage as well as fetch time. |
 | One Overview section is unavailable | Read its warning. Other sections can still load; a permission or network error does not mean the missing section has no data. |
 | Portfolio opens knowledge notes | Choose **Trading 212** for investments. **Portfolio** is the separate knowledge workspace. |
-| Disconnect did not remove old chat data | Disconnect removes saved credentials and backend caches. It does not delete saved chats/notes or revoke the pair at Trading 212. |
+| Today is unavailable | Enable tracking; inspect the opening valuation and both cash/fill coverage. A missed midnight baseline cannot be recovered from current values. Try Since tracking began. |
+| Disconnect did not delete history | Disconnect retains encrypted local investment history and old chats/notes. Use Delete history for the selected local ledger, and the separate chat/note controls for those copies. It does not revoke the key. |
 
 See [Trading 212 setup and limits](features/trading212.md). Browser preview data is fictional and cannot connect to an account.
 
