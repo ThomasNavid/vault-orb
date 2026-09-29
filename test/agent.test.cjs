@@ -52,7 +52,21 @@ test('completing a task immediately removes it from the displayed list',async()=
   await agent.execute('update_task',{path,version:'v1',planned:null,due:null,completed:true,category:null,venture:null});
   const views=events.filter(event=>event.kind==='visual').map(event=>event.visual);
   assert.deepEqual(views[0].rows.map(row=>row[0]),['Submit draft']);
-  assert.deepEqual(views[1].rows,[]);
+ assert.deepEqual(views[1].rows,[]);
+});
+test('a task view that includes completed items stays visibly distinct after refresh',async()=>{
+  const date='2026-09-26',path='0. Home/Life Tasks/Submit draft.md',events=[];
+  let completed=false;
+  const agent=new Agent({vault:{
+    tasks:query=>({date,tasks:!completed||query.include_completed?[{path,title:'Submit draft',list:'life',planned:date,due:null,completed}]:[],warnings:[]}),
+    updateTask:()=>{completed=true;return {path,change_id:'c1',action:'Task updated'};}
+  },getKey:()=>'',onActivity:event=>events.push(event)});
+  await agent.execute('list_tasks',{scope:'all',date,include_completed:true});
+  await agent.execute('update_task',{path,version:'v1',planned:null,due:null,completed:true,category:null,venture:null});
+  const last=events.filter(event=>event.kind==='visual').at(-1).visual;
+  assert.equal(last.title,'All tasks');
+  assert.match(last.subtitle,/1 completed/);
+  assert.deepEqual(last.taskCompleted,[true]);
 });
 test('any successful edit refreshes a task list already in view',async()=>{
   const date='2026-09-26',events=[],queries=[];

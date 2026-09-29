@@ -32,12 +32,15 @@
     </div>
     <form id="chat-form" inert><button type="button" id="type-close" class="round" aria-label="Back to controls" title="Back"><svg class="icon"><use href="#i-back"/></svg></button><label class="sr-only" for="message">Message Orb</label><input id="message" placeholder="A thought, a task…" maxlength="12000" autocomplete="off"><button type="submit" id="send-button" aria-label="Send message"><svg class="icon"><use href="#i-arrow-up"/></svg></button></form>
   </div>
+  <nav class="orb-nav" aria-label="Orb views"><button id="home-button" class="orb-nav-button" type="button" aria-label="Open Today dashboard" aria-pressed="false">Today <span aria-hidden="true">↗</span></button><button id="discover-button" class="orb-nav-button" type="button" aria-label="Explore what Orb can do" aria-pressed="false">Explore <span aria-hidden="true">↗</span></button></nav>
   <button id="shortcut-hint" class="shortcut-hint"><kbd>⌃</kbd><kbd>⌃</kbd><span>summon Orb</span></button>
   <div id="error" role="alert" hidden><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><span id="error-text"></span><button id="dismiss-error" aria-label="Dismiss error"><svg class="icon"><use href="#i-close"/></svg></button></div>
 </section>
 <aside id="companion" class="companion" hidden aria-label="Conversation visual">
   <header class="card-header"><span id="card-eyebrow">In view</span><button id="close-card" class="round" aria-label="Close panel"><svg class="icon"><use href="#i-close"/></svg></button></header>
   <div id="visual-view" class="card-body" hidden></div>
+  <div id="home-view" class="card-body" hidden><div class="home-heading"><div><h1>Today</h1><p id="home-date" class="subtitle"></p></div><button id="refresh-home" class="secondary" type="button">Refresh</button></div><div id="home-content" aria-live="polite"></div></div>
+  <div id="welcome-view" class="card-body" hidden><h1>A place to start.</h1><p class="subtitle">See what matters today, or pick something Orb can help with.</p><button id="welcome-today" class="welcome-today" type="button"><strong>Open Today</strong><span>Tasks, goals, habits, and your calendar at a glance</span><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></button><h2 class="discovery-heading">Try asking Orb</h2><div id="discovery-prompts" class="discovery-prompts"></div><p class="discovery-footnote">These are starting points. You can also type your own request or talk to Orb.</p></div>
   <div id="transcript-view" class="card-body" hidden><h1>Conversation</h1><div id="transcript" role="log" aria-label="Conversation"></div></div>
   <div id="steps-view" class="card-body" hidden><h1>Steps</h1><p class="subtitle">What Orb did for your last request.</p><ol id="steps-list" class="steps-list"></ol></div>
   <div id="history-view" class="card-body" hidden><h1>Recent changes</h1><p class="subtitle">Edits made by Orb, with undo.</p><div id="activity-list"></div></div>
@@ -49,9 +52,12 @@
         <div class="field"><label for="vault-path">Obsidian vault</label><div class="field-row"><input id="vault-path" required readonly><button type="button" id="choose-vault" class="secondary">Choose…</button></div></div>
         <div class="field"><label for="life-folder">Personal tasks folder</label><input id="life-folder" required spellcheck="false" placeholder="0. Home/Life Tasks"></div>
         <div class="field"><label for="business-folder">Work tasks folder</label><input id="business-folder" required spellcheck="false" placeholder="0. Home/Business Tasks"></div>
+        <div class="field"><label for="goals-folder">Goals folder <span class="optional">Optional</span></label><input id="goals-folder" spellcheck="false" placeholder="0. Home/Goals"></div>
+        <div class="field"><label for="habit-folder">Habit log folder <span class="optional">Optional</span></label><input id="habit-folder" spellcheck="false" placeholder="0. Home/Habit Log"></div>
+        <div class="field"><label for="habit-script">Habit dashboard script</label><input id="habit-script" required spellcheck="false" placeholder="99. System/99.4 Scripts/habits/view.js"></div>
         <div class="field"><label for="rules-path">Task rules note <span class="optional">Optional</span></label><input id="rules-path" spellcheck="false" placeholder="0. Home/Task Rules.md"></div>
       </div>
-      <p class="help">Task paths are relative to the chosen vault. Create the folders in Obsidian first.</p>
+      <p class="help">Folder paths are relative to the chosen vault. Create the folders in Obsidian first. Leave Goals or Habit log blank to disable that feature. Habit names and targets are read from the dashboard script’s definitions.</p>
 
       <h2 class="group-title">Google Calendar</h2>
       <div class="group">

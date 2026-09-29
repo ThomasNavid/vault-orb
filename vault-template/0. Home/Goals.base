@@ -1,0 +1,48 @@
+filters:
+  and:
+    - file.inFolder("0. Home/Goals")
+    - file.ext == "md"
+    - note.type == "goal"
+properties:
+  file.name:
+    displayName: Goal
+  note.status:
+    displayName: Status
+  note.target:
+    displayName: Target
+  note.review:
+    displayName: Review
+  note.next_task:
+    displayName: Next task
+views:
+  - type: table
+    name: Active
+    filters:
+      and:
+        - note.status == "Active"
+    order:
+      - file.name
+      - target
+      - review
+      - next_task
+  - type: table
+    name: Review due
+    filters:
+      and:
+        - note.status == "Active"
+        - '!note.review || note.review < today() + "1d"'
+    order:
+      - file.name
+      - review
+      - next_task
+  - type: table
+    name: Other
+    filters:
+      and:
+        - note.status != "Active"
+    order:
+      - file.name
+      - status
+      - target
+      - review
+      - next_task

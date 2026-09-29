@@ -1,0 +1,38 @@
+# Vault Orb documentation
+
+[Project home](../README.md) · [Things to ask Orb](things-to-ask.md)
+
+## Start here
+
+- [Getting started](getting-started.md): requirements, installation, settings, and a first walkthrough.
+- [Things to ask Orb](things-to-ask.md): copyable requests, prerequisites, and expected results.
+- [Vault format](vault-format.md): folder layout, task and goal properties, dates, and templates.
+- [Privacy and data](privacy.md): what stays local, what is sent, and what is recorded.
+- [Troubleshooting](troubleshooting.md): common problems and practical checks.
+
+## Feature guides
+
+Every guide covers purpose, setup, things to ask, expected results, a walkthrough, limits, and troubleshooting. Example wording is flexible; it is not a special command syntax or a guarantee of an identical model response. Examples describe supported operations, checked against the current code. They are not transcripts of live model tests.
+
+| Guide | What you can do |
+| --- | --- |
+| [Today and Explore](features/today-and-explore.md) | Open a read-only daily overview or choose a discoverable starting request. |
+| [Tasks](features/tasks.md) | Read, create, plan, categorize, complete, and reopen task notes. |
+| [Goals and weekly reviews](features/goals.md) | Define outcomes, link next actions, review progress, and change status. |
+| [Habits and heatmaps](features/habits.md) | Log repeated actions, inspect annual history, and review weekly totals. |
+| [Calendar](features/calendar.md) | Read calendars, include task dates, and create Google Calendar events. |
+| [Finding and updating notes](features/notes.md) | Search, read, summarize, compare, and append to existing notes. |
+| [Spreadsheets and visuals](features/spreadsheets-and-visuals.md) | Inspect supported files and display sourced tables and charts. |
+| [Planning across notes](features/planning.md) | Compare evidence and propose actions using goals, tasks, and notes. |
+| [Voice and controls](features/voice-and-controls.md) | Talk, type, interrupt, inspect activity, and manage the floating window. |
+| [Changes and undo](features/changes-and-undo.md) | Inspect journaled note edits and undo them when safe. |
+
+## Contributors
+
+- [Contributing](../CONTRIBUTING.md): change scope, validation, and documentation expectations.
+- [Development](development.md): architecture, tool map, tests, packaging, installation, and previews.
+- [Goals internals](goals.md): parser, linked tasks, review writes, and feature-specific tests.
+- [Habits internals](habits.md): shared definitions, daily records, heatmaps, and tests.
+- [Sample vault](../vault-template/): fictional notes and data for learning and reproductions.
+
+Start with the user guide for a feature, then follow its implementation links when working on code.

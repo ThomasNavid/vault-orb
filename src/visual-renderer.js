@@ -12,11 +12,11 @@
   const col=name=>v.columns.indexOf(name),area=col('Area'),planned=col('Planned'),due=col('Deadline');
   const tags=new Map(),list=el('ul','task-list');
   v.rows.forEach((row,i)=>{
-   const item=stagger(el('li','task'),i),main=el('div','task-main');
+   const completed=v.taskCompleted?.[i]===true,item=stagger(el('li',`task${completed?' is-completed':''}`),i),main=el('div','task-main');
    item.append(el('span','task-ring'));
    const title=v.rowPaths?.[i]?el('button','source-link task-title',row[0]??'—'):el('span','task-title',row[0]??'—');if(v.rowPaths?.[i])title.onclick=()=>open(v.rowPaths[i]);main.append(title);
    if(area>=0&&row[area]){if(!tags.has(row[area]))tags.set(row[area],tags.size%palette.length);main.append(el('span',`tag tag-${tags.get(row[area])}`,row[area]));}
-   const when=el('div','task-when');if(planned>=0&&row[planned])when.append(el('span',null,row[planned]));if(due>=0&&row[due])when.append(el('span','due','Due '+row[due]));
+   const when=el('div','task-when');if(completed)when.append(el('span','task-status','Completed'));if(planned>=0&&row[planned])when.append(el('span',null,row[planned]));if(due>=0&&row[due])when.append(el('span','due','Due '+row[due]));
    item.append(main,when);list.append(item);
   });
   return list;
@@ -83,10 +83,106 @@
   next.onclick=()=>{monthIndex++;selected=months.get(keys[monthIndex]).find(day=>day.items.length)?.date||months.get(keys[monthIndex])[0].date;showMonth();};
   showMonth();return wrap;
  }
- window.renderVisual=(host,v,openSource)=>{
+ function goals(v,open,actions){
+  const wrap=el('div','goals-view'),filters=el('div','goal-filters');filters.setAttribute('aria-label','Filter goals');
+  for(const [scope,label]of [['active','Active'],['review_due','Review due'],['other','Other'],['all','All']]) {
+   const button=el('button','goal-filter',label);button.type='button';button.setAttribute('aria-pressed',String(v.scope===scope));
+   button.onclick=()=>actions.filterGoals?.(scope);filters.append(button);
+  }
+  wrap.append(filters);
+  if(v.setup)wrap.append(el('p','empty',v.setup));
+  if(v.active_count>3)wrap.append(el('p','goal-notice','More than three active goals. Consider pausing one to make room for your priorities.'));
+  if(v.warnings?.length){const details=el('details','goal-warning');details.append(el('summary',null,'Some notes could not be read. This view may be incomplete.'));for(const warning of v.warnings)details.append(el('p',null,`${warning.path}: ${warning.error}`));wrap.append(details);}
+  const controls=el('div','goal-actions');
+  for(const [label,request]of [['New goal','Help me create a goal with an observable finish line and a next action.'],['Review goals','Let’s review my goals, one at a time.']]) {
+   const button=el('button','secondary',label);button.type='button';button.onclick=()=>actions.request?.(request);controls.append(button);
+  }
+  if(!v.setup)wrap.append(controls);
+  if(!v.goals.length&&!v.setup)wrap.append(el('p','empty',v.scope==='review_due'?'No active goals need a review.':v.scope==='active'?'No active goals yet. Choose an outcome you want to work towards.':'No goals in this view.'));
+  const dateLabel=value=>value?new Date(value+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'Not set';
+  v.goals.forEach((goal,i)=>{
+   const card=stagger(el('article','goal-card'),i),header=el('div','goal-heading'),title=el('button','source-link goal-title',goal.title);
+   title.onclick=()=>open(goal.path);header.append(title,el('span','tag tag-0',goal.status));card.append(header);
+   card.append(el('p','goal-finish',goal.finish_line||'Define an observable finish line in this goal note.'));
+   const dates=el('div','goal-dates');dates.append(el('span',null,'Target · '+dateLabel(goal.target)));
+   if(goal.status==='Active')dates.append(el('span',null,'Review · '+dateLabel(goal.review)));card.append(dates);
+   const notices=[];
+   if(goal.needs_review)notices.push(goal.review?'Review due':'Choose a review date');
+   if(goal.target_passed)notices.push('Target passed · reassess the plan');
+   const nextLabels={missing:'Choose a next action',broken:'Next task not found · repair the link',ambiguous:'Next task is ambiguous · choose the exact note',completed:'Next task finished · choose another action'};
+   if(nextLabels[goal.next_task_state])notices.push(nextLabels[goal.next_task_state]);
+   for(const notice of notices)card.append(el('p','goal-notice',notice));
+   if(goal.task){const next=el('div','goal-next');next.append(el('span','goal-label','Next action'));
+    const task=el('button','source-link',goal.task.title);task.onclick=()=>open(goal.task.path);next.append(task);
+    const timing=[goal.task.completed?'Completed':null,goal.task.planned?'Planned '+goal.task.planned.replace('T',' · '):'Unscheduled',goal.task.due?'Deadline '+goal.task.due.replace('T',' · '):null].filter(Boolean);
+    next.append(el('span','goal-task-dates',timing.join(' · ')));card.append(next);
+   }
+   if(goal.check_ins){const history=el('details','goal-check-ins');history.append(el('summary',null,'Recorded check-ins'),el('p',null,goal.check_ins));card.append(history);}
+   const review=el('button','data-toggle','Review this goal');review.type='button';review.onclick=()=>actions.request?.(`Help me review the goal note at this exact vault path: ${JSON.stringify(goal.path)}. Read its current state and ask about progress, obstacles and the next action.`);card.append(review);
+   wrap.append(card);
+  });
+  return wrap;
+ }
+ function habits(v,open,actions){
+  const wrap=el('div','habits-view'),status=el('p','habit-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+  let busy=false;
+  if(v.setup){wrap.append(el('p','empty',v.setup));const retry=el('button','secondary','Refresh');retry.onclick=()=>run(()=>actions.habits?.({date:v.date,year:v.year}));wrap.append(retry,status);return wrap;}
+  async function run(action){
+   if(busy)return;busy=true;status.textContent='Working…';
+   const controls=[...wrap.querySelectorAll('button,input')].filter(n=>!n.disabled);controls.forEach(n=>n.disabled=true);
+   try{await action();status.textContent='Saved.';}catch(e){status.textContent=(e.message||String(e)).replace(/^Error invoking remote method '[^']+': Error: /,'');}
+   finally{busy=false;controls.forEach(n=>n.disabled=false);}
+  }
+  const select=(date,year=Number(date.slice(0,4)))=>run(()=>actions.habits?.({date,year}));
+  const toolbar=el('div','habit-toolbar'),label=el('label',null,'Log a day'),picker=el('input');picker.type='date';picker.value=v.date;picker.max=v.today;picker.min='1900-01-01';picker.setAttribute('aria-label','Log a day');picker.dataset.focus='habit-date';label.append(picker);
+  picker.onchange=()=>{if(picker.value&&picker.checkValidity())select(picker.value);else {picker.value=v.date;status.textContent='Choose a valid date from 1900 through today.';}};
+  const today=el('button','secondary','Today');today.dataset.focus='habit-today';today.onclick=()=>select(v.today);
+  const refresh=el('button','data-toggle','Refresh');refresh.onclick=()=>select(v.date,v.year);refresh.dataset.focus='habit-refresh';toolbar.append(label,today,refresh);wrap.append(toolbar);
+  const checkArea=el('div','habit-checks');
+  for(const h of v.habits){const label=el('label','habit-check'),check=el('input');check.type='checkbox';check.checked=v.selected.values?.[h.key]===true;check.disabled=!!v.selected.error;check.dataset.focus='habit-'+h.key;
+   check.onchange=()=>{const completed=check.checked;check.checked=!completed;run(()=>actions.setHabit?.({date:v.date,key:h.key,completed,version:v.selected.version,definitions_version:v.definitions_version}));};label.append(check,el('span',null,h.label));checkArea.append(label);}
+  const openButton=el('button','data-toggle',v.selected.version?'Open daily record':'Create / open daily record');openButton.disabled=!!v.selected.error;
+  openButton.onclick=()=>run(()=>actions.openHabitRecord?.({date:v.date,version:v.selected.version,definitions_version:v.definitions_version}));checkArea.append(openButton);wrap.append(checkArea,status);
+  if(v.selected.error)status.textContent=v.selected.error;
+  if(v.warnings?.length){const warning=el('details','goal-warning');warning.append(el('summary',null,'Some habit data needs attention. Totals may be incomplete.'));for(const w of v.warnings)warning.append(el('p',null,`${w.path}: ${w.error}`));wrap.append(warning);}
+  const dateLabel=date=>new Date(date+'T12:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'UTC'});
+  const plus=(date,n)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
+  wrap.append(el('h2','habit-section-title',`This week · ${dateLabel(v.week_start)} – ${dateLabel(plus(v.week_start,6))}`));
+  const cards=el('div','habit-cards');
+  for(const h of v.habits){const card=el('article','habit-card');card.style.setProperty('--habit-color',h.color);const heading=el('div','habit-card-heading');heading.append(el('strong',null,h.label),el('span',null,h.cadence));card.append(heading);
+   const count=el('div','habit-count');count.append(el('strong',null,String(h.week_count)),el('span',null,` / ${h.target} days`));card.append(count);
+   const progress=el('progress');progress.max=h.target;progress.value=Math.min(h.week_count,h.target);progress.setAttribute('aria-label',`${h.label}: ${h.week_count} of ${h.target} days recorded this week`);card.append(progress,el('span','habit-caption',h.week_count>=h.target?'Weekly target reached':`${h.target-h.week_count} more ${h.target-h.week_count===1?'day':'days'} to your target`));cards.append(card);}
+  wrap.append(cards);
+  const annual=el('div','habit-year-controls'),prev=el('button','calendar-nav','‹'),next=el('button','calendar-nav','›');prev.setAttribute('aria-label','Previous habit year');next.setAttribute('aria-label','Next habit year');prev.disabled=v.year<=1900;next.disabled=v.year>=Number(v.today.slice(0,4));prev.dataset.focus='habit-prev';next.dataset.focus='habit-next';
+  prev.onclick=()=>select(v.date,v.year-1);next.onclick=()=>select(v.date,v.year+1);annual.append(el('h2','habit-section-title','A year of showing up'),prev,el('strong',null,String(v.year)),next);wrap.append(annual,el('p','habit-caption','Select a square to view that day. Only a checked habit records completion.'));
+  const records=new Map(v.records.map(r=>[r.date,r.values])),bad=new Set(v.bad_dates||[]),first=`${v.year}-01-01`,last=`${v.year}-12-31`,offset=(new Date(first+'T12:00:00Z').getUTCDay()+6)%7;
+  for(const h of v.habits){
+   const section=el('section','habit-map');section.style.setProperty('--habit-color',h.color);const heading=el('div','habit-map-heading');heading.append(el('h3',null,h.label),el('span','habit-caption',`${h.year_count} ${h.year_count===1?'day':'days'} recorded in ${v.year}`));section.append(heading);
+   const scroll=el('div','habit-map-scroll'),plot=el('div','habit-plot'),months=el('div','habit-months'),grid=el('div','habit-grid'),weekdays=el('div','habit-weekdays');
+   ['M','','W','','F','','S'].forEach(d=>weekdays.append(el('span',null,d)));grid.setAttribute('aria-label',`${h.label} daily history for ${v.year}`);
+   for(let i=0;i<offset;i++)grid.append(el('span','habit-cell habit-blank'));
+   let i=0;const cells=[];
+   for(let d=first;d<=last;d=plus(d,1),i++){
+    if(d.endsWith('-01')){const month=el('span',null,new Date(d+'T12:00:00Z').toLocaleDateString('en-GB',{month:'short',timeZone:'UTC'}));month.style.gridColumn=String(Math.floor((offset+i)/7)+1);months.append(month);}
+    const done=records.get(d)?.[h.key]===true,unknown=bad.has(d),future=d>v.today,cell=el('button','habit-cell'+(done?' is-done':'')+(unknown?' is-unknown':'')+(d===v.today?' is-today':''));cell.type='button';cell.dataset.date=d;cell.dataset.focus=`${h.key}-${d}`;cell.disabled=future;cell.tabIndex=d===(v.date.startsWith(String(v.year))?v.date:v.today.startsWith(String(v.year))?v.today:first)?0:-1;
+    const label=`${d} · ${h.label}: ${future?'future date':unknown?'unreadable record':done?'recorded':'not recorded'}`;cell.title=label;cell.setAttribute('aria-label',label);cell.setAttribute('aria-pressed',String(d===v.date));
+    cell.onclick=()=>select(d,v.year);cell.onkeydown=e=>{const delta={ArrowUp:-1,ArrowDown:1,ArrowLeft:-7,ArrowRight:7}[e.key];if(delta===undefined)return;e.preventDefault();const target=cells.find(c=>c.dataset.date===plus(d,delta));if(target&&!target.disabled){cells.forEach(c=>c.tabIndex=-1);target.tabIndex=0;target.focus();}};grid.append(cell);cells.push(cell);
+   }
+   plot.append(months,weekdays,grid);scroll.append(plot);section.append(scroll);
+   const legend=el('div','habit-legend');for(const [cls,text]of [['','Not recorded'],['is-done','Recorded'],['is-today','Today']]){const item=el('span');item.append(el('i','habit-cell '+cls),document.createTextNode(text));legend.append(item);}section.append(legend);wrap.append(section);
+  }
+  wrap.append(el('h2','habit-section-title','Recent weeks'));
+  wrap.append(table(['Week',...v.habits.map(h=>h.label)],v.weeks.map(w=>[`${dateLabel(w.start)} – ${dateLabel(w.end)}${w.current?' · current':''}${w.incomplete?' · incomplete':''}`,...v.habits.map(h=>`${w.counts[h.key]} / ${h.target}${w.counts[h.key]>=h.target?' ✓':''}`)]),null,open));
+  wrap.append(el('p','habit-caption habit-footnote','A colored square means one recorded day. Empty means not recorded. Targets apply to all weeks; they do not automatically complete goals.'));
+  return wrap;
+ }
+ window.renderVisual=(host,v,openSource,actions={})=>{
+  const habitFocus=document.activeElement?.dataset.focus,habitScroll=host.scrollTop;
   const selectedDate=host.querySelector('.calendar-day[aria-pressed="true"]')?.dataset.date;
   host.replaceChildren();host.append(el('h1',null,v.title),el('p','subtitle',v.subtitle||''));
-  if(v.kind==='calendar')host.append(calendar(v,openSource,selectedDate));
+  if(v.kind==='habits'){host.append(habits(v,openSource,actions));host.scrollTop=habitScroll;if(habitFocus)[...host.querySelectorAll('[data-focus]')].find(n=>n.dataset.focus===habitFocus)?.focus({preventScroll:true});}
+  else if(v.kind==='goals')host.append(goals(v,openSource,actions));
+  else if(v.kind==='calendar')host.append(calendar(v,openSource,selectedDate));
   else if(v.kind==='table'){
    if(!v.rows.length)host.append(el('p','empty',v.emptyText||'No rows to show.'));else host.append(isTaskTable(v)?taskList(v,openSource):table(v.columns,v.rows,v.rowPaths,openSource));
   }else{

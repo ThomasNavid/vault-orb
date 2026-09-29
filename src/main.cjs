@@ -1,6 +1,8 @@
 const {app,BrowserWindow,ipcMain,dialog,safeStorage,globalShortcut,Menu,shell,session,systemPreferences,Tray,nativeImage,screen}=require('electron');
 const fs=require('node:fs'),path=require('node:path'),{pathToFileURL}=require('node:url');
-const {Vault,FOLDERS,RULES_PATH,atomicWrite}=require('./vault.cjs');
+const {Vault,FOLDERS,RULES_PATH,GOALS_FOLDER,HABIT_FOLDER,atomicWrite}=require('./vault.cjs');
+const {HABIT_SCRIPT}=require('./habits.cjs');
+const {todaySnapshot}=require('./today.cjs');
 const {Agent}=require('./agent.cjs');
 const {pluginSettings}=require('./google-calendar.cjs');
 let win,tray,shortcut,shortcutActive=false,rendererReady=false,pendingActivation=false,config={},vault,agent,controller=new AbortController(),conversation=[],calls=new Map(),generation=0,chatBusy=false,quitting=false;
@@ -11,8 +13,8 @@ const trusted=event=>event.sender===win?.webContents && event.senderFrame?.url==
 function handle(name,fn) {ipcMain.handle(name,async(event,...args)=>{if(!trusted(event))throw new Error('Untrusted window.');return fn(...args);});}
 function getKey() {if(!config.encryptedKey)return '';if(!safeStorage.isEncryptionAvailable())throw new Error('macOS key encryption is unavailable.');return safeStorage.decryptString(Buffer.from(config.encryptedKey,'base64'));}
 function getCalendarToken() {if(!config.encryptedCalendarToken)return '';if(!safeStorage.isEncryptionAvailable())throw new Error('macOS key encryption is unavailable.');return safeStorage.decryptString(Buffer.from(config.encryptedCalendarToken,'base64'));}
-function publicSettings() {let calendar={calendars:[],enabled:false};try {if(vault)calendar=pluginSettings(vault);}catch{}return {vaultPath:config.vaultPath||'',taskFolders:{...FOLDERS,...config.taskFolders},rulesPath:config.rulesPath??RULES_PATH,hasKey:!!config.encryptedKey,hasCalendarToken:!!config.encryptedCalendarToken,googleCalendars:calendar.calendars.map(({id,name})=>({id,name})),fullCalendarServer:calendar.enabled,calendarId:config.calendarId||'',autoStart:config.autoStart!==false,voiceModel:'gpt-realtime-2.1',advancedModel:'gpt-6-sol',shortcutActive};}
-function setupVault() {if(!config.vaultPath) return;vault=new Vault(config.vaultPath,path.join(userData,'changes'),{folders:config.taskFolders||FOLDERS,rulesPath:config.rulesPath??RULES_PATH});agent=new Agent({vault,getKey,getCalendarAccess:()=>({token:getCalendarToken(),calendarId:config.calendarId||''}),onActivity:data=>win?.webContents.send('activity',data)});}
+function publicSettings() {let calendar={calendars:[],enabled:false};try {if(vault)calendar=pluginSettings(vault);}catch{}return {vaultPath:config.vaultPath||'',taskFolders:{...FOLDERS,...config.taskFolders},rulesPath:config.rulesPath??RULES_PATH,goalsFolder:vault?.goalsFolder??config.goalsFolder??GOALS_FOLDER,habitFolder:vault?.habitFolder??config.habitFolder??HABIT_FOLDER,habitScript:config.habitScript??HABIT_SCRIPT,hasKey:!!config.encryptedKey,hasCalendarToken:!!config.encryptedCalendarToken,googleCalendars:calendar.calendars.map(({id,name})=>({id,name})),fullCalendarServer:calendar.enabled,calendarId:config.calendarId||'',autoStart:config.autoStart!==false,voiceModel:'gpt-realtime-2.1',advancedModel:'gpt-6-sol',shortcutActive};}
+function setupVault() {if(!config.vaultPath) return;vault=new Vault(config.vaultPath,path.join(userData,'changes'),{folders:config.taskFolders||FOLDERS,rulesPath:config.rulesPath??RULES_PATH,goalsFolder:config.goalsFolder,habitFolder:config.habitFolder,habitScript:config.habitScript});agent=new Agent({vault,getKey,getCalendarAccess:()=>({token:getCalendarToken(),calendarId:config.calendarId||''}),onActivity:data=>win?.webContents.send('activity',data)});}
 function stop() {controller.abort();controller=new AbortController();calls.clear();generation++;}
 function resize(mode='compact'){
   const previous=win.getBounds(),work=screen.getDisplayMatching(previous).workArea;
@@ -74,18 +76,22 @@ else {
     handle('enable-shortcut',async()=>{if(!shortcut)throw new Error('The native shortcut module is unavailable.');return startShortcut();});
     handle('settings',()=>publicSettings());
     handle('choose-vault',async()=>{const r=await dialog.showOpenDialog(win,{title:'Choose your Obsidian vault',properties:['openDirectory'],defaultPath:config.vaultPath||app.getPath('documents')});return r.canceled?null:r.filePaths[0];});
-    handle('save-settings',({vaultPath,taskFolders,rulesPath,key,calendarToken,calendarId,autoStart})=>{
-      const candidate=new Vault(vaultPath,path.join(userData,'changes'),{folders:taskFolders||FOLDERS,rulesPath:rulesPath??RULES_PATH});
+    handle('save-settings',({vaultPath,taskFolders,rulesPath,goalsFolder,habitFolder,habitScript,key,calendarToken,calendarId,autoStart})=>{
+      const candidate=new Vault(vaultPath,path.join(userData,'changes'),{folders:taskFolders||FOLDERS,rulesPath:rulesPath??RULES_PATH,goalsFolder:goalsFolder??config.goalsFolder,habitFolder:habitFolder??config.habitFolder,habitScript:habitScript??config.habitScript});
       candidate.validateTaskFolders();
       const available=pluginSettings(candidate).calendars;
       if(calendarId&&!available.some(c=>c.id===calendarId))throw new Error('Choose a Google calendar connected in this Obsidian vault.');
-      const next={...config,vaultPath:candidate.root,taskFolders:candidate.folders,rulesPath:candidate.rulesPath,autoStart:!!autoStart};
+      const next={...config,vaultPath:candidate.root,taskFolders:candidate.folders,rulesPath:candidate.rulesPath,goalsFolder:candidate.goalsFolder,habitFolder:candidate.habitFolder,habitScript:candidate.habitScript,autoStart:!!autoStart};
       if(key){if(typeof key!=='string'||key.length>1000||!key.startsWith('sk-'))throw new Error('Enter a valid OpenAI API key.');if(!safeStorage.isEncryptionAvailable())throw new Error('macOS key encryption is unavailable.');next.encryptedKey=safeStorage.encryptString(key.trim()).toString('base64');}
       next.calendarId=calendarId||'';
       if(calendarToken){if(typeof calendarToken!=='string'||calendarToken.length>2000)throw new Error('Enter a valid Full Calendar access token.');if(!safeStorage.isEncryptionAvailable())throw new Error('macOS key encryption is unavailable.');next.encryptedCalendarToken=safeStorage.encryptString(calendarToken.trim()).toString('base64');}
       atomicWrite(configFile,JSON.stringify(next,null,2));config=next;stop();conversation=[];setupVault();return publicSettings();
     });
-    handle('today',()=>{if(!vault)throw new Error('Choose a valid vault in Settings.');return {today:vault.tasks({scope:'today'}),overdue:vault.tasks({scope:'overdue'})};});
+    handle('habits',args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');return agent.showHabits(args);});
+    handle('set-habit',args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size)throw new Error('Wait for Orb to finish before logging a habit.');return agent.execute('set_habit',args);});
+    handle('open-habit-record',async args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size)throw new Error('Wait for Orb to finish before opening a record.');return agent.openHabitRecord(args);});
+    handle('goals',scope=>{if(!agent)throw new Error('Choose a valid vault in Settings.');return agent.showGoals({scope,date:null});});
+    handle('today',()=>{if(!vault)throw new Error('Choose a valid vault in Settings.');return todaySnapshot(vault,{getCalendarAccess:()=>({token:getCalendarToken(),calendarId:config.calendarId||''})});});
     handle('history',()=>vault?.publicHistory()||[]);
     handle('undo',id=>{if(chatBusy||calls.size)throw new Error('End the current conversation before undoing from Activity.');return agent.execute('undo_change',{change_id:id});});
     handle('open-note',relative=>{const file=vault.resolve(relative,{note:false});if(!['.md','.txt','.csv','.tsv','.xlsx'].includes(path.extname(file).toLowerCase()))throw new Error('Unsupported source file.');if(!relative.endsWith('.md'))return shell.openPath(file);return shell.openExternal(`obsidian://open?vault=${encodeURIComponent(vault.root)}&file=${encodeURIComponent(relative)}`);});

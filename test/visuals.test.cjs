@@ -14,7 +14,9 @@ test('visual tables reject ragged rows and do not interpret markup',()=>{
 });
 test('task table is made directly from source task values',()=>{
  const v=tasksVisual({date:'2026-09-26',tasks:[{title:'Dentist',path:'Dentist.md',planned:'2026-09-26',due:null,list:'life'}],warnings:[]},'today');
- assert.equal(v.title,'Today’s tasks');assert.deepEqual(v.rows[0],['Dentist','life','Today',null]);assert.equal(v.rowPaths[0],'Dentist.md');assert.deepEqual(v.sources,[]);
+ assert.equal(v.title,'Today’s tasks');assert.deepEqual(v.rows[0],['Dentist','life','Today',null]);assert.equal(v.rowPaths[0],'Dentist.md');assert.deepEqual(v.taskCompleted,[false]);assert.deepEqual(v.sources,[]);
+ const all=tasksVisual({date:'2026-09-26',tasks:[{title:'Done',path:'Done.md',planned:null,due:null,list:'life',completed:true}],warnings:[]},'all',true);
+ assert.equal(all.title,'All tasks');assert.match(all.subtitle,/1 completed/);assert.deepEqual(all.taskCompleted,[true]);
 });
 test('deep-model show_visual emits a UI event and returns a compact tool result',async()=>{
  const events=[];const agent=new Agent({vault:{read:()=>({content:'January: 1000. March: -100.',version:'v'})},getKey:()=>'',onActivity:e=>events.push(e)});

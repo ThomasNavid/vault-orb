@@ -25,10 +25,14 @@ function validateVisual(v,allowedSources=new Set()) {
   if(!count)throw new Error('No numeric observations to chart.');
   return {...base,series:v.series.map(s=>text(s,'series',80)),points,x_label:text(v.x_label||'','x label',100),y_label:text(v.y_label||'','y label',100),unit:text(v.unit||'','unit',30)};
 }
-function tasksVisual(result,scope){
+function tasksVisual(result,scope,includeCompleted=false){
   const dateLabel=value=>{if(!value)return null;const day=value.slice(0,10),time=value.includes('T')?value.slice(11,16):'';if(day===result.date)return time||'Today';const date=new Date(day+'T12:00:00');if(!Number.isFinite(date.getTime()))return value;return date.toLocaleDateString('en-GB',{day:'numeric',month:'short',...(day.slice(0,4)!==result.date.slice(0,4)?{year:'numeric'}:{})})+(time?' · '+time:'');};
   const subtitleDate=result.date?new Date(result.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long'}):'';
-  return {id:crypto.randomUUID(),kind:'table',title:({today:'Today’s tasks',overdue:'Past deadlines',life:'Life tasks',business:'Business tasks',all:'Your tasks'})[scope]||'Your tasks',subtitle:`${subtitleDate} · ${result.tasks.length} ${result.tasks.length===1?'task':'tasks'}${result.warnings?.length?' · Some notes could not be read':''}`,columns:['Task','Area','Planned','Deadline'],rows:result.tasks.map(t=>[t.title,t.venture||t.list,dateLabel(t.planned),dateLabel(t.due)]),rowPaths:result.tasks.map(t=>t.path),sources:[],createdAt:new Date().toISOString(),emptyText:'Nothing here. A little breathing room.'};
+  const titles=includeCompleted
+    ?{today:'All today’s tasks',overdue:'All past-deadline tasks',life:'All life tasks',business:'All business tasks',all:'All tasks'}
+    :{today:'Today’s tasks',overdue:'Past deadlines',life:'Life tasks',business:'Business tasks',all:'Your tasks'};
+  const completed=result.tasks.filter(t=>t.completed===true).length;
+  return {id:crypto.randomUUID(),kind:'table',title:titles[scope]||(includeCompleted?'All tasks':'Your tasks'),subtitle:`${subtitleDate} · ${result.tasks.length} ${result.tasks.length===1?'task':'tasks'}${includeCompleted?` · ${completed} completed`:''}${result.warnings?.length?' · Some notes could not be read':''}`,columns:['Task','Area','Planned','Deadline'],rows:result.tasks.map(t=>[t.title,t.venture||t.list,dateLabel(t.planned),dateLabel(t.due)]),rowPaths:result.tasks.map(t=>t.path),taskCompleted:result.tasks.map(t=>t.completed===true),sources:[],createdAt:new Date().toISOString(),emptyText:'Nothing here. A little breathing room.'};
 }
 function calendarVisual(result){
   const days=[];
@@ -45,4 +49,9 @@ function calendarVisual(result){
   const count=result.items.length;
   return {id:crypto.randomUUID(),kind:'calendar',title:'Your calendar',subtitle:`${count} ${count===1?'entry':'entries'} · ${result.timezone}`,start:result.start,end:result.end,days,warnings:result.warnings,truncated:result.truncated,total:result.total,shown:count,calendars:result.calendars,sources:[],createdAt:new Date().toISOString()};
 }
-module.exports={validateVisual,tasksVisual,calendarVisual};
+function goalsVisual(result){
+  return {id:crypto.randomUUID(),kind:'goals',title:'Your goals',subtitle:`${result.active_count} active · One next action at a time`,
+    date:result.date,scope:result.scope,goals:result.goals,warnings:result.warnings,setup:result.setup||null,active_count:result.active_count,sources:[],createdAt:new Date().toISOString()};
+}
+function habitsVisual(result){return {id:crypto.randomUUID(),kind:'habits',title:'Your habits',subtitle:'Small actions, a little more often.',...result,sources:[],createdAt:new Date().toISOString()};}
+module.exports={habitsVisual,validateVisual,tasksVisual,calendarVisual,goalsVisual};

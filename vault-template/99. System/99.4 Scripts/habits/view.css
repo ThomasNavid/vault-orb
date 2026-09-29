@@ -1,0 +1,27 @@
+.habits-dashboard { --habit-gap: 4px; }
+.habits-dashboard .habits-toolbar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin:12px 0; }
+.habits-dashboard .habits-toolbar h3 { margin-right:auto; }
+.habits-dashboard .habits-toolbar input[type=date] { margin-left:8px; }
+.habits-dashboard .habits-checks { border:1px solid var(--background-modifier-border); border-radius:12px; padding:18px; }
+.habits-dashboard .habits-date { font-weight:600; margin-bottom:12px; }
+.habits-dashboard .habits-check { display:flex; align-items:center; gap:12px; padding:10px 0; cursor:pointer; }
+.habits-dashboard .habits-check input { width:20px; height:20px; margin:0; }
+.habits-dashboard .habits-check .habits-muted { margin-left:auto; }
+.habits-dashboard .habits-muted { color:var(--text-muted); font-size:0.85em; }
+.habits-dashboard .habits-status { min-height:24px; color:var(--text-muted); font-size:0.85em; }
+.habits-dashboard .habits-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
+.habits-dashboard .habits-card { border:1px solid var(--background-modifier-border); border-radius:12px; padding:16px; }
+.habits-dashboard .habits-card strong { display:block; font-size:1.7em; margin:6px 0; }
+.habits-dashboard progress { width:100%; height:8px; display:block; margin:12px 0; }
+.habits-dashboard .habits-scroll { overflow-x:auto; padding:3px 3px 10px; }
+.habits-dashboard .habits-grid { display:grid; grid-auto-columns:11px; grid-template-columns:18px; grid-template-rows:20px repeat(7,11px); gap:var(--habit-gap); width:max-content; }
+.habits-dashboard .habits-axis { font-size:9px; color:var(--text-muted); line-height:11px; }
+.habits-dashboard .habits-month { font-size:10px; color:var(--text-muted); white-space:nowrap; }
+.habits-dashboard button.habits-cell { appearance:none; width:11px; height:11px; min-width:0; min-height:0; padding:0; margin:0; border:0; border-radius:2px; box-shadow:none; background:var(--background-modifier-border); cursor:pointer; }
+.habits-dashboard button.habits-cell.is-done { background:var(--habit-color); }
+.habits-dashboard button.habits-cell.is-future { opacity:0.25; cursor:default; }
+.habits-dashboard button.habits-cell.is-today { outline:1px solid var(--text-normal); outline-offset:1px; }
+.habits-dashboard button.habits-cell:focus-visible, .habits-dashboard button.habits-cell:hover:not(:disabled) { outline:2px solid var(--text-accent); outline-offset:1px; }
+.habits-dashboard .habits-legend { margin:4px 0 22px; }
+.habits-dashboard .habits-history { overflow-x:auto; }
+.habits-dashboard .habits-history table { width:100%; font-size:0.9em; }

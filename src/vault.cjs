@@ -5,6 +5,8 @@ const YAML = require('yaml');
 
 const FOLDERS = { life: '0. Home/Life Tasks', business: '0. Home/Business Tasks' };
 const RULES_PATH = '0. Home/Task Rules.md';
+const GOALS_FOLDER = '0. Home/Goals';
+const HABIT_FOLDER = '0. Home/Habit Log';
 const hash = text => crypto.createHash('sha256').update(text).digest('hex');
 const localDate = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 function string(value, name, max = 500) {
@@ -42,12 +44,24 @@ function atomicWrite(file, text) {
 }
 
 class Vault {
-  constructor(root, stateDir, {folders=FOLDERS,rulesPath=RULES_PATH}={}) {
+  constructor(root, stateDir, {folders=FOLDERS,rulesPath=RULES_PATH,goalsFolder,habitFolder,habitScript='99. System/99.4 Scripts/habits/view.js'}={}) {
     this.root = fs.realpathSync(root);
     if (!fs.statSync(this.root).isDirectory()) throw new Error('Choose a vault folder.');
     this.folders={life:vaultPath(folders.life,'Life tasks folder'),business:vaultPath(folders.business,'Business tasks folder')};
     if(this.folders.life===this.folders.business || this.folders.life.startsWith(this.folders.business+'/') || this.folders.business.startsWith(this.folders.life+'/')) throw new Error('Life and business task folders must be separate.');
     this.rulesPath=rulesPath===''?'':vaultPath(rulesPath,'Task rules note',{note:true});
+    // An older custom task layout may contain the default Goals path. Keep
+    // that installation usable until the user chooses a separate goal folder.
+    const overlaps=folder=>Object.values(this.folders).some(f=>f===folder || f.startsWith(folder+'/') || folder.startsWith(f+'/'));
+    const configuredGoals=goalsFolder===undefined?(overlaps(GOALS_FOLDER)?'':GOALS_FOLDER):goalsFolder;
+    this.goalsFolder=configuredGoals===''?'':vaultPath(configuredGoals,'Goals folder');
+    if(this.goalsFolder && Object.values(this.folders).some(f=>f===this.goalsFolder || f.startsWith(this.goalsFolder+'/') || this.goalsFolder.startsWith(f+'/'))) throw new Error('Goals and task folders must be separate.');
+    const habitOverlaps=f=>overlaps(f)||(this.goalsFolder&&(f===this.goalsFolder||f.startsWith(this.goalsFolder+'/')||this.goalsFolder.startsWith(f+'/')));
+    const configuredHabits=habitFolder===undefined?(habitOverlaps(HABIT_FOLDER)?'':HABIT_FOLDER):habitFolder;
+    this.habitFolder=configuredHabits===''?'':vaultPath(configuredHabits,'Habit log folder');
+    if(this.habitFolder&&habitOverlaps(this.habitFolder))throw new Error('Habit log, goals and task folders must be separate.');
+    this.habitScript=vaultPath(habitScript,'Habit dashboard script');
+    if(!this.habitScript.endsWith('.js'))throw new Error('Habit dashboard script must end in .js.');
     this.stateDir = stateDir;
     fs.mkdirSync(stateDir,{recursive:true,mode:0o700});
     this.journalFile = path.join(stateDir,`history-${hash(this.root).slice(0,16)}.json`);
@@ -58,6 +72,17 @@ class Vault {
       if(!fs.statSync(file).isDirectory()) throw new Error(`${list} tasks path must be a folder.`);
     }
     if(this.rulesPath) this.read(this.rulesPath);
+    for(const optionalFolder of [this.goalsFolder,this.habitFolder].filter(Boolean)) {
+      // Missing goals folders are allowed for existing installations. Validate
+      // each existing ancestor, including symlinks, without creating anything.
+      const parts=optionalFolder.split('/');
+      for(let i=1;i<=parts.length;i++) {
+        const relative=parts.slice(0,i).join('/');
+        const file=this.resolve(relative,{note:false,missing:true});
+        if(!fs.existsSync(file)) break;
+        if(!fs.statSync(file).isDirectory()) throw new Error('Goals and habit log paths must be folders.');
+      }
+    }
   }
   resolve(relative, {missing=false, note=true}={}) {
     string(relative,'Note path',2000);
@@ -211,4 +236,4 @@ class Vault {
     return {path:entry.path,action:'Change undone',change_id:entry.id};
   }
 }
-module.exports={Vault,FOLDERS,RULES_PATH,parseNote,localDate,dateValue,hash,atomicWrite};
+module.exports={Vault,FOLDERS,RULES_PATH,GOALS_FOLDER,HABIT_FOLDER,parseNote,localDate,dateValue,hash,atomicWrite};
