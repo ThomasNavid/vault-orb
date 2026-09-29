@@ -51,6 +51,13 @@ test('Monday weeks, leap days, year boundaries and daylight-saving transitions u
  const v=fixture(t),monday=weekStart(localDate()),sunday=addDays(monday,-1);raw(v,sunday,'---\npull_ups: true\n---\n');raw(v,monday,'---\npull_ups: true\n---\n');
  const r=listHabits(v,{date:'2024-02-29',year:2024});assert.equal(r.habits[0].week_count,1);assert.equal(r.weeks[1].counts.pull_ups,1);assert.equal(r.habits[0].year_count,0);assert.equal(r.date,'2024-02-29');
 });
+test('heatmap window covers 13 Monday weeks, crosses year boundaries and never runs past today',t=>{
+ const v=fixture(t);raw(v,'2025-12-30','---\npull_ups: true\n---\n');raw(v,'2026-01-02','---\npull_ups: true\n---\n');
+ const r=listHabits(v,{date:'2026-01-02',end:'2026-01-02'});assert.deepEqual(r.range,{start:'2025-10-06',end:'2026-01-04'});assert.equal(r.habits[0].range_count,2);assert.equal(r.habits[0].year_count,1);
+ const today=localDate(),latest=listHabits(v,{end:addDays(today,400)});assert.equal(latest.range.end,addDays(weekStart(today),6));assert.equal(latest.range.start,addDays(weekStart(today),-84));
+ assert.equal(listHabits(v,{date:'2026-01-02'}).range.end,'2026-01-04');
+ assert.equal(listHabits(v,{date:'2026-01-02',year:2025}).range.end,'2026-01-04');
+});
 test('future dates, invalid dates, unknown keys and non-boolean writes are rejected before journaling',t=>{
  const v=fixture(t),date=localDate(),base=args(v,date);
  for(const change of [{date:addDays(date,1)},{date:'2026-02-30'},{date:'2026-01-01T00:00:00'},{key:'gym'},{completed:'true'},{key:'date'}])assert.throws(()=>setHabit(v,{...base,...change}));

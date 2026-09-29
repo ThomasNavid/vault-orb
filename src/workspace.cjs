@@ -13,7 +13,7 @@ function createWorkspace(destination,{template=TEMPLATE}={}) {
   const manifest=[];
   function scan(dir,relative='') {
     for(const entry of fs.readdirSync(dir,{withFileTypes:true})) {
-      if(entry.name==='.gitkeep')continue;
+      if(entry.name==='.gitkeep'||entry.name==='.DS_Store')continue;
       if(entry.name.startsWith('.')||entry.isSymbolicLink())throw new Error('The starter contains an unsupported hidden file or symbolic link.');
       const rel=path.join(relative,entry.name),file=path.join(dir,entry.name);
       if(entry.isDirectory()){manifest.push({relative:rel,directory:true});scan(file,rel);}

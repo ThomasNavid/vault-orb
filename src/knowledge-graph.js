@@ -2,10 +2,28 @@
 // Layout is a d3-style force simulation (charge, links, centring, collision) in world space;
 // the camera fits the settled graph instead of clamping nodes to the canvas edges.
 (() => {
- const NS='http://www.w3.org/2000/svg',colors={hub:'#69adff',topic:'#c391ff',knowledge:'#a5b2c4',portfolio:'#64d5a4'},sizes={hub:9.5,topic:5.5,knowledge:3.2,portfolio:4.5};
+ const NS='http://www.w3.org/2000/svg',colors={hub:'#69adff',topic:'#c391ff',knowledge:'#a5b2c4',portfolio:'#64d5a4',task:'#ffb340',area:'#69adff'},sizes={hub:9.5,topic:5.5,knowledge:3.2,portfolio:4.5,task:5.5,area:9.5};
  // Minimum zoom at which a label appears without hover or selection; busier kinds wait for more zoom.
- const labelZoom={hub:0,topic:.6,portfolio:.75,knowledge:1.25};
+ const labelZoom={hub:0,topic:.6,portfolio:.75,knowledge:1.25,task:.6,area:0};
  const el=(tag,attrs={})=>{const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);return n;};
+ // A task graph uses the exact displayed rows, including saved chat visuals.
+ // Area edges describe the task's list/venture; they are not inferred note links.
+ function tasks(v){
+  if(v?.kind!=='table'||!Array.isArray(v.taskCompleted))return null;
+  const notes=new Map(),edges=[],warnings=[];
+  for(const section of v.taskSections||[v]){
+   const areaIndex=section.columns.indexOf('Area');
+   for(const [i,row] of section.rows.entries()){
+    const path=section.rowPaths?.[i];if(!path||notes.has(path))continue;
+    const area=row[areaIndex],parent=area?`orb-task-area:${encodeURIComponent(area)}`:null;
+    const excerpt=[section.taskCompleted?.[i]?'Completed':null,...['Planned','Deadline'].map(name=>{const value=row[section.columns.indexOf(name)];return value?`${name}: ${value}`:null;})].filter(Boolean).join(' · ');
+    notes.set(path,{path,title:row[0],kind:'task',excerpt});
+    if(parent){if(!notes.has(parent))notes.set(parent,{path:parent,title:area,kind:'area',excerpt:'Tasks in this area.'});edges.push({source:path,target:parent,type:'hierarchy'});}
+   }
+   warnings.push(...section.taskWarnings||[]);
+  }
+  return {notes:[...notes.values()],edges,warnings,total:notes.size,truncated:false,suggestions:[],emptyText:'No tasks in this view'};
+ }
  function filter(data,{focus=null,depth=1,kind='all',hidden=[],query='',hub='',orphans=false}={}){
   let allowed=new Set(data.notes.map(n=>n.path));
   if(hub){allowed=new Set([hub]);for(let i=0;i<2;i++)for(const e of data.edges)if(e.type==='hierarchy'&&allowed.has(e.target))allowed.add(e.source);}
@@ -35,7 +53,7 @@
  function draw(host,data,{mini=false,selected=null,onSelect=()=>{},onFocus=()=>{},...options}={}){
   host._dispose?.();host.replaceChildren();const filtered=filter(data,options),spacing=Number(options.spacing)||100;
   const svg=el('svg',{role:mini?'img':'group','aria-label':mini?'Knowledge connections preview':'Interactive knowledge graph. Tab to a note and press Enter to preview it.'});host.append(svg);
-  if(!filtered.nodes.length){svg.setAttribute('viewBox','0 0 800 500');const text=el('text',{x:400,y:250,'text-anchor':'middle',class:'graph-empty','font-size':mini?40:15});text.textContent=data.notes.length?'No matching notes':'Capture your first idea';svg.append(text);host._dispose=()=>{};return {total:0,shown:0,reset:()=>{},zoom:()=>{},select:()=>{},has:()=>false};}
+  if(!filtered.nodes.length){svg.setAttribute('viewBox','0 0 800 500');const text=el('text',{x:400,y:250,'text-anchor':'middle',class:'graph-empty','font-size':mini?40:15});text.textContent=data.notes.length?'No matching notes':data.emptyText||'Capture your first idea';svg.append(text);host._dispose=()=>{};return {total:0,shown:0,reset:()=>{},zoom:()=>{},select:()=>{},has:()=>false};}
   const nodes=filtered.nodes.map(n=>({...n})),map=new Map(nodes.map(n=>[n.path,n]));
   const edges=filtered.edges.map(e=>({...e,a:map.get(e.source),b:map.get(e.target)})).filter(e=>e.a!==e.b);
   const sim=simulation(nodes,edges,spacing,mini?1.9:Math.max(1,Math.min(2.2,(host.clientWidth||800)/(host.clientHeight||500))));
@@ -67,7 +85,7 @@
   }
   // Labels stay 11px on screen at any zoom. In busy graphs lesser kinds fade in as you zoom closer,
   // and labels claim screen space in priority order (focus, Hubs, Topics, busiest notes) so none overlap.
-  const crowd=Math.min(1,nodes.length/80),rank={hub:0,topic:1,portfolio:2,knowledge:3},ranked=[...nodes].sort((a,b)=>(rank[a.kind]-rank[b.kind])||(b.degree-a.degree));
+  const crowd=Math.min(1,nodes.length/80),rank={hub:0,topic:1,portfolio:2,knowledge:3,area:0,task:1},ranked=[...nodes].sort((a,b)=>(rank[a.kind]-rank[b.kind])||(b.degree-a.degree));
   function labels(){const focus=hovered||current,near=focus?neighbours.get(focus):null,size=11/scale,taken=[];
    for(const n of focus?[map.get(focus),...ranked.filter(n=>n.path!==focus)]:ranked){
     n.text.setAttribute('font-size',size);n.text.setAttribute('y',n.r+size*1.25);n.text.setAttribute('stroke-width',3/scale);
@@ -100,5 +118,5 @@
   host._dispose=()=>{stopped=true;cancelAnimationFrame(frame);resize.disconnect();};
   return {total:filtered.total,shown:nodes.length,zoom,has:p=>map.has(p),select:p=>select(p,false),reset:()=>{autoFit=true;sim.alpha=Math.max(sim.alpha,.12);wake(0);}};
  }
- window.KnowledgeGraph={draw,filter,colors};
+ window.KnowledgeGraph={draw,filter,colors,tasks};
 })();

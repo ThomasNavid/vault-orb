@@ -269,6 +269,29 @@ class Vault {
     const note=this.read(relative); if(version!==note.version) throw new Error('Note changed. Read it again before appending.');
     return this.commit(relative,note.content,note.content.trimEnd()+'\n\n'+string(text,'Text',20000)+'\n','Note appended');
   }
+  // One line per focus session under the task's own "## Focus log" heading.
+  logFocus({path:relative,version,minutes,note=null,at=new Date()}) {
+    return this.withTaskLock(()=>{
+      if(!Object.values(this.folders).some(f=>relative?.startsWith(f+'/'))) throw new Error('Focus can only be logged on a note in a task folder.');
+      const current=this.read(relative);
+      if(version!==undefined&&version!==null&&version!==current.version) throw new Error('Task changed. Read it again before logging focus.');
+      if(parseNote(current.content).data.type!=='task') throw new Error('This is not a task note.');
+      if(!Number.isSafeInteger(minutes)||minutes<1||minutes>1440) throw new Error('Focus minutes must be a whole number from 1 to 1440.');
+      const text=note===null||note===undefined||note.trim()===''?'':string(note,'Progress note',500);
+      if(/[\r\n]/.test(text)) throw new Error('Progress note must be a single line.');
+      const line=`- ${localDate(at)} ${String(at.getHours()).padStart(2,'0')}:${String(at.getMinutes()).padStart(2,'0')} · ${minutes} min${text?' — '+text:''}`;
+      const lines=current.content.split('\n'),heading=lines.findIndex(l=>/^##\s+Focus log\s*$/i.test(l));
+      let after;
+      if(heading<0) after=`${current.content.trimEnd()}\n\n## Focus log\n\n${line}\n`;
+      else {
+        let end=lines.findIndex((l,i)=>i>heading&&/^#{1,6}\s/.test(l));if(end<0)end=lines.length;
+        let insert=end;while(insert>heading+1&&lines[insert-1].trim()==='')insert--;
+        lines.splice(insert,0,...(insert===heading+1?['',line]:[line]));
+        after=lines.join('\n');if(!after.endsWith('\n'))after+='\n';
+      }
+      return {...this.commit(relative,current.content,after,'Focus logged'),entry:line};
+    });
+  }
   undo(id) {return this.withTaskLock(()=>this._undo(id));}
   _undo(id) {
     const entries=this.history(), entry=id?entries.find(e=>e.id===id):entries.findLast(e=>e.status==='applied');

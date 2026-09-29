@@ -47,13 +47,13 @@ Orb saves supplied material or an explicitly requested draft; saving a URL does 
 
 ## Learn within a subject
 
-Open a Topic or Hub and use **Ask Orb**, **Quiz me**, or **5-minute refresher**. These open a chat with the exact subject path. The assistant reads the note and connected material, cites note paths, and is instructed to separate source claims from its own synthesis. Clickable Markdown source citations open in Obsidian.
+Open a Topic or Hub and use **Ask Smith**, **Quiz me**, or **5-minute refresher**. These open a chat with the exact subject path. The assistant reads the note and connected material, cites note paths, and is instructed to separate source claims from its own synthesis. Clickable Markdown source citations open in Obsidian.
 
 Quizzes ask one question at a time and wait for your answer before feedback. Refreshers use approximately five minutes of material, not a timer. Learning conversations do not save grades, mark progress, or change notes. Missing or truncated evidence must be acknowledged; a saved link is not evidence that a source was read.
 
 ## Create from selected notes
 
-Select up to 30 Library notes in the Library tab or a Topic's related list. Click **Create from these notes**, choose Explanation, Comparison, Framework, or Cheat sheet, give the output a title and your angle, then choose **Draft with Orb**.
+Select up to 30 Library notes in the Library tab or a Topic's related list. Click **Create from these notes**, choose Explanation, Comparison, Framework, or Cheat sheet, give the output a title and your angle, then choose **Draft with Smith**.
 
 This starts a chat request to read the selected sources and save an AI-assisted Portfolio draft at stage **Developing**. Its Related Documents section cites those sources. Each selected Library note also receives a `Supports: [[Portfolio path]]` backlink, which makes it appear in the Portfolio template's Dataview knowledge list. The original source content is preserved.
 
@@ -75,7 +75,11 @@ Review the notes before choosing **File under Topic** or **Add connection**. Fil
 
 ## Corner graph
 
-A small graph preview stays in the bottom-right corner while an Orb panel or chat is open. It is hidden in the bare compact Orb. Click it to expand; **Collapse** or Escape returns to the previous view.
+A small graph preview stays in the bottom-right corner while an Orb panel or chat is open. It is hidden in the bare compact Orb. Click it to expand; **Close graph** or Escape returns to the previous view.
+
+When a task list is displayed, the corner preview opens a **To-do graph** of that list, including both sections when today and past deadlines are shown together. Orange To-dos connect to blue Areas using the displayed venture or task-list label. These edges describe grouping, not wikilinks or inferred knowledge connections. Task previews open their source in Obsidian; area nodes provide grouping only. The Hub filter is not shown in this view.
+
+In the knowledge graph:
 
 - Blue Hubs, purple Topics, neutral Library notes, and green Portfolio nodes have distinct sizes.
 - Full graph shows the knowledge system; local graph shows one or two steps around a note.
@@ -84,13 +88,13 @@ A small graph preview stays in the bottom-right corner while an Orb panel or cha
 - Click a node for a preview; double-click or choose Focus here for its neighbourhood. Explore note returns to the knowledge browser.
 - Graph nodes are keyboard focusable: Tab to a node and press Enter to preview it.
 
-Solid lines represent `hub` and `topic` property links. Dotted lines represent other property/body links. The graph recognises incoming and outgoing links, wikilink labels and headings, exact vault paths, unique short filenames, and ordinary relative Markdown links. Ambiguous short filenames are not guessed. Fenced code, inline code, HTML comments, external URLs and Dataview-generated results do not create edges. Connections outside the four indexed knowledge folders are not drawn.
+Solid lines represent `hub` and `topic` property links. Dotted lines represent other property/body links. The graph recognises incoming and outgoing links, wikilink labels and headings, exact vault paths, unique short filenames, and ordinary relative Markdown links. Ambiguous short filenames are not guessed. Fenced code, inline code, HTML comments, external URLs and Dataview-generated results do not create edges. The knowledge graph excludes connections outside the four indexed knowledge folders; the contextual to-do graph is built separately from the displayed task rows.
 
 ## Limits and troubleshooting
 
 The local index exposes up to 2,000 tagged notes and warns when incomplete; each graph view draws at most 300 matching nodes. Narrow the graph with a Hub or local view. Assistant listings return at most 200 records; use search for narrower retrieval. Topic context includes up to 16 notes and 60,000 characters overall, with at most 12,000 characters per note. Selected-source synthesis reads up to 30 Library notes together, capped at 90,000 characters overall and 12,000 per source. Note previews are capped at 50,000 characters. Truncation is explicit.
 
-Orb refreshes after its own writes and on opening Knowledge. Use the graph's **Refresh** or reopen Knowledge after edits made in Obsidian. Graph layout/filter choices last for the current app session. No automatic file watcher or Obsidian graph-settings import is provided.
+Orb refreshes after its own writes and on opening Knowledge. Use the graph's **Refresh** or reopen Knowledge after edits made in Obsidian. Switching between a knowledge note and a task view, or to a different task result, clears the previous focus, title search and type/Hub/unlinked filters. Closing and reopening the corner graph within the same view keeps those filters. The to-do graph reflects the displayed task snapshot; ask for the list again after external task edits. No automatic file watcher or Obsidian graph-settings import is provided.
 
 If a note is missing, check its folder and tag. If a primary relationship is missing, quote the wikilink in YAML and use a unique/exact path. Malformed YAML and unresolved primary links appear as warnings. If a save reports that a note changed, reopen it to get a current version before retrying. See [Changes and undo](changes-and-undo.md) for restoration limits.
 

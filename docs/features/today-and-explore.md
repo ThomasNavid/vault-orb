@@ -12,7 +12,8 @@ Click **Today** beneath the orb. The dashboard can contain:
 - unfinished tasks with a past Deadline;
 - active goals, review-due badges, and linked next actions;
 - today's habit records and current-week counts;
-- today's calendar events.
+- today's calendar events;
+- a weather chip under the date, such as “9° · rain likely by 16:00”, when a [weather](weather.md) home location is saved. Click it to open the forecast.
 
 The task list removes duplicate rows when a task is both planned today and past its deadline. It still labels that task as a past deadline. A future Deadline does not turn a task planned today into “Due today.”
 
@@ -32,13 +33,13 @@ Click **Explore** or press ⌘K. Category filters separate everyday tools from c
 
 - **Planning** opens Today, Plan my day, Recurring tasks, Goals, and Habits. Plan my day uses AI when you request a plan.
 - **Knowledge** opens Knowledge, Writing portfolio, and Knowledge graph.
-- **Connectors** holds Trading 212 and Google Calendar. Each shows its setup state. Configured services open directly; **Set up** takes you to that service in Settings. Trading 212 browsing and calendar browsing do not require an AI-provider key. “Configured” means the prerequisites are saved, not that a live connection has just been tested.
+- **Connectors** holds Trading 212, [Weather](weather.md) and Google Calendar. Each shows its setup state; Weather shows your saved place. Opening Weather shows the forecast card without an AI request. Connected services open directly; **Set up** takes you to that service in Settings. Trading 212 browsing and calendar browsing do not require an AI-provider key. “Connected” means the prerequisites are saved, not that a live connection has just been tested.
 - **Try asking** contains example requests. Selecting one sends it through the normal assistant flow, with the same prerequisites, model use, write boundaries, and confirmations.
 - **Orb**, in the All view, opens Chats, Conversation, Recent changes, and Settings.
 
 **All** shows tools and connectors, keeping example prompts in their own category until you search. Search matches titles, descriptions, categories, and aliases such as `t212`, within the selected category. Select All to search everything; this searches commands, not vault contents.
 
-Matching tools come before the freeform **Ask Orb** row. Return opens the selected match; use the arrow keys to choose a different result or Ask Orb. When nothing matches, Return sends your text to Orb. The action bar shows whether Return will Open, Set up, or Ask Orb. Escape clears the query first. Reopening Explore resets the category and search.
+Matching tools come before the freeform **Ask Smith** row. Return opens the selected match; use the arrow keys to choose a different result or Ask Smith. When nothing matches, Return sends your text to Smith. The action bar shows whether Return will Open, Set up, or Ask Smith. Escape clears the query first. Reopening Explore resets the category and search.
 
 Google Calendar stays visible even before setup. Browsing requires a Google calendar in Obsidian Full Calendar, its local REST server, and a saved access token. A default calendar is only needed for creating events. Opening the connector shows the next 14 days from configured calendar sources without an AI request or changing task dates.
 
@@ -46,7 +47,7 @@ The Explore screen appears automatically once after initial setup. It remains av
 
 ## Trading 212 investments
 
-Choose **Trading 212** in Connectors after connecting a read-only API key and secret in Settings → Integrations. Browse account totals, holdings and allocation, dividends, trade history, cash movements and pending orders. This does not need an AI-provider key. **Ask Orb about my investments** starts an assistant request and shares relevant retrieved financial data with the selected provider.
+Choose **Trading 212** in Connectors after connecting a read-only API key and secret in Settings → Integrations. Browse account totals, holdings and allocation, dividends, trade history, cash movements and pending orders. This does not need an AI-provider key. **Ask Smith about my investments** starts an assistant request and shares relevant retrieved financial data with the selected provider.
 
 **Writing portfolio** in Explore opens your knowledge notes and working drafts; **Trading 212** opens your financial portfolio. Trading 212 is a separate view and is not included in Today. History starts with up to 50 records; load older records before treating a total as complete. See [Trading 212](trading212.md) for the full setup and limits.
 
@@ -55,7 +56,7 @@ Choose **Trading 212** in Connectors after connecting a read-only API key and se
 - Today is a daily overview, not a replacement for the complete task, goal, habit, or calendar views. Long sections show only a focused subset and provide a route to the full feature.
 - Undated tasks are not included. A task needs Planned or Deadline today, or a past Deadline.
 - Calendar tasks are not repeated in the calendar section; task dates already appear in the task section.
-- Today does not prioritize work, schedule free time, or make changes. Ask Orb explicitly when you want a recommendation or edit.
+- Today does not prioritize work, schedule free time, or make changes. Ask Smith explicitly when you want a recommendation or edit.
 - Explore examples are fixed starting prompts, not a history of personalized suggestions. Filtering searches command metadata and aliases; it does not search your vault.
 
 ## Troubleshooting
@@ -82,4 +83,4 @@ Opening or refreshing Today reconciles existing calendar links before collecting
 
 ## Plan my day
 
-Choose **Plan my day** on Today or in Explore. It opens a manual daily draft without an AI call. Ask AI to prioritise, adjust task estimates and pins, inspect capacity and overflow, and choose whether to save Markdown, apply date-only task plans, or book selected calendar blocks. See [AI daily planner](daily-planner.md).
+Choose **Plan my day** on Today or in Explore. It walks you through your day one step at a time, starting from the hours you used last time, without an AI call. Ask AI to prioritise, adjust task estimates and pins, inspect capacity and overflow, and choose whether to save Markdown, apply date-only task plans, or book selected calendar blocks. See [AI daily planner](daily-planner.md).

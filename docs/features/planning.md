@@ -1,8 +1,8 @@
 # Planning across notes
 
-[Documentation](../README.md) · [Things to ask Orb](../things-to-ask.md) · [Goals](goals.md)
+[Documentation](../README.md) · [Things to ask Smith](../things-to-ask.md) · [Goals](goals.md)
 
-Ask Orb to bring together relevant goals, tasks, notes, and calendar information to propose a plan or compare options. You choose which recommendations to turn into changes.
+Ask Smith to bring together relevant goals, tasks, notes, and calendar information to propose a plan or compare options. You choose which recommendations to turn into changes.
 
 For a daily timeline, editable estimates, and optional reviewed calendar booking, use [Plan my day](daily-planner.md). The broader comparisons and cross-note planning below remain available.
 
@@ -14,7 +14,7 @@ There is no separate planning integration. Orb uses the vault tools already avai
 
 Voice delegates vault requests to the selected chat/tools model; typed requests use it directly. Enable a separate advanced reasoning model for complex work, or leave reasoning with chat/tools. Each selected provider uses its own encrypted key. Planning has access to the app's tools, not unrestricted filesystem, web browsing, or shell access.
 
-For a comparison exercise, supply your own options and meeting notes, then give Orb their exact paths.
+For a comparison exercise, supply your own options and meeting notes, then give Smith their exact paths.
 
 ## Things to ask
 
@@ -27,7 +27,7 @@ For a comparison exercise, supply your own options and meeting notes, then give 
 | “Help me break this ambition into a milestone I could reach in eight weeks.” | A discussion of a concrete finish line, with questions where information is missing. | No, until creation is requested |
 | “Create a work task called Draft the pilot outline, planned for tomorrow, using the next step we just agreed.” | Saves a requested action as a task. | Vault note |
 
-Orb should distinguish recorded facts from its assumptions. If a source does not contain the effort, priority, availability, or progress needed for a confident plan, supply those details rather than assuming Orb knows them.
+Smith should distinguish recorded facts from its assumptions. If a source does not contain the effort, priority, availability, or progress needed for a confident plan, supply those details rather than assuming Smith knows them.
 
 ## What happens
 
@@ -54,7 +54,7 @@ If you only wanted advice, stop after step 2. Nothing needs to be written to mak
 
 ## Troubleshooting
 
-**Advice seems generic:** identify the exact notes, goal, or decision criteria. Ask Orb to cite what it used and identify missing information.
+**Advice seems generic:** identify the exact notes, goal, or decision criteria. Ask Smith to cite what it used and identify missing information.
 
 **A tool limit or timeout interrupts a plan:** check Recent changes before retrying a request that included edits. Ask for a narrower next step using the existing results.
 

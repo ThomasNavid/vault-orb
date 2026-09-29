@@ -1,6 +1,18 @@
 (() => {
  const names={hub:'Hubs',topic:'Topics',knowledge:'Library',portfolio:'Portfolio'},singular={hub:'Hub',topic:'Topic',knowledge:'Library note',portfolio:'Portfolio'};
  const k={data:null,scope:'hub',path:null,query:'',selected:new Set(),generation:0,workspace:false,graph:false,focus:null,graphHidden:[],graphQuery:'',hub:'',depth:1,spacing:100,orphans:false};
+ const graphNames={...names,task:'To-dos',area:'Areas'},graphSingular={...singular,task:'To-do',area:'Area'};
+ const graphData=()=>k.taskData||k.data,graphNote=p=>graphData()?.notes.find(n=>n.path===p);
+ function syncGraphContext(){
+  const visual=!k.graphOverride&&!k.workspace&&(chatOpen||cardMode==='visual')?currentVisual:null;
+  const taskView=visual?.kind==='table'&&Array.isArray(visual.taskCompleted)?visual:null;
+  const context=taskView||(k.graphOverride?'explicit-knowledge':k.workspace?`knowledge:${k.path||''}`:'knowledge');
+  if(k.graphContext===context)return;
+  k.graphContext=context;k.taskData=window.KnowledgeGraph.tasks(taskView);
+  k.focus=k.workspace?k.path:null;k.graphSelected=null;k.hub='';k.graphQuery='';k.graphHidden=[];k.orphans=false;
+  clearTimeout(searchTimer);graphSearch.value='';closeCard();renderMini();
+  if(k.graph){renderGraphControls();drawGraph();}
+ }
  const make=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
  const button=(text,fn,cls='k-button')=>{const n=make('button',cls,text);n.type='button';n.onclick=fn;return n;};
  const field=(label,input)=>{const n=make('label','k-field');n.append(make('span',null,label),input);return n;};
@@ -28,9 +40,10 @@
  let graphDrawing,returnFocus=null,refreshTimer,searchTimer;
  function fail(e){status.textContent=(e?.message||String(e)).replace(/^Error invoking remote method '[^']+': Error: /,'');if(!k.workspace&&!k.graph)error(e);else if(k.graph){notice.textContent=status.textContent;notice.hidden=false;}}
  async function refresh(){const generation=++k.generation;const data=await api.knowledge();if(generation!==k.generation)return;k.data=data;for(const p of k.selected)if(!noteBy(p))k.selected.delete(p);if(k.path&&!noteBy(k.path))k.path=null;renderMini();if(k.workspace&&!k.form)render();if(k.graph){renderGraphControls();drawGraph();}}
- function visibility(){const vaultKey=settings?.vaultPath||'';if(k.vaultKey!==vaultKey){k.vaultKey=vaultKey;k.generation++;k.data=null;k.path=null;k.focus=null;k.graphSelected=null;k.selected.clear();mini.replaceChildren();miniLabel.textContent='Knowledge graph';}
- const hidden=!(k.workspace||cardMode||chatOpen)||k.graph||cardMode==='settings';if(dock.hidden!==hidden)dock.hidden=hidden;if(!hidden)placeDock();if(!dock.hidden&&!k.data&&!refreshTimer){refreshTimer=setTimeout(()=>{refreshTimer=null;refresh().catch(()=>{miniLabel.textContent='Set up knowledge';});},50);}}
- new MutationObserver(visibility).observe(document.body,{subtree:true,attributes:true,attributeFilter:['hidden','class']});
+ function visibility(){const vaultKey=settings?.vaultPath||'';if(k.vaultKey!==vaultKey){k.vaultKey=vaultKey;k.generation++;k.data=null;k.path=null;k.focus=null;k.graphContext=null;k.taskData=null;k.graphSelected=null;k.selected.clear();mini.replaceChildren();miniLabel.textContent='Knowledge graph';}
+ syncGraphContext();
+ const hidden=!(k.workspace||cardMode||chatOpen)||k.graph||cardMode==='settings';if(dock.hidden!==hidden)dock.hidden=hidden;if(!hidden)placeDock();if(!dock.hidden&&!graphData()&&!refreshTimer){refreshTimer=setTimeout(()=>{refreshTimer=null;refresh().catch(()=>{miniLabel.textContent='Set up knowledge';});},50);}}
+ new MutationObserver(visibility).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['hidden','class']});
  function dockArea(){if(k.workspace)return content.getBoundingClientRect();if(chatOpen)return document.getElementById('chat-scroll').getBoundingClientRect();return (document.querySelector('#companion>.card-body:not([hidden])')||document.getElementById('companion')).getBoundingClientRect();}
  function placeDock(){if(dock.hidden||dockDrag)return;const a=dockArea(),w=dock.offsetWidth,h=dock.offsetHeight,inset=12;if(!a.width||!a.height)return;
   const x=dockCorner[1]==='l'?a.left+inset:a.right-w-inset,y=dockCorner[0]==='t'?a.top+inset:a.bottom-h-inset;
@@ -43,7 +56,7 @@
  dock.addEventListener('keydown',e=>{const turn={ArrowLeft:[0,'l'],ArrowRight:[0,'r'],ArrowUp:['t',0],ArrowDown:['b',0]}[e.key];if(!turn)return;e.preventDefault();moveDock((turn[0]||dockCorner[0])+(turn[1]||dockCorner[1]));});
  const dockWatch=new ResizeObserver(()=>placeDock());for(const n of [document.getElementById('companion'),document.getElementById('chat-scroll'),content])if(n)dockWatch.observe(n);
  addEventListener('resize',()=>placeDock());document.addEventListener('animationend',()=>placeDock(),true);document.addEventListener('transitionend',e=>{if(e.target!==dock)placeDock();},true);
- function renderMini(){if(!k.data)return;miniLabel.textContent=`Knowledge graph · ${k.data.notes.length}`;window.KnowledgeGraph.draw(mini,k.data,{mini:true,focus:k.path});}
+ function renderMini(){const data=graphData();if(!data)return;miniLabel.textContent=`${k.taskData?'To-do':'Knowledge'} graph · ${data.notes.length}`;window.KnowledgeGraph.draw(mini,data,{mini:true,focus:k.workspace?k.path:null});}
  async function open(scope='hub',relative=null){
   window.clippingsUI?.close();
   if(!cardMode&&!chatOpen)showPanel('welcome');
@@ -89,7 +102,7 @@
   if(n.reason){const why=make('p','k-reason');why.append(make('span',null,'Why saved'),document.createTextNode(n.reason));head.append(why);}
   const actions=make('div','k-actions');actions.append(button('Open in Obsidian',()=>api.openNote(relative).catch(fail)),button('Local graph',()=>expand(relative)));head.append(actions);page.append(head);
   if(['hub','topic'].includes(n.kind)){
-   const ask=input('Ask a question about this subject…');ask.setAttribute('aria-label','Question about '+n.title);const form=make('form','k-inline-form k-ask');const submitQuestion=button('Ask Orb',()=>{});submitQuestion.type='submit';form.append(ask,submitQuestion);form.onsubmit=e=>{e.preventDefault();if(ask.value.trim())request(`Use my subject note ${JSON.stringify(relative)} and its linked material. Answer this question with source citations and distinguish your explanation from source claims: ${ask.value}`);};page.append(form);
+   const ask=input('Ask a question about this subject…');ask.setAttribute('aria-label','Question about '+n.title);const form=make('form','k-inline-form k-ask');const submitQuestion=button('Ask Smith',()=>{});submitQuestion.type='submit';form.append(ask,submitQuestion);form.onsubmit=e=>{e.preventDefault();if(ask.value.trim())request(`Use my subject note ${JSON.stringify(relative)} and its linked material. Answer this question with source citations and distinguish your explanation from source claims: ${ask.value}`);};page.append(form);
    actions.append(button('Quiz me',()=>request(`Quiz me on ${n.title}. Use my subject note ${JSON.stringify(relative)} and its linked material. Ask one question at a time from my notes, wait for my answer, then give feedback with source paths. Do not save progress.`)),button('5-minute refresher',()=>request(`Give me a roughly five-minute refresher on ${n.title}. Use my subject note ${JSON.stringify(relative)} and its linked material, cite the notes, and finish with a recall question.`)),button('+ Capture here',()=>capture(n.kind==='topic'?'knowledge':'topic',relative)));
   }
   if(n.kind==='portfolio'){
@@ -132,7 +145,7 @@
   const paths=[...k.selected].filter(p=>noteBy(p)?.kind==='knowledge');if(!paths.length)return;
   const form=formFrame('Create from your knowledge'),type=select([['explanation','Explanation'],['comparison','Comparison'],['framework','Framework'],['cheat sheet','Cheat sheet']],'explanation'),title=input('What will you call it?'),angle=textArea('What should someone understand? Add your perspective.');title.required=true;title.maxLength=180;angle.required=true;angle.maxLength=3000;
   form.append(make('p','k-muted',`${paths.length} supporting notes. Saving the draft will also add backlinks to these notes.`),field('Format',type),field('Portfolio title',title),field('Your angle',angle));for(const p of paths)form.append(make('small',null,noteBy(p).title));
-  const save=button('Draft with Orb',()=>{});save.type='submit';form.append(save);form.onsubmit=e=>{e.preventDefault();request(`Draft ${JSON.stringify(title.value)} as an AI-assisted Portfolio ${type.value}. My angle: ${angle.value}\n\nRead these Library notes and cite them as supporting sources:\n${paths.map(p=>'- '+p).join('\n')}\n\nSave the draft at stage Developing and add backlinks from those sources. Distinguish source claims from the draft's synthesis. Let me know where it was saved and whether any source links could not be added.`);};
+  const save=button('Draft with Smith',()=>{});save.type='submit';form.append(save);form.onsubmit=e=>{e.preventDefault();request(`Draft ${JSON.stringify(title.value)} as an AI-assisted Portfolio ${type.value}. My angle: ${angle.value}\n\nRead these Library notes and cite them as supporting sources:\n${paths.map(p=>'- '+p).join('\n')}\n\nSave the draft at stage Developing and add backlinks from those sources. Distinguish source claims from the draft's synthesis. Let me know where it was saved and whether any source links could not be added.`);};
  }
  async function editDraft(relative){
   try{const full=await api.knowledgeNote(relative);const part=name=>full.body.match(new RegExp(`<!-- orb:${name} -->\\n## ${name}\\n\\n([^]*?)\\n<!-- /orb:${name} -->`))?.[1]||'';const form=formFrame('Develop your draft'),draft=textArea('Write a working draft…',part('Working draft')),questions=textArea('What still needs answering?',part('Open questions'));draft.maxLength=30000;questions.maxLength=30000;form.append(make('p','k-muted','These sections sit alongside your existing note and preserve its original content.'),field('Working draft',draft),field('Open questions',questions));const save=button('Save draft',()=>{});save.type='submit';form.append(save);form.onsubmit=async e=>{e.preventDefault();save.disabled=true;try{await write('update_knowledge',{path:relative,version:full.version,draft:draft.value,questions:questions.value});render();}catch(e){fail(e);save.disabled=false;}};}catch(e){fail(e);}
@@ -144,37 +157,42 @@
   for(const s of k.data.suggestions){const box=make('div','k-suggestion');box.append(make('strong',null,s.label),button(noteBy(s.path)?.title||s.path,()=>{k.path=s.path;render();}),make('span',null,'→'),button(noteBy(s.target)?.title||s.target,()=>{k.path=s.target;render();}),make('p','k-muted',s.reason));const accept=button(s.property?'File under Topic':'Add connection',async()=>{accept.disabled=true;try{await write('connect_knowledge',s);}catch(e){fail(e);accept.disabled=false;}}),dismiss=button('Dismiss',async()=>{try{await api.knowledgeDismiss({id:s.id});await refresh();}catch(e){fail(e);}});box.append(accept,dismiss);content.append(box);}
  }
  async function request(text){closeWorkspace();collapse();if(connected||connecting)endVoice();if(!chatOpen)await openChat();sendChat(text);}
- async function expand(relative){returnFocus=document.activeElement;if(relative!==undefined){k.focus=relative;k.graphSelected=relative;}else if(k.path)k.focus=k.path;if(!cardMode&&!chatOpen&&!k.workspace)showPanel('welcome');k.graph=true;graph.hidden=false;workspace.inert=true;document.querySelector('.shell').inert=true;visibility();try{if(!k.data)await refresh();else {renderGraphControls();drawGraph();}}catch(e){fail(e);}graphSearch.focus();}
- function collapse(){if(!k.graph)return;k.graph=false;graph.hidden=true;toggleFilters(false);workspace.inert=false;document.querySelector('.shell').inert=false;canvas._dispose?.();visibility();returnFocus?.focus();}
+ async function expand(relative){k.graphOverride=relative!==undefined;syncGraphContext();returnFocus=document.activeElement;if(relative!==undefined){k.focus=relative;k.graphSelected=relative;}else if(k.workspace&&k.path)k.focus=k.path;if(!cardMode&&!chatOpen&&!k.workspace)showPanel('welcome');k.graph=true;graph.hidden=false;workspace.inert=true;document.querySelector('.shell').inert=true;visibility();try{if(!graphData())await refresh();else {renderGraphControls();drawGraph();}}catch(e){fail(e);}graphSearch.focus();}
+ function collapse(){if(!k.graph)return;k.graph=false;k.graphOverride=false;graph.hidden=true;toggleFilters(false);workspace.inert=false;document.querySelector('.shell').inert=false;canvas._dispose?.();visibility();returnFocus?.focus();}
  function toggleFilters(show=filters.hidden){filters.hidden=!show;filterButton.setAttribute('aria-expanded',String(show));if(show)filters.querySelector('select,input')?.focus();}
  function renderGraphControls(){
-  const focus=noteBy(k.focus);scopeChip.hidden=!focus;scopeChip.replaceChildren();
+  const data=graphData();if(!data)return;graphTitle.querySelector('strong').textContent=k.taskData?'To-do graph':'Knowledge graph';graph.setAttribute('aria-label',k.taskData?'To-do graph':'Knowledge graph');
+  const focus=graphNote(k.focus);scopeChip.hidden=!focus;scopeChip.replaceChildren();
   if(focus){const label=make('span','graph-scope-label'),depth=button(k.depth===2?'2 steps':'1 step',()=>{k.depth=k.depth===2?1:2;renderGraphControls();drawGraph();},'graph-chip');depth.setAttribute('aria-label',`Local graph depth ${k.depth}. Change depth`);
    label.append(make('small',null,'Local'),make('span',null,focus.title));scopeChip.append(label,depth,iconButton('i-close','Show the full graph',()=>{k.focus=null;renderGraphControls();drawGraph();},'graph-chip graph-chip-icon'));}
+  graphSearch.placeholder=k.taskData?'Search to-dos':'Search notes';
   if(graphSearch.value!==k.graphQuery)graphSearch.value=k.graphQuery;
-  const hubs=select([['','All Hubs'],...k.data.notes.filter(n=>n.kind==='hub').map(n=>[n.path,n.title])],k.hub);hubs.onchange=()=>{k.hub=hubs.value;renderGraphControls();drawGraph();};
+  const hubs=select([['','All Hubs'],...data.notes.filter(n=>n.kind==='hub').map(n=>[n.path,n.title])],k.hub);hubs.onchange=()=>{k.hub=hubs.value;renderGraphControls();drawGraph();};
   const orphan=make('input');orphan.type='checkbox';orphan.checked=k.orphans;orphan.onchange=()=>{k.orphans=orphan.checked;renderGraphControls();drawGraph();};
   const spacing=input('',String(k.spacing));spacing.type='range';spacing.min=40;spacing.max=180;spacing.onchange=()=>{k.spacing=Number(spacing.value);drawGraph();};
   const toggle=make('label','graph-switch');toggle.append(make('span',null,'Unlinked notes only'),orphan);
-  const notes=[k.data.truncated?'Index limited to 2,000 notes.':'',k.data.warnings.length?`${k.data.warnings.length} source warning${k.data.warnings.length===1?'':'s'}. See the Knowledge view.`:''].filter(Boolean).join(' ');
-  filters.replaceChildren(field('Hub',hubs),toggle,field('Spacing',spacing));if(notes)filters.append(make('p','graph-filter-note',notes));
+  const notes=[data.truncated?'Index limited to 2,000 notes.':'',data.warnings.length?`${data.warnings.length} source warning${data.warnings.length===1?'':'s'}. ${k.taskData?'See the task list.':'See the Knowledge view.'}`:''].filter(Boolean).join(' ');
+  filters.replaceChildren(...(k.taskData?[]:[field('Hub',hubs)]),toggle,field('Spacing',spacing));if(notes)filters.append(make('p','graph-filter-note',notes));
   const active=(k.hub?1:0)+(k.orphans?1:0);filterButton.dataset.count=active||'';filterButton.classList.toggle('is-active',!!active);
-  legend.replaceChildren();for(const [kind,name] of Object.entries(names)){const count=k.data.notes.filter(n=>n.kind===kind).length;if(!count)continue;const shown=!k.graphHidden.includes(kind);
+  legend.replaceChildren();for(const [kind,name] of Object.entries(graphNames)){const count=data.notes.filter(n=>n.kind===kind).length;if(!count)continue;const shown=!k.graphHidden.includes(kind);
    const key=button('',()=>{k.graphHidden=shown?[...k.graphHidden,kind]:k.graphHidden.filter(x=>x!==kind);renderGraphControls();drawGraph();},'graph-key');key.style.setProperty('--node-color',window.KnowledgeGraph.colors[kind]);key.setAttribute('aria-pressed',String(shown));key.title=`${shown?'Hide':'Show'} ${name}`;key.append(make('span',null,name),make('small',null,String(count)));legend.append(key);}
  }
  function drawGraph(){
-  if(!k.data)return;notice.hidden=true;
+  const data=graphData();if(!data)return;notice.hidden=true;
   const options={focus:k.focus,depth:k.depth,hidden:k.graphHidden,hub:k.hub,query:k.graphQuery,orphans:k.orphans,spacing:k.spacing,selected:k.graphSelected,onSelect:n=>n?inspect(n):closeCard(),onFocus:n=>{k.focus=n.path;k.graphSelected=n.path;renderGraphControls();drawGraph();}};
-  graphDrawing=window.KnowledgeGraph.draw(canvas,k.data,options);const all=k.data.notes.length;graphCount.textContent=graphDrawing.shown===all?`${all} notes`:`${graphDrawing.shown} of ${all} notes`;
-  if(k.graphSelected&&graphDrawing.has(k.graphSelected))inspect(noteBy(k.graphSelected));else closeCard();
+  graphDrawing=window.KnowledgeGraph.draw(canvas,data,options);const all=data.notes.length,unit=k.taskData?'items':'notes';graphCount.textContent=graphDrawing.shown===all?`${all} ${unit}`:`${graphDrawing.shown} of ${all} ${unit}`;
+  if(k.graphSelected&&graphDrawing.has(k.graphSelected))inspect(graphNote(k.graphSelected));else closeCard();
  }
  let inspectGeneration=0;
  const clean=text=>text.replace(/```dataview\r?\n[^]*?```/g,'').replace(/<!--[^]*?-->/g,'').replace(/^#{1,6}\s+/gm,'').replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g,'$1').replace(/\n\s*\n+/g,'\n').trim().slice(0,700);
- async function inspect(n){const generation=++inspectGeneration,links=related(n.path).size;k.graphSelected=n.path;card.hidden=false;card.style.setProperty('--node-color',window.KnowledgeGraph.colors[n.kind]);
+ async function inspect(n){const generation=++inspectGeneration,links=new Set((graphData()?.edges||[]).filter(e=>e.source===n.path||e.target===n.path).flatMap(e=>[e.source,e.target]).filter(p=>p!==n.path)).size;k.graphSelected=n.path;card.hidden=false;card.style.setProperty('--node-color',window.KnowledgeGraph.colors[n.kind]);
   const head=make('div','graph-card-head'),excerpt=make('p','graph-note',n.excerpt?clean(n.excerpt):''),actions=make('div','graph-card-actions');
-  head.append(make('span','graph-card-kind',singular[n.kind]),iconButton('i-close','Close preview',()=>{graphDrawing?.select(null);closeCard();},'graph-chip graph-chip-icon'));
-  actions.append(button('Open note',()=>{collapse();open(n.kind,n.path);},'k-button graph-primary'),button('Focus here',()=>{k.focus=n.path;renderGraphControls();drawGraph();}),iconButton('i-external','Open in Obsidian',()=>api.openNote(n.path).catch(fail),'k-button graph-icon-button'));
+  head.append(make('span','graph-card-kind',graphSingular[n.kind]),iconButton('i-close','Close preview',()=>{graphDrawing?.select(null);closeCard();},'graph-chip graph-chip-icon'));
+  if(n.kind!=='area')actions.append(button('Open note',()=>{if(n.kind==='task')api.openNote(n.path).catch(fail);else {collapse();open(n.kind,n.path);}},'k-button graph-primary'));
+  actions.append(button('Focus here',()=>{k.focus=n.path;renderGraphControls();drawGraph();}));
+  if(n.kind!=='area')actions.append(iconButton('i-external','Open in Obsidian',()=>api.openNote(n.path).catch(fail),'k-button graph-icon-button'));
   card.replaceChildren(head,make('h2',null,n.title),make('span','graph-card-meta',`${links} connection${links===1?'':'s'}`),excerpt,actions);
+  if(n.kind==='task'||n.kind==='area')return;
   try{const full=await api.knowledgeNote(n.path);if(generation===inspectGeneration)excerpt.textContent=clean(full.body)||'No content yet.';}catch(e){if(generation===inspectGeneration)excerpt.textContent=e.message;}}
  function closeCard(){inspectGeneration++;k.graphSelected=null;card.hidden=true;}
  document.addEventListener('keydown',e=>{if(k.graph){if(e.metaKey&&['j','k'].includes(e.key.toLowerCase())){e.preventDefault();e.stopImmediatePropagation();return;}if(e.metaKey&&e.key.toLowerCase()==='f'){e.preventDefault();graphSearch.focus();graphSearch.select();return;}if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();if(!filters.hidden){toggleFilters(false);filterButton.focus();}else collapse();}else if(e.key==='Tab'){const items=[...graph.querySelectorAll('button,input,select,[tabindex="0"]')].filter(n=>!n.disabled&&!n.hidden&&n.getClientRects().length);const first=items[0],last=items.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}}else if(k.workspace&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();closeWorkspace();}},true);

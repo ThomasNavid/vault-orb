@@ -146,3 +146,12 @@ test('explicit daily-planning requests expose no mutation tools to the outer cha
  const agent=new Agent({vault:f.vault,getKey:()=> 'fake-key',fetchImpl:async(_url,request)=>{names=JSON.parse(request.body).tools.map(t=>t.name);return new Response(JSON.stringify({output:[{type:'message',content:[{type:'output_text',text:'Open the planner.'}]}]}),{status:200});}});
  await agent.respond([{role:'user',content:'Help me plan my day.'}]);assert.deepEqual(names,['plan_day','dismiss_visual']);
 });
+test('new days start from the hours, reserve and breaks chosen last time',async t=>{
+ const f=fixture(t);f.add('Proposal',60);
+ let d=await f.command(null,'open');assert.equal(d.preferences.start,'09:00');
+ d=await f.command(d,'edit',{patch:{preferences:{start:'07:30',end:'15:00',buffer:10,energy:'low',breaks:[{start:'12:00',end:'12:45',label:'Lunch'}],manual:[{start:'14:00',end:'14:30',label:'School run'}]}}});
+ const next=await f.service.command({action:'open',date:'2030-01-08'});
+ assert.deepEqual([next.preferences.start,next.preferences.end,next.preferences.buffer,next.preferences.energy],['07:30','15:00',10,'usual']);
+ assert.deepEqual(next.preferences.breaks,[{start:'12:00',end:'12:45',label:'Lunch'}]);assert.deepEqual(next.preferences.manual,[]);
+ const again=new DayPlans(f.vault,f.options),later=await again.command({action:'open',date:'2030-01-09'});assert.equal(later.preferences.start,'07:30');
+});

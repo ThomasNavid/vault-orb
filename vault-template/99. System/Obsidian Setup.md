@@ -79,3 +79,9 @@ Keep a separate backup: sync alone is not versioned backup. An external assistan
 - Habits are empty: follow Habit Setup and refresh. This is the expected initial state.
 - Calendar is empty: connect your own sources. No calendar credentials are included.
 - A template is not applied: check the exact folder mapping and trigger setting; use Insert template manually for existing files.
+
+## Places
+
+Keep `6. Life Admin/Places` mapped to `99. System/99.1 Templates/10. Place Template.md` in Templater Folder Templates. In Obsidian Properties, use Text for `category`, `location`, and `website`, and Number for `latitude` and `longitude`. Leave unknown coordinates empty. Existing mappings and property types should be preserved when adding this setup.
+
+[[6. Life Admin/Places|Places]] embeds the editable Base. Orb renders its own map when a Geoapify key is configured; no Obsidian map plugin is required. Orb writes complete frontmatter directly, without running Templater. The starter intentionally does not distribute `.obsidian` settings or plugin accounts.

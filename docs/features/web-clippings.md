@@ -10,7 +10,7 @@ Open **Explore → Web Clippings** to browse and search saved articles, videos, 
 2. Open Web Clippings, or click **Refresh** after capturing something in the browser.
 3. Search for words from the title or saved content. All words must match somewhere in the note; put a phrase in double quotes to match consecutive words.
 4. Filter by category, source domain, Topic/Unfiled, or capture dates. Empty search lists newest first; searches rank title matches above metadata and body matches. **Newest** is also available as an explicit sort.
-5. Open a result to read its saved content, open the original URL in your browser, open the note in Obsidian, or **Ask Orb about this**.
+5. Open a result to read its saved content, open the original URL in your browser, open the note in Obsidian, or **Ask Smith about this**.
 
 Results show matching passages and highlight search terms. Title/metadata-only matches are labelled. **Load more** adds the next 30 results. Back preserves the current query, filters, and position. Escape returns from the preview, then closes the library; ⌘F focuses search. Tab stays within the library while it is open.
 
@@ -36,7 +36,7 @@ Missing or invalid capture dates display as Unknown and sort last in newest orde
 
 Untagged clips are searchable here but retain the existing tag requirements for Knowledge graph and Portfolio synthesis. Add `knowledge` in Obsidian if you want that integration.
 
-## Ask Orb
+## Ask Smith
 
 | Request | Result | Changes data? |
 | --- | --- | --- |
@@ -45,7 +45,7 @@ Untagged clips are searchable here but retain the existing tag requirements for 
 | “What did the article I clipped about pricing say?” | Finds candidates, reads relevant saved notes, and answers with local source citations. | No |
 | “Compare these two saved articles: [exact paths].” | Reads the specified notes and compares the saved evidence. | No |
 
-**Ask Orb about this** starts a chat that reads the exact selected clipping and explains its main points. The assistant is instructed to cite the local note, distinguish source material from personal notes and synthesis, and acknowledge missing or truncated evidence. Asking needs a configured provider and shares relevant retrieved material with that provider.
+**Ask Smith about this** starts a chat that reads the exact selected clipping and explains its main points. The assistant is instructed to cite the local note, distinguish source material from personal notes and synthesis, and acknowledge missing or truncated evidence. Asking needs a configured provider and shares relevant retrieved material with that provider.
 
 A saved URL alone is not the article's content. Video links do not provide transcripts. Capture the content or add your notes before asking content questions. No webpage, video, image, or X post is automatically fetched by this feature.
 

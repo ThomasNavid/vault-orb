@@ -8,7 +8,9 @@ Open **Today → Plan my day** or **Explore → Plan my day** to turn tasks and 
 
 The planner reads unfinished tasks from your configured Life and Business folders, including undated work, and the next actions of active goals. Existing future plans start excluded. Completed work is not proposed again, and recurring tasks refer only to their current occurrence.
 
-Under **Shape your day**, choose a working window, task list, energy level, and the percentage to leave free (20% initially). Add breaks or manual commitments. Working days and hours start from your calendar settings; enable the day override to plan on a non-working day. The date picker also lets you open tomorrow or another date.
+The planner walks you through one question per screen: your hours, which task list, your energy, breaks and commitments, how much time to leave free (20% initially), and what matters most. The dots at the bottom show how far through you are; select one to jump back to a step. The date picker at the top opens tomorrow or another date.
+
+Your start and finish times, free-time percentage, task list, and breaks are remembered for the next day you plan, so you only change them when a day is different. Energy and one-off commitments apply to a single day. Until you change them, hours start from your calendar settings. On a non-working day, the hours step offers to plan it anyway.
 
 The capacity calculation merges overlapping calendar events, excludes elapsed time, protects breaks, and reserves buffer time. Each task gets one continuous gap. A task that cannot fit appears under **Not in this timeline** with a reason; its dates remain unchanged.
 
@@ -29,7 +31,7 @@ AI considers up to 60 candidate tasks and reports omitted coverage. Essential an
 
 ## Edit the plan
 
-Expand **Tasks and estimates** to change minutes, include/exclude tasks, reorder work, or pin a task and optionally a time. Labels distinguish **Your estimate**, **Saved estimate**, and **AI suggestion**. These changes recalculate the draft locally.
+On the **Check your tasks** step, change minutes, include/exclude tasks, reorder work, or pin a task and optionally a time. Labels distinguish **Your estimate**, **Saved estimate**, and **AI suggestion**. These changes recalculate the draft locally.
 
 Choose **Started** to preserve a proposed session during replanning. **Release session** makes it available to place again. Replanning preserves earlier proposed sessions as history, current started sessions, and existing bookings. Elapsed time never marks a task complete.
 
@@ -43,21 +45,21 @@ Existing calendar bookings stay fixed. Move them through the existing scheduling
 
 | Choice | Result |
 | --- | --- |
-| Planned date only | Set the selected date in the task's `planned` property. Proposed times remain in the day plan. The review shows the previous date/time. |
+| Plan for date | Set the selected date in the task's `planned` property. Proposed times remain in the day plan. The review shows the previous date/time. |
 | Save estimate | Save `estimated_minutes` to the task, including an explicitly selected AI suggestion. |
 | Book time | Create a linked calendar block at the displayed time and duration. Booking sets timed Planned; it does not change Deadline. |
 
-Choose **Review selected changes**, inspect the exact actions, then **Apply these changes**. Selecting a booking accepts its displayed duration, including a labelled AI suggestion. Task dates, goals, calendar coverage, and settings are checked again; stale plans require refresh and review. The conversational planner directs you to these controls instead of applying its own suggestions.
+Choose **Review changes**, inspect the exact actions, then **Apply changes**. **Back** returns to your day without applying anything. Selecting a booking accepts its displayed duration, including a labelled AI suggestion. Task dates, goals, calendar coverage, and settings are checked again; stale plans require refresh and review. The conversational planner directs you to these controls instead of applying its own suggestions.
 
 Recurring tasks and already linked tasks remain visible but cannot be bulk-rescheduled or booked here. Use their existing management controls. Excluded tasks and real deadlines are never moved as a side effect.
 
 ## Interrupted work and undo
 
-Each action reports **applied**, **not applied**, or **pending recovery**. A failure stops later actions and retains successful changes. **Resume remaining changes** checks the prior operation and reuses the same booking identity. If a link needs repair, follow [calendar recovery](task-scheduling.md#partial-writes-and-recovery) first. **Keep changes and close review** ends the operation without running the remaining actions; inspect any uncertain calendar booking before creating another plan.
+Each action reports **applied**, **not applied**, or **pending recovery**. A failure stops later actions and retains successful changes. **Resume changes** checks the prior operation and reuses the same booking identity. If a link needs repair, follow [calendar recovery](task-scheduling.md#partial-writes-and-recovery) first. **Keep changes and close review** ends the operation without running the remaining actions; inspect any uncertain calendar booking before creating another plan.
 
 Note edits use Recent changes and version-checked undo. Calendar bookings use the existing remove/move/repair controls. There is no single transaction or undo across a saved plan, several tasks, and external events.
 
-In-progress drafts are cached locally per vault/date and resume after restart. Ordinary caches expire after 30 days without a write; unfinished apply records are retained. **Discard cached draft** removes the local draft, not saved Markdown or task/calendar changes. See [Privacy](../privacy.md).
+In-progress drafts are cached locally per vault/date and resume after restart. Ordinary caches expire after 30 days without a write; unfinished apply records are retained. **Discard draft and start over** removes the local draft, not saved Markdown, task/calendar changes, or your remembered hours. See [Privacy](../privacy.md).
 
 ## Verification and limits
 

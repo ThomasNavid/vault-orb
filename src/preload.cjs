@@ -2,12 +2,13 @@ const {contextBridge,ipcRenderer}=require('electron');
 const invoke=name=>(...args)=>ipcRenderer.invoke(name,...args);
 contextBridge.exposeInMainWorld('orb',{
   providerCatalog:invoke('provider-catalog'),testModel:invoke('test-model'),speechStart:invoke('speech-start'),speechTurn:invoke('speech-turn'),speechInterrupt:invoke('speech-interrupt'),
-  trading212:invoke('trading212'),trading212Tracking:invoke('trading212-tracking'),trading212Connect:invoke('trading212-connect'),
+  places:invoke('places'),savePlaces:invoke('save-places'),placesLocation:invoke('places-location'),
+  weather:invoke('weather'),weatherSearch:invoke('weather-search'),saveWeather:invoke('save-weather'),trading212:invoke('trading212'),trading212Tracking:invoke('trading212-tracking'),trading212Connect:invoke('trading212-connect'),
   settings:invoke('settings'),saveAppearance:invoke('save-appearance'),saveSettings:invoke('save-settings'),chooseVault:invoke('choose-vault'),createVault:invoke('create-vault'),
   clippings:invoke('clippings'),clippingNote:invoke('clipping-note'),clippingSource:invoke('clipping-source'),
   knowledge:invoke('knowledge'),knowledgeNote:invoke('knowledge-note'),knowledgeWrite:invoke('knowledge-write'),knowledgeDismiss:invoke('knowledge-dismiss'),
   recurring:invoke('recurring'),recurringInstall:invoke('recurring-install'),recurringWrite:invoke('recurring-write'),recurringCreate:invoke('recurring-create'),
-  dayPlanner:invoke('day-planner'),
+  dayPlanner:invoke('day-planner'),focus:invoke('focus'),
   calendar:invoke('calendar'),habits:invoke('habits'),setHabit:invoke('set-habit'),openHabitRecord:invoke('open-habit-record'),goals:invoke('goals'),today:invoke('today'),history:invoke('history'),undo:invoke('undo'),openNote:invoke('open-note'),openLink:invoke('open-link'),
   connect:invoke('connect'),tool:invoke('tool'),chat:invoke('chat'),stop:invoke('stop'),
   chats:invoke('chats'),getChat:invoke('chat-get'),archiveChat:invoke('chat-archive'),renameChat:invoke('chat-rename'),deleteChat:invoke('chat-delete'),
@@ -16,5 +17,6 @@ contextBridge.exposeInMainWorld('orb',{
   onActivate:fn=>{ipcRenderer.on('activate-voice',()=>fn());},
   onHide:fn=>{ipcRenderer.on('hide-voice',()=>fn());},
   onSettings:fn=>{ipcRenderer.on('open-settings',()=>fn());},
+  onFocus:fn=>{ipcRenderer.on('focus',(_e,data)=>fn(data));},
   onShortcut:fn=>{ipcRenderer.on('shortcut-status',(_e,active)=>fn(active));}
 });

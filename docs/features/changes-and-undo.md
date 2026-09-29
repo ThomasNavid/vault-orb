@@ -64,7 +64,7 @@ For a goal review that also creates a task, the goal review and task creation ar
 
 ## Troubleshooting
 
-**“Note changed” before saving:** ask Orb to reread it and apply the intended edit to the new version.
+**“Note changed” before saving:** ask Smith to reread it and apply the intended edit to the new version.
 
 **Undo refuses:** undo newer Orb changes to that note first, or inspect newer external edits in Obsidian. Do not delete the journal or overwrite the note merely to force undo.
 
@@ -84,7 +84,7 @@ Captures, stages, Topic filing, revisit dates, managed Portfolio draft/questions
 
 ## Trading 212 reviews
 
-Browsing investments and asking account questions do not edit the vault or the trading account. If you explicitly ask Orb to append a portfolio review to an existing note, that note edit uses the normal version checks and undo journal. Undoing it does not delete the conversation or its saved financial card. Disconnecting the connector is a Settings change, not a journaled note edit, and does not revoke the key or erase saved chats. See [Trading 212](trading212.md) and [Privacy](../privacy.md#trading-212).
+Browsing investments and asking account questions do not edit the vault or the trading account. If you explicitly ask Smith to append a portfolio review to an existing note, that note edit uses the normal version checks and undo journal. Undoing it does not delete the conversation or its saved financial card. Disconnecting the connector is a Settings change, not a journaled note edit, and does not revoke the key or erase saved chats. See [Trading 212](trading212.md) and [Privacy](../privacy.md#trading-212).
 
 ## Calendar-linked tasks
 

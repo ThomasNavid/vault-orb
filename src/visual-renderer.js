@@ -8,17 +8,20 @@
  function table(columns,rows,paths,open){const wrap=el('div','table-scroll'),t=el('table'),head=el('thead'),tr=el('tr');columns.forEach((col,j)=>tr.append(el('th',rows.some(r=>typeof r[j]==='number')?'numeric':null,col)));head.append(tr);const body=el('tbody');rows.forEach((row,i)=>{const r=stagger(el('tr'),i);row.forEach((value,j)=>{const c=el('td',typeof value==='number'?'numeric':'');if(j===0&&paths?.[i]){const b=el('button','source-link',value??'—');b.onclick=()=>open(paths[i]);c.append(b);}else c.textContent=value??'—';r.append(c);});body.append(r);});t.append(head,body);wrap.append(t);return wrap;}
  // Task tables read better as a list: title, area tag, and when.
  const isTaskTable=v=>v.columns[0]==='Task'&&v.columns.includes('Area');
- function taskList(v,open){
+ function taskList(v,open,actions={}){
   const col=name=>v.columns.indexOf(name),area=col('Area'),planned=col('Planned'),due=col('Deadline');
-  const tags=new Map(),list=el('ul','task-list');
+  const tags=new Map(),list=el('ul','task-list'),dated=planned>=0||due>=0;
+  if(dated&&v.rows.length){const head=el('li','task task-head');head.setAttribute('aria-hidden','true');head.append(el('span','task-ring'),el('span','task-main','Task'));if(planned>=0)head.append(el('span','task-date','Planned'));if(due>=0)head.append(el('span','task-date','Due'));list.append(head);}
   v.rows.forEach((row,i)=>{
    const completed=v.taskCompleted?.[i]===true,item=stagger(el('li',`task${completed?' is-completed':''}`),i),main=el('div','task-main');
    item.append(el('span','task-ring'));
    const title=v.rowPaths?.[i]?el('button','source-link task-title',row[0]??'—'):el('span','task-title',row[0]??'—');if(v.rowPaths?.[i])title.onclick=()=>open(v.rowPaths[i]);main.append(title);
    if(area>=0&&row[area]){if(!tags.has(row[area]))tags.set(row[area],tags.size%palette.length);main.append(el('span',`tag tag-${tags.get(row[area])}`,row[area]));}
    if(v.taskRepeat?.[i])main.append(el('span','tag',v.taskRepeat[i]));
-   const when=el('div','task-when');if(completed)when.append(el('span','task-status','Completed'));if(v.taskBlocks?.[i])when.append(el('span','task-status',v.taskBlocks[i].state==='linked'&&!v.taskWarnings?.some(w=>w.path===v.rowPaths?.[i])?'Calendar linked':'Calendar needs repair'));if(planned>=0&&row[planned])when.append(el('span',null,row[planned]));if(due>=0&&row[due])when.append(el('span','due','Due '+row[due]));
-   item.append(main,when);list.append(item);
+   if(completed)main.append(el('span','task-status','Completed'));if(v.taskBlocks?.[i])main.append(el('span','task-status',v.taskBlocks[i].state==='linked'&&!v.taskWarnings?.some(w=>w.path===v.rowPaths?.[i])?'Calendar linked':'Calendar needs repair'));
+   item.append(main);
+   if(!completed&&v.rowPaths?.[i]&&actions.focus){const focus=el('button','task-focus');focus.type='button';focus.append(icon('i-clock'));focus.setAttribute('aria-label',`Focus on ${row[0]} for 25 minutes`);focus.title='Focus · 25 min';focus.onclick=()=>actions.focus({action:'start',path:v.rowPaths[i],minutes:25});main.append(focus);}
+   if(planned>=0)item.append(el('span','task-date',row[planned]||'—'));if(due>=0)item.append(el('span','task-date due',row[due]||'—'));list.append(item);
   });
   for(const w of v.taskWarnings||[])list.append(el('li','calendar-warning',`${w.path?w.path.split('/').pop()+': ':''}${w.error||'Task data needs attention.'}`));
   return list;
@@ -135,11 +138,11 @@
    try{await action();status.textContent='Saved.';}catch(e){status.textContent=(e.message||String(e)).replace(/^Error invoking remote method '[^']+': Error: /,'');}
    finally{busy=false;controls.forEach(n=>n.disabled=false);}
   }
-  const select=(date,year=Number(date.slice(0,4)))=>run(()=>actions.habits?.({date,year}));
+  const select=(date,year=Number(date.slice(0,4)),end=null)=>run(()=>actions.habits?.({date,year,...(end?{end}:{})}));
   const toolbar=el('div','habit-toolbar'),label=el('label',null,'Log a day'),picker=el('input');picker.type='date';picker.value=v.date;picker.max=v.today;picker.min='1900-01-01';picker.setAttribute('aria-label','Log a day');picker.dataset.focus='habit-date';label.append(picker);
   picker.onchange=()=>{if(picker.value&&picker.checkValidity())select(picker.value);else {picker.value=v.date;status.textContent='Choose a valid date from 1900 through today.';}};
   const today=el('button','secondary','Today');today.dataset.focus='habit-today';today.onclick=()=>select(v.today);
-  const refresh=el('button','data-toggle','Refresh');refresh.onclick=()=>select(v.date,v.year);refresh.dataset.focus='habit-refresh';toolbar.append(label,today,refresh);wrap.append(toolbar);
+  const refresh=el('button','data-toggle','Refresh');refresh.onclick=()=>select(v.date,v.year,v.range?.end);refresh.dataset.focus='habit-refresh';toolbar.append(label,today,refresh);wrap.append(toolbar);
   const checkArea=el('div','habit-checks');
   for(const h of v.habits){const label=el('label','habit-check'),check=el('input');check.type='checkbox';check.checked=v.selected.values?.[h.key]===true;check.disabled=!!v.selected.error;check.dataset.focus='habit-'+h.key;
    check.onchange=()=>{const completed=check.checked;check.checked=!completed;run(()=>actions.setHabit?.({date:v.date,key:h.key,completed,version:v.selected.version,definitions_version:v.definitions_version}));};label.append(check,el('span',null,h.label));checkArea.append(label);}
@@ -155,41 +158,93 @@
    const count=el('div','habit-count');count.append(el('strong',null,String(h.week_count)),el('span',null,` / ${h.target} days`));card.append(count);
    const progress=el('progress');progress.max=h.target;progress.value=Math.min(h.week_count,h.target);progress.setAttribute('aria-label',`${h.label}: ${h.week_count} of ${h.target} days recorded this week`);card.append(progress,el('span','habit-caption',h.week_count>=h.target?'Weekly target reached':`${h.target-h.week_count} more ${h.target-h.week_count===1?'day':'days'} to your target`));cards.append(card);}
   wrap.append(cards);
-  const annual=el('div','habit-year-controls'),prev=el('button','calendar-nav','‹'),next=el('button','calendar-nav','›');prev.setAttribute('aria-label','Previous habit year');next.setAttribute('aria-label','Next habit year');prev.disabled=v.year<=1900;next.disabled=v.year>=Number(v.today.slice(0,4));prev.dataset.focus='habit-prev';next.dataset.focus='habit-next';
-  prev.onclick=()=>select(v.date,v.year-1);next.onclick=()=>select(v.date,v.year+1);annual.append(el('h2','habit-section-title','A year of showing up'),prev,el('strong',null,String(v.year)),next);wrap.append(annual,el('p','habit-caption','Select a square to view that day. Only a checked habit records completion.'));
-  const records=new Map(v.records.map(r=>[r.date,r.values])),bad=new Set(v.bad_dates||[]),first=`${v.year}-01-01`,last=`${v.year}-12-31`,offset=(new Date(first+'T12:00:00Z').getUTCDay()+6)%7;
+  // A 13-week window (about 90 days) with large cells; paging keeps the selected day.
+  const range=v.range||(()=>{const monday=plus(v.date,-((new Date(v.date+'T12:00:00Z').getUTCDay()+6)%7));return {start:plus(monday,-84),end:plus(monday,6)};})();
+  const shortDate=date=>new Date(date+'T12:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'UTC',...(date.slice(0,4)!==v.today.slice(0,4)?{year:'numeric'}:{})});
+  const controls=el('div','habit-range-controls'),prev=el('button','calendar-nav','‹'),next=el('button','calendar-nav','›'),heading=el('div','habit-range-title');
+  prev.type=next.type='button';prev.setAttribute('aria-label','Previous 13 weeks');next.setAttribute('aria-label','Next 13 weeks');prev.dataset.focus='habit-prev';next.dataset.focus='habit-next';
+  prev.disabled=range.start<='1900-01-07';next.disabled=range.end>=v.today;
+  const inRange=v.date>=range.start&&v.date<=range.end;
+  prev.onclick=()=>select(v.date,undefined,plus(range.start,-1));next.onclick=()=>select(v.date,undefined,plus(range.end,91));
+  heading.append(el('h2','habit-section-title',range.end>=v.today?'Last 90 days':'90 days'),el('span','habit-range-dates',(()=>{const last=range.end>v.today?v.today:range.end,span=range.start.slice(0,4)!==last.slice(0,4),full=d=>new Date(d+'T12:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});return span?`${full(range.start)} – ${full(last)}`:`${shortDate(range.start)} – ${shortDate(last)}`;})()));
+  controls.append(heading,prev,next);wrap.append(controls,el('p','habit-caption','Select a square to view that day. Only a checked habit records completion.'));
+  const records=new Map(v.records.map(r=>[r.date,r.values])),bad=new Set(v.bad_dates||[]);
   for(const h of v.habits){
-   const section=el('section','habit-map');section.style.setProperty('--habit-color',h.color);const heading=el('div','habit-map-heading');heading.append(el('h3',null,h.label),el('span','habit-caption',`${h.year_count} ${h.year_count===1?'day':'days'} recorded in ${v.year}`));section.append(heading);
-   const scroll=el('div','habit-map-scroll'),plot=el('div','habit-plot'),months=el('div','habit-months'),grid=el('div','habit-grid'),weekdays=el('div','habit-weekdays');
-   ['M','','W','','F','','S'].forEach(d=>weekdays.append(el('span',null,d)));grid.setAttribute('aria-label',`${h.label} daily history for ${v.year}`);
-   for(let i=0;i<offset;i++)grid.append(el('span','habit-cell habit-blank'));
-   let i=0;const cells=[];
-   for(let d=first;d<=last;d=plus(d,1),i++){
-    if(d.endsWith('-01')){const month=el('span',null,new Date(d+'T12:00:00Z').toLocaleDateString('en-GB',{month:'short',timeZone:'UTC'}));month.style.gridColumn=String(Math.floor((offset+i)/7)+1);months.append(month);}
-    const done=records.get(d)?.[h.key]===true,unknown=bad.has(d),future=d>v.today,cell=el('button','habit-cell'+(done?' is-done':'')+(unknown?' is-unknown':'')+(d===v.today?' is-today':''));cell.type='button';cell.dataset.date=d;cell.dataset.focus=`${h.key}-${d}`;cell.disabled=future;cell.tabIndex=d===(v.date.startsWith(String(v.year))?v.date:v.today.startsWith(String(v.year))?v.today:first)?0:-1;
-    const label=`${d} · ${h.label}: ${future?'future date':unknown?'unreadable record':done?'recorded':'not recorded'}`;cell.title=label;cell.setAttribute('aria-label',label);cell.setAttribute('aria-pressed',String(d===v.date));
-    cell.onclick=()=>select(d,v.year);cell.onkeydown=e=>{const delta={ArrowUp:-1,ArrowDown:1,ArrowLeft:-7,ArrowRight:7}[e.key];if(delta===undefined)return;e.preventDefault();const target=cells.find(c=>c.dataset.date===plus(d,delta));if(target&&!target.disabled){cells.forEach(c=>c.tabIndex=-1);target.tabIndex=0;target.focus();}};grid.append(cell);cells.push(cell);
+   const section=el('section','habit-map');section.style.setProperty('--habit-color',h.color);
+   const total=h.range_count??[...records].filter(([d,values])=>d>=range.start&&d<=range.end&&values[h.key]===true).length;
+   const title=el('div','habit-map-heading');title.append(el('h3',null,h.label),el('span','habit-caption',`${total} ${total===1?'day':'days'}`));section.append(title);
+   const plot=el('div','habit-plot'),months=el('div','habit-months'),grid=el('div','habit-grid'),weekdays=el('div','habit-weekdays');
+   ['Mon','','Wed','','Fri','','Sun'].forEach(d=>weekdays.append(el('span',null,d)));grid.setAttribute('aria-label',`${h.label} daily history, ${shortDate(range.start)} to ${shortDate(range.end)}`);
+   const cells=[],focus=inRange?v.date:range.end>v.today?v.today:range.end;
+   const monthName=d=>new Date(d+'T12:00:00Z').toLocaleDateString('en-GB',{month:'short',timeZone:'UTC'}),firstOfMonth=col=>Array.from({length:7},(_,k)=>plus(range.start,col*7+k)).find(d=>d.endsWith('-01'));
+   for(let col=0;col<13;col++){const first=firstOfMonth(col),label=first?monthName(first):col===0&&!firstOfMonth(1)?monthName(range.start):null;if(label){const month=el('span',null,label);month.style.gridColumn=String(col+1);months.append(month);}}
+   for(let d=range.start,i=0;d<=range.end;d=plus(d,1),i++){
+    const done=records.get(d)?.[h.key]===true,unknown=bad.has(d),future=d>v.today,cell=el('button','habit-cell'+(done?' is-done':'')+(unknown?' is-unknown':'')+(d===v.today?' is-today':''));
+    cell.type='button';cell.dataset.date=d;cell.dataset.focus=`${h.key}-${d}`;cell.disabled=future;cell.tabIndex=d===focus?0:-1;
+    const label=`${shortDate(d)} · ${h.label}: ${future?'future date':unknown?'unreadable record':done?'recorded':'not recorded'}`;cell.title=label;cell.setAttribute('aria-label',label);cell.setAttribute('aria-pressed',String(d===v.date));
+    cell.onclick=()=>select(d,undefined,range.end);cell.onkeydown=e=>{const delta={ArrowUp:-1,ArrowDown:1,ArrowLeft:-7,ArrowRight:7}[e.key];if(delta===undefined)return;e.preventDefault();const target=cells.find(c=>c.dataset.date===plus(d,delta));if(target&&!target.disabled){cells.forEach(c=>c.tabIndex=-1);target.tabIndex=0;target.focus();}};grid.append(cell);cells.push(cell);
    }
-   plot.append(months,weekdays,grid);scroll.append(plot);section.append(scroll);
-   const legend=el('div','habit-legend');for(const [cls,text]of [['','Not recorded'],['is-done','Recorded'],['is-today','Today']]){const item=el('span');item.append(el('i','habit-cell '+cls),document.createTextNode(text));legend.append(item);}section.append(legend);wrap.append(section);
+   plot.append(months,weekdays,grid);section.append(plot);wrap.append(section);
   }
+  const legend=el('div','habit-legend');for(const [cls,text]of [['','Not recorded'],['is-done','Recorded'],['is-today','Today']]){const item=el('span');item.append(el('i','habit-cell '+cls),document.createTextNode(text));legend.append(item);}wrap.append(legend);
   wrap.append(el('h2','habit-section-title','Recent weeks'));
   wrap.append(table(['Week',...v.habits.map(h=>h.label)],v.weeks.map(w=>[`${dateLabel(w.start)} – ${dateLabel(w.end)}${w.current?' · current':''}${w.incomplete?' · incomplete':''}`,...v.habits.map(h=>`${w.counts[h.key]} / ${h.target}${w.counts[h.key]>=h.target?' ✓':''}`)]),null,open));
   wrap.append(el('p','habit-caption habit-footnote','A colored square means one recorded day. Empty means not recorded. Targets apply to all weeks; they do not automatically complete goals.'));
   return wrap;
  }
+ // Focus sessions: a small setup form, and the card that appears when time is up.
+ const cleanError=e=>(e?.message||String(e)).replace(/^Error invoking remote method '[^']+': Error: /,'');
+ function focusCard(v,open,actions){
+  const wrap=el('div','focus-card'),status=el('p','focus-status');status.setAttribute('role','status');
+  const run=async(buttons,args,done)=>{buttons.forEach(b=>b.disabled=true);status.textContent='';try{await actions.focus(args);if(done)status.textContent=done;else buttons.forEach(b=>b.disabled=false);}catch(e){status.textContent=cleanError(e);buttons.forEach(b=>b.disabled=false);}};
+  const button=(cls,text)=>{const b=el('button',cls,text);b.type='button';return b;};
+  if(v.mode==='setup'){
+   const form=el('form','focus-form'),label=el('label','focus-label','What are you working on?'),title=el('input');
+   title.id='focus-title';label.htmlFor=title.id;title.maxLength=180;title.placeholder='Email, reading, a draft…';title.autocomplete='off';
+   const lengths=el('div','focus-lengths');lengths.setAttribute('role','radiogroup');lengths.setAttribute('aria-label','Length');let minutes=25;
+   for(const n of [15,25,45,60]){const chip=button('focus-length',`${n} min`);chip.setAttribute('role','radio');chip.setAttribute('aria-checked',String(n===minutes));chip.onclick=()=>{minutes=n;for(const c of lengths.children)c.setAttribute('aria-checked',String(c===chip));};lengths.append(chip);}
+   const start=el('button','primary','Start focus');start.type='submit';
+   form.onsubmit=e=>{e.preventDefault();if(!title.value.trim()){status.textContent='Add a short title first.';title.focus();return;}run([start],{action:'start',title:title.value.trim(),minutes});};
+   form.append(label,title,lengths,start);wrap.append(form,status,el('p','help','To log progress on a task, press the clock beside it in any task list, or ask Smith for time on it.'));
+   setTimeout(()=>title.focus(),60);
+   return wrap;
+  }
+  const s=v.session;
+  if(s.path){
+   const link=button('source-link focus-task',s.title);link.onclick=()=>open(s.path);wrap.append(link);
+   const form=el('form','focus-form'),label=el('label','focus-label','What did you get done?'),note=el('input');
+   note.id='focus-note';label.htmlFor=note.id;note.maxLength=500;note.placeholder='Optional · e.g. drafted the intro';note.autocomplete='off';
+   const log=el('button','primary','Log progress'),done=button('secondary','Mark done');log.type='submit';
+   form.onsubmit=e=>{e.preventDefault();run([log,note],{action:'log',note:note.value.trim()},'Logged in the task’s Focus log.');};
+   done.onclick=()=>run([done],{action:'done'},'Marked done.');
+   const row=el('div','focus-actions');row.append(log,done);form.append(label,note,row);wrap.append(form);
+   setTimeout(()=>note.focus(),60);
+  }else wrap.append(el('p','help','This session was not linked to a task, so there is nothing to log.'));
+  const more=button('secondary','+5 min'),finish=button('secondary','Done'),row=el('div','focus-actions');
+  more.onclick=()=>run([more,finish],{action:'extend',minutes:5});finish.onclick=()=>run([more,finish],{action:'dismiss'});
+  row.append(more,finish);wrap.append(row,status);
+  return wrap;
+ }
  window.renderVisual=(host,v,openSource,actions={})=>{
+  window.placesUI?.dispose(host);
+  if(v?.kind==='places'){window.placesUI.render(host,v,actions);return;}
   if(v?.kind==='day-planner'){window.dayPlannerUI.render(host,v);return;}
   if(v?.kind==='recurring'){const api=window.orb||window.orbRecurringPreview;window.OrbRecurring.ui.mount(host,{list:()=>api.recurring(),...(api.recurringInstall?{install:()=>api.recurringInstall()}:{}),write:args=>api.recurringWrite(args),create:args=>api.recurringCreate(args),open:path=>api.openNote(path)});return;}
+  if(v?.kind==='weather'){window.weatherUI.render(host,v,actions);return;}
   if(v?.kind==='trading212'){window.trading212UI.render(host,v,actions);return;}
   const habitFocus=document.activeElement?.dataset.focus,habitScroll=host.scrollTop;
   const selectedDate=host.querySelector('.calendar-day[aria-pressed="true"]')?.dataset.date;
   host.replaceChildren();host.append(el('h1',null,v.title),el('p','subtitle',v.subtitle||''));
   if(v.kind==='habits'){host.append(habits(v,openSource,actions));host.scrollTop=habitScroll;if(habitFocus)[...host.querySelectorAll('[data-focus]')].find(n=>n.dataset.focus===habitFocus)?.focus({preventScroll:true});}
   else if(v.kind==='goals')host.append(goals(v,openSource,actions));
+  else if(v.kind==='focus')host.append(focusCard(v,openSource,actions));
   else if(v.kind==='calendar')host.append(calendar(v,openSource,selectedDate));
   else if(v.kind==='table'){
-   if(!v.rows.length)host.append(el('p','empty',v.emptyText||'No rows to show.'));else host.append(isTaskTable(v)?taskList(v,openSource):table(v.columns,v.rows,v.rowPaths,openSource));
+   for(const [i,section] of (v.taskSections||[v]).entries()){
+    if(i)host.append(el('h2','task-section-title',section.title),el('p','subtitle',section.subtitle));
+    if(!section.rows.length)host.append(el('p','empty',section.emptyText||'No rows to show.'));
+    if(isTaskTable(section))host.append(taskList(section,openSource,actions));else if(section.rows.length)host.append(table(section.columns,section.rows,section.rowPaths,openSource));
+   }
   }else{
    const series=v.series,points=v.points,values=points.flatMap(p=>p.values).filter(n=>n!==null),unit=v.unit||'';
    if(series.length===1){

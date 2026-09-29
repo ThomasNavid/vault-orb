@@ -1,11 +1,13 @@
-# Vault Orb documentation
+# Vault Orb - Smith documentation
 
-[Project home](../README.md) · [Things to ask Orb](things-to-ask.md)
+[Project home](../README.md) · [Things to ask Smith](things-to-ask.md)
+
+Vault Orb is the Mac app. Smith (Agent Smith) is its chat and voice assistant, named as a playful nod to *The Matrix*.
 
 ## Start here
 
 - [Getting started](getting-started.md): requirements, installation, settings, and a first walkthrough.
-- [Things to ask Orb](things-to-ask.md): copyable requests, prerequisites, and expected results.
+- [Things to ask Smith](things-to-ask.md): copyable requests, prerequisites, and expected results.
 - [Vault format](vault-format.md): folder layout, task and goal properties, dates, and templates.
 - [Privacy and data](privacy.md): what stays local, what is sent, and what is recorded.
 - [Troubleshooting](troubleshooting.md): common problems and practical checks.
@@ -20,11 +22,14 @@ Every guide covers purpose, setup, things to ask, expected results, a walkthroug
 | [Tasks](features/tasks.md) | Read, create, plan, categorize, complete, and reopen task notes. |
 | [Goals and weekly reviews](features/goals.md) | Define outcomes, link next actions, review progress, and change status. |
 | [Habits and heatmaps](features/habits.md) | Log repeated actions, inspect annual history, and review weekly totals. |
+| [Focus sessions](features/focus-sessions.md) | Time focused work with a progress ring around the orb, then log progress to the task. |
 | [Task scheduling](features/task-scheduling.md) | Find free time, book linked blocks, move them, and reflect task completion. |
 | [Calendar](features/calendar.md) | Read calendars, include task dates, and create/edit single Google Calendar events. |
 | [Web Clippings](features/web-clippings.md) | Search saved articles, videos and posts; filter, preview and ask questions about captured content. |
+| [Maps and nearby places](features/maps-and-places.md) | Browse saved places, discover nearby cafés, see walking times, and open directions. |
 | [Finding and updating notes](features/notes.md) | Search, read, summarize, compare, and append to existing notes. |
-| [Trading 212](features/trading212.md) | Connect a read-only investment account, browse holdings and history, and ask Orb about retrieved data. |
+| [Weather](features/weather.md) | Check the live forecast with jacket and umbrella advice, and watch the orb react to the weather. |
+| [Trading 212](features/trading212.md) | Connect a read-only investment account, browse holdings and history, and ask Smith about retrieved data. |
 | [Spreadsheets and visuals](features/spreadsheets-and-visuals.md) | Inspect supported files and display sourced tables and charts. |
 | [AI daily planner](features/daily-planner.md) | Build a realistic day with AI priorities, editable estimates, a timeline, Markdown plans, and reviewed task/calendar changes. |
 | [Planning across notes](features/planning.md) | Compare evidence and propose actions using goals, tasks, and notes. |
@@ -36,6 +41,7 @@ Every guide covers purpose, setup, things to ask, expected results, a walkthroug
 - [Contributing](../CONTRIBUTING.md): change scope, validation, and documentation expectations.
 - [Development](development.md): architecture, tool map, tests, packaging, installation, and previews.
 - [Trading 212 improvement plan](trading212-improvement-plan.md): delivered local tracking/metrics scope, validation gates and deferred market-data expansion.
+- [Focus sessions plan](focus-sessions-plan.md): design decisions and behaviour contract for timed focus sessions.
 - [Web clippings plan](web-clippings-plan.md): design and implementation scope for searchable saved clippings, with later capture extensions.
 - [Goals internals](goals.md): parser, linked tasks, review writes, and feature-specific tests.
 - [Habits internals](habits.md): shared definitions, daily records, heatmaps, and tests.

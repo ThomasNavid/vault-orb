@@ -30,20 +30,29 @@ The native build script resolves Node headers beside the installed Node binary a
 | [vault.cjs](../src/vault.cjs) | File boundary checks, note search/reads, task records, versioned writes, journal, and undo. |
 | [goals.cjs](../src/goals.cjs) | Goal records, link resolution, managed narrative sections, and review writes. |
 | [habits.cjs](../src/habits.cjs) | Validated Dataview habit definitions, date-based activity, weekly totals, and versioned logging. |
+| [focus.cjs](../src/focus.cjs) | Focus session timer: one session with absolute start and end times, pause/extend, and `focus.json` persistence and restore. Also validates what a session is linked to. |
 | [today.cjs](../src/today.cjs) | Daily aggregation with linked-block reconciliation before task reads with isolated section failures. |
 | [calendar.cjs](../src/calendar.cjs) | iCal sources/cache/recurrence, task dates, source warnings, and calendar query results. |
 | [google-calendar.cjs](../src/google-calendar.cjs) | Full Calendar local API, connected Google calendars, event lookup, validation, creation, editing, and linked-block removal. |
+| [weather.cjs](../src/weather.cjs) | Open-Meteo forecast and place search, a 10-minute cache with a 2-hour offline fallback, deterministic jacket/umbrella/sun advice, orb mood thresholds, and `settings.json` weather validation. |
+| [weather-ui.js](../src/weather-ui.js), [weather.css](../src/weather.css) | Weather card, Today chip helper, and the Settings → Connectors → Weather place search. |
 | [trading212.cjs](../src/trading212.cjs) | Credential helpers, fixed read-only API endpoints, response projection, caching, rate limits and history pagination. |
 | [trading212-ui.js](../src/trading212-ui.js), [trading212.css](../src/trading212.css) | Settings connector, companion/chat financial views, pagination controls and fictional preview. |
 | [spreadsheet.cjs](../src/spreadsheet.cjs) | Bounded Excel/CSV/TSV inspection and reads. |
 | [visuals.cjs](../src/visuals.cjs) | Chart/table validation and native task, goal, and calendar visual construction. |
 | [visual-renderer.js](../src/visual-renderer.js) | DOM/SVG presentation, source links, goal filters, and calendar interactions. |
 | [renderer.js](../src/renderer.js) | WebRTC voice session, typed messages, UI state, activity, and preview fixtures. |
-| [orb.js](../src/orb.js) | Jelly Orb: layered SVG, spring motion, pointer attraction, and per-state looks behind `window.orbVisual.setState/setLevel`. |
+| [orb.js](../src/orb.js) | Jelly Orb: layered SVG, spring motion, pointer attraction, and per-state looks behind `window.orbVisual.setState/setLevel`. `react({colour,wet,snow})` plays the roughly five-second weather tint and rain or snow shimmer without changing the saved colour. |
 | [index.html](../src/index.html), [style.css](../src/style.css) | Interface structure and styling. |
 | [native/shortcut.cc](../native/shortcut.cc) | Native Control gesture listener. |
 
 Main/renderer isolation, restricted navigation, and the local preload bridge keep filesystem and permanent credential access in the main process. Native goal/task/calendar panels are created directly from tool results. General visuals accept validated data, not executable HTML or scripts.
+
+## Assistant name
+
+The assistant is **Smith (Agent Smith)**, a playful nod to *The Matrix*. The shared `instructions()` function in [agent.cjs](../src/agent.cjs) sets this identity for chat/tools, deeper reasoning, and Realtime voice. Independent voice uses the same chat agent. Conversational interface text uses Smith, including **Ask Smith**, **Talk to Smith**, **Draft with Smith**, and transcript labels.
+
+**Vault Orb** remains the product name. Keep app identifiers, storage paths, vault layouts, `/orb`, and technical `orb` names stable when updating assistant-facing copy. The name does not select a different model or speech voice; those remain provider settings.
 
 ## Assistant tool map
 
@@ -52,14 +61,24 @@ Main/renderer isolation, restricted navigation, and the local preload bridge kee
 | `list_tasks`, `create_task`, `update_task` | [Tasks](features/tasks.md): two lists, exact fields, explicit completion. |
 | `list_goals`, `create_goal`, `update_goal`, `review_goal` | [Goals](features/goals.md): outcome → task → recorded review. [Internals](goals.md). |
 | `list_habits`, `set_habit` | [Habits](features/habits.md): shared daily logs, local controls, and heatmaps. [Internals](habits.md). |
+| `weather` | [Weather](features/weather.md): forecast card, advice and orb reaction. Also a direct realtime voice tool beside `run_task`, so quick weather questions skip delegation. Main exposes `weather`, `weather-search` and `save-weather` IPC. |
 | `trading212` | [Trading 212](features/trading212.md): read account data and render a financial card; no order mutations. History continuation needs the returned `nextPagePath` and `connectionId`. |
 | `query_calendar`, `create_calendar_event` | [Calendar](features/calendar.md): reads, single-event edits, and [linked scheduling](features/task-scheduling.md). |
 | `search_notes`, `find_files`, `read_note`, `append_note` | [Notes](features/notes.md): keyword retrieval and append-only general note writes. |
 | `read_spreadsheet`, `show_visual`, `dismiss_visual` | [Spreadsheets and visuals](features/spreadsheets-and-visuals.md): bounded data and source-backed presentation. |
+| `start_focus`, `focus`, `log_focus` | [Focus sessions](features/focus-sessions.md): one timer in the main process. Logging only happens on request, and a finished session never completes the task. |
 | `undo_change` | [Changes and undo](features/changes-and-undo.md): version-checked note restoration. |
 | `run_task`, `think_deeply` | [Planning](features/planning.md): Realtime delegates to chat/tools; chat can delegate to an optional reasoning model. |
 
 Existing settings default to OpenAI `gpt-realtime-2.1` and `gpt-6-sol`. `ai-settings.cjs` validates model roles and migrates the legacy encrypted key when settings are saved. `providers.cjs` adapts OpenAI Responses and OpenRouter Chat Completions, preserving native reasoning state across tool turns. Realtime exposes only `run_task`, delegating vault work to chat/tools. Optional `think_deeply` routes to the reasoning model and cannot recurse. Nested work shares a 12-request budget, with sequential tool execution, argument validation, and per-request call-ID deduplication. `speech.cjs` and `speech-client.js` implement the interruptible Deepgram/ElevenLabs pipeline; recognition and playback buffers are memory-only. Permanent keys remain in the main process. Use [agent tests](../test/agent.test.cjs) for API mocks, cancellation, and refresh behavior; do not introduce credentials into fixtures.
+
+## Task results and graph context
+
+Within one assistant request, `agent.cjs` combines `list_tasks` reads for today and overdue when their dates and completion filters match and the task view is still current. The request budget tracks the previous view; a new request starts fresh. `taskSections` keeps today first and past deadlines below in `visual-renderer.js`, including after edits and undo. Tool results still return the individually requested scope.
+
+`KnowledgeGraph.tasks()` builds a separate graph from displayed task rows, deduplicating exact task paths across sections and connecting them to their displayed areas. `knowledge-ui.js` chooses task or knowledge data from the active view and resets focus/search/type/Hub/unlinked filters on context changes. Task previews use the displayed dates and open the original note; area nodes cannot open a note. `chat.js` keeps background chat results from replacing the active graph context.
+
+Regression coverage in `test/agent.test.cjs` checks both task-query orders, refresh after completion, and a subsequent overdue-only request. `test/knowledge.test.cjs` checks task graph membership, overlapping-section deduplication, paths, dates and empty results. Browser checks should reproduce Knowledge → Computing local graph → today and overdue → to-do graph, then switch to overdue-only and empty lists, verifying stale focus/search filters are cleared. These fixtures do not prove live model query selection or Obsidian opening.
 
 ## Orb appearance
 
@@ -194,10 +213,24 @@ Trusted IPC exposes `clippings`, `clipping-note`, and `clipping-source`; the lat
 
 Run `node --test test/clippings.test.cjs test/clippings-ipc.test.cjs` and `npm test`. Temporary-vault tests cover content beyond the preview limit, metadata, filters, pagination beyond 2,000 notes, incomplete coverage, refresh, vault isolation, trusted IPC and assistant retrieval. Browser checks should cover body search, category/date/source/Topic filters, missing results, keyboard navigation, narrow layouts and inert captured markup. IPC mocks and browser fixtures do not verify live Obsidian opening or model-generated answers.
 
+## Focus sessions
+
+`FocusTimer` in `focus.cjs` owns the only session. Main creates it with `userData/focus.json`, restores it on launch, and re-arms it when the Mac wakes. It sends `{session, event}` on the `focus` IPC channel. It is not sent as `activity`, so a finishing session is never attached to a chat turn. Main also updates the tray title, shows the orb with `showInactive()` when a session finishes, and posts a notification if the app is not focused. The trusted `focus` handle covers status, start, pause, resume, extend, stop and dismiss. Its `log` and `done` actions go through `agent.execute`, so the change is journaled and panels refresh.
+
+`orb.js` exposes `orbVisual.setFocus({durationMs, endsAt, pausedAt})` and `orbVisual.celebrate()`. The ring is drawn in the existing render loop from absolute timestamps. With reduced motion, a one-second ticker redraws it instead. `renderer.js` mirrors the session on the idle status line and inline controls, and renders the setup and finish cards through `renderVisual` with `kind:'focus'`. In the browser preview, focus sessions count seconds instead of minutes, so typing “focus” or pressing a task-row clock shows the ring and celebration quickly.
+
+Run `node --test test/focus.test.cjs`. It covers the timer state machine with a fake clock, restore after restart, target validation, Focus log placement and undo, and the agent tools.
+
 ## AI daily planner
 
-`day-planner.cjs` collects a read-only snapshot, creates manual drafts, validates preferences and allocates continuous task intervals after merging busy time. It reuses exported scheduling availability helpers and `calendar-time.cjs`; snapshot calendar reads skip reconciliation. `day-planner-ai.cjs` uses the existing provider adapter with only `submit_day_plan`, bounded context, schema and identity validation, and one repair attempt. `day-plans.cjs` owns vault-scoped cached drafts, managed Markdown plans, revision-bound reviews, serial apply and durable recovery. A persisted booking UUID is passed into the existing scheduler so retry never posts a second event for a pending operation.
+`day-planner.cjs` collects a read-only snapshot, creates manual drafts, validates preferences and allocates continuous task intervals after merging busy time. It reuses exported scheduling availability helpers and `calendar-time.cjs`; snapshot calendar reads skip reconciliation. `day-planner-ai.cjs` uses the existing provider adapter with only `submit_day_plan`, bounded context, schema and identity validation, and one repair attempt. `day-plans.cjs` owns vault-scoped cached drafts, remembered preferences (`preferences.json`: start, end, buffer, scope, breaks; applied to new drafts, updated on preference edits), managed Markdown plans, revision-bound reviews, serial apply and durable recovery. A persisted booking UUID is passed into the existing scheduler so retry never posts a second event for a pending operation.
 
-Trusted `day-planner` IPC and the draft-only `plan_day` assistant tool share the same service. Planner sessions cannot delegate or mutate; an assistant turn that enters daily planning cannot subsequently call mutation tools. `day-planner-ui.js` renders the same panel in companion and chat views, with manual edits, AI refinement, explicit write choices, and fictional browser fixtures. `day-planner.css` scopes its dark-theme styles.
+Trusted `day-planner` IPC and the draft-only `plan_day` assistant tool share the same service. Planner sessions cannot delegate or mutate; an assistant turn that enters daily planning cannot subsequently call mutation tools. `day-planner-ui.js` renders the same panel in companion and chat views as an eight-step flow (`STEPS`: hours, tasks, energy, breaks, free time, priorities, estimates, your day) with progress dots, Back/Continue, and an apply screen over the last step. Hours and free time are held locally and committed when you move on, so typing never redraws the field. It also contains fictional browser fixtures. `day-planner.css` scopes its dark-theme styles.
 
-Run `node --test test/day-planner.test.cjs`, then `npm test`. Coverage includes interval union, reserves, fragmentation, timezones, estimate metadata preservation, model validation, read-only drafting, stale revisions, partial writes, cancellation and restart recovery. Browser checks cover the 870 × 560 panel, narrower layouts, estimate editing and review controls; these are simulated fixtures. Live AI, Full Calendar and Google behaviour require separate disposable-vault checks.
+Run `node --test test/day-planner.test.cjs`, then `npm test`. Coverage includes interval union, reserves, fragmentation, timezones, estimate metadata preservation, model validation, read-only drafting, stale revisions, partial writes, cancellation and restart recovery. Browser checks cover each step of the flow, remembered hours on a new date, estimate editing and the apply review; these are simulated fixtures. Live AI, Full Calendar and Google behaviour require separate disposable-vault checks.
+
+## Maps and Places implementation
+
+`places.cjs` owns portable vault records, `places-provider.cjs` wraps Geoapify, and `places-service.cjs` resolves origins/results and constructs directions. `places-ui.js` shares the map/card component between companion and chat. Main-process IPC handles writes and external links; a narrowly validated `orbplaces://tiles/…` handler keeps the Geoapify key out of the renderer. `native/location.mm` provides one-shot macOS Core Location through N-API; `build:native` builds it and packaging includes both native helpers.
+
+MapLibre assets are bundled under `src/vendor/maplibre` with their licence. After upgrading the pinned dependency, run `npm run build:maps`. Browser preview includes fictional Places fixtures and real OpenStreetMap tiles; the normal app requests Geoapify tiles. Run `node --test test/places*.test.cjs` for record, provider, service, and trusted IPC coverage, then `npm test`.

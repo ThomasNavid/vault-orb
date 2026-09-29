@@ -1,8 +1,8 @@
 # Habits and weekly rhythm
 
-[Documentation](../README.md) · [Things to ask Orb](../things-to-ask.md) · [Vault format](../vault-format.md#habit-records)
+[Documentation](../README.md) · [Things to ask Smith](../things-to-ask.md) · [Vault format](../vault-format.md#habit-records)
 
-Habits are actions you repeat and record. Orb shares daily Markdown records with your vault's Dataview dashboard and displays weekly progress, annual heatmaps, and eight recent weeks. No separate database, service, or heatmap plugin is needed.
+Habits are actions you repeat and record. Orb shares daily Markdown records with your vault's Dataview dashboard and displays weekly progress, 90-day heatmaps, and eight recent weeks. No separate database, service, or heatmap plugin is needed.
 
 | Concept | Purpose | Example |
 | --- | --- | --- |
@@ -32,7 +32,7 @@ Open **Today** beneath the orb and click **Open habits**, or say **“Show my ha
 - Select a heatmap square to view that day's checkboxes. Selecting alone never logs activity.
 - Use **Today** to return to today and **Refresh** to reread external changes.
 - **Create / open daily record** creates a missing Markdown record with false values, then opens it in Obsidian. **Open daily record** opens an existing one.
-- Use the year arrows to browse history. Dates after today cannot be selected or logged.
+- Each heatmap shows 13 weeks (about 90 days) ending with the current week. Use the arrows to page back or forward 13 weeks at a time; choosing a date with Log a day jumps to the window containing it. Dates after today cannot be selected or logged.
 - Tab into each heatmap and use arrow keys: up/down moves a day; left/right moves a week. Enter or Space selects a date. Labels describe the date, habit, and recorded state.
 
 Weekly cards always show the **current Monday–Sunday week**, even when you select a historical date or year. Counts are days, not repetitions or sessions. The recent-weeks table shows this week and seven preceding weeks, including totals against each habit's target.
@@ -47,7 +47,7 @@ Each habit uses its configured color. A colored square means recorded, an empty 
 | “Record pull-ups for today.” | Writes today's completion, then refreshes the panel. |
 | “I studied Mandarin yesterday. Log it.” | Writes one completion for yesterday. |
 | “Remove yesterday's pull-ups completion.” | Changes that boolean to false, preserving other activity and notes. |
-| “Show my habit heatmaps for 2025.” | Reads that year while weekly cards still describe the current week. |
+| “Show my habit heatmaps for 2025.” | Opens the last 13 weeks of that year while weekly cards still describe the current week. |
 | “Use my habit history to help review my language goal.” | Reads evidence and guides a goal review; never infers achievement. |
 | “Undo your last note edit.” | Reverses the last eligible Orb edit, including a habit log change. |
 
@@ -61,7 +61,7 @@ In a disposable starter copy, first define the habits named in these illustrativ
 2. Check Pull-ups for today. Expect a green square, one recorded day, and a daily Markdown record.
 3. Select yesterday and check Study Mandarin. Expect a blue square. On Monday, yesterday belongs to the preceding week's row, not the current week's card.
 4. Open the daily record, inspect its properties and Notes section, then return to Orb.
-5. Ask Orb to undo its last note edit, or use Settings → Recent changes. The corresponding completion disappears. If undo reverses the creation of a new record, that file is removed.
+5. Ask Smith to undo its last note edit, or use Settings → Recent changes. The corresponding completion disappears. If undo reverses the creation of a new record, that file is removed.
 
 Only record real completions in your actual vault. Nothing is inferred from visiting the gym, a scheduled lesson, completed tasks, or goal text.
 

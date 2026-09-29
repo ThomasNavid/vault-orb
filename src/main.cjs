@@ -1,5 +1,5 @@
 const {workingHours}=require('./calendar-time.cjs');
-const {app,BrowserWindow,ipcMain,dialog,safeStorage,globalShortcut,Menu,shell,session,systemPreferences,Tray,nativeImage,screen,powerMonitor}=require('electron');
+const {app,BrowserWindow,ipcMain,dialog,safeStorage,globalShortcut,Menu,shell,session,systemPreferences,Tray,nativeImage,screen,powerMonitor,Notification,protocol}=require('electron');
 const fs=require('node:fs'),path=require('node:path'),{pathToFileURL}=require('node:url');
 const {Vault,FOLDERS,RULES_PATH,GOALS_FOLDER,HABIT_FOLDER,atomicWrite}=require('./vault.cjs');
 const {HABIT_SCRIPT}=require('./habits.cjs');
@@ -8,10 +8,16 @@ const {clippings,invalidateClippings,readClipping}=require('./clippings.cjs');
 const {todaySnapshot}=require('./today.cjs');
 const {DayPlans}=require('./day-plans.cjs');
 const {Agent,voiceTools}=require('./agent.cjs');
+const {FocusTimer,focusTarget,DEFAULT_MINUTES}=require('./focus.cjs');
 const {normalizeAI,keyFor,saveAI,publicAI}=require('./ai-settings.cjs');
 const {readAppearance,withAppearance}=require('./appearance.js');
 const {Trading212,publicTrading,readCredentials}=require('./trading212.cjs');
 const {createTradingService}=require('./trading212-service.cjs');
+const {createWeatherService,readWeather,withWeather}=require('./weather.cjs');
+const {createPlacesProvider,tileURL}=require('./places-provider.cjs');
+const {createPlacesService,readPlacesSettings,withPlacesSettings,placesKey}=require('./places-service.cjs');
+protocol.registerSchemesAsPrivileged([{scheme:'orbplaces',privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:true}}]);
+const placesRequests=new Map();
 const tradingClients=new Map();
 let activeTradingClient=null;
 function tradingClient(credentials=readCredentials(config,safeStorage)){
@@ -27,21 +33,25 @@ const {SpeechSession}=require('./speech.cjs');
 const {pluginSettings}=require('./google-calendar.cjs');
 const {ChatStore}=require('./chats.cjs');
 const {createWorkspace,validateWorkspace,DEFAULTS}=require('./workspace.cjs');
-let speechSession,win,tray,shortcut,shortcutActive=false,rendererReady=false,pendingActivation=false,config={},vault,agent,planner,controller=new AbortController(),chats,activeChat=null,layout='compact',chatSize={width:920,height:620},calls=new Map(),generation=0,chatBusy=false,quitting=false;
+let speechSession,win,tray,shortcut,shortcutActive=false,rendererReady=false,pendingActivation=false,config={},vault,agent,planner,controller=new AbortController(),chats,activeChat=null,layout='compact',chatSize={width:920,height:620},calls=new Map(),generation=0,chatBusy=false,quitting=false,focusTimer,focusNotice;
 const userData=app.getPath('userData');
 const configFile=path.join(userData,'settings.json');
 const tradingService=createTradingService({directory:path.join(userData,'trading212'),safeStorage,getConfig:()=>config,saveConfig:next=>{atomicWrite(configFile,JSON.stringify(next,null,2));config=next;},getClient:tradingClient,clearClients:clearTradingClients,exportFile:async data=>{
   const result=await dialog.showSaveDialog(win,{title:'Export unencrypted investment history',defaultPath:'trading212-history.json',filters:[{name:'JSON',extensions:['json']}]});if(result.canceled)return false;
   atomicWrite(result.filePath,JSON.stringify(data,null,2));return true;
 }});
+const locale=()=>app.getLocale?.()||'';
+const weatherService=createWeatherService({getConfig:()=>config,getLocale:locale});
+const placesProvider=createPlacesProvider({getKey:()=>placesKey(config,safeStorage)});
+const placesService=createPlacesService({getVault:()=>vault,getConfig:()=>config,provider:placesProvider,onChange:change=>recordActivity({kind:'change',...change})});
 const index=path.join(__dirname,'index.html');
 const trusted=event=>event.sender===win?.webContents && event.senderFrame?.url===pathToFileURL(index).href;
 function handle(name,fn) {ipcMain.handle(name,async(event,...args)=>{if(!trusted(event))throw new Error('Untrusted window.');return fn(...args);});}
 function getKey(provider='openai') {return keyFor(config,provider,safeStorage);}
 function getCalendarToken() {if(!config.encryptedCalendarToken)return '';if(!safeStorage.isEncryptionAvailable())throw new Error('macOS key encryption is unavailable.');return safeStorage.decryptString(Buffer.from(config.encryptedCalendarToken,'base64'));}
-function publicSettings() {let calendar={calendars:[],enabled:false};try {if(vault)calendar=pluginSettings(vault);}catch{}return {appearance:readAppearance(config),vaultPath:config.vaultPath||'',taskFolders:{...FOLDERS,...config.taskFolders},rulesPath:config.rulesPath??RULES_PATH,goalsFolder:vault?.goalsFolder??config.goalsFolder??GOALS_FOLDER,habitFolder:vault?.habitFolder??config.habitFolder??HABIT_FOLDER,habitScript:config.habitScript??HABIT_SCRIPT,...publicAI(config),trading212:publicTrading(config),hasCalendarToken:!!config.encryptedCalendarToken,googleCalendars:calendar.calendars.map(({id,name})=>({id,name})),fullCalendarServer:calendar.enabled,calendarId:config.calendarId||'',workingHours:workingHours(config.workingHours),autoStart:config.autoStart!==false,shortcutActive};}
+function publicSettings() {let calendar={calendars:[],enabled:false};try {if(vault)calendar=pluginSettings(vault);}catch{}return {appearance:readAppearance(config),vaultPath:config.vaultPath||'',taskFolders:{...FOLDERS,...config.taskFolders},rulesPath:config.rulesPath??RULES_PATH,goalsFolder:vault?.goalsFolder??config.goalsFolder??GOALS_FOLDER,habitFolder:vault?.habitFolder??config.habitFolder??HABIT_FOLDER,habitScript:config.habitScript??HABIT_SCRIPT,...publicAI(config),trading212:publicTrading(config),weather:readWeather(config,locale()),places:readPlacesSettings(config),hasCalendarToken:!!config.encryptedCalendarToken,googleCalendars:calendar.calendars.map(({id,name})=>({id,name})),fullCalendarServer:calendar.enabled,calendarId:config.calendarId||'',workingHours:workingHours(config.workingHours),autoStart:config.autoStart!==false,shortcutActive};}
 function dayPlanner(){if(!vault)throw new Error('Choose a valid vault in Settings.');if(!planner)planner=new DayPlans(vault,{getKey,getAI:()=>normalizeAI(config.ai),aiReady:()=>publicAI(config).chatReady,getCalendarAccess:()=>({token:getCalendarToken(),calendarId:config.calendarId||'',workingHours:workingHours(config.workingHours)}),onChange:change=>recordActivity({kind:'change',...change})});return planner;}
-function setupVault() {invalidateClippings(vault);if(!config.vaultPath) return;vault=new Vault(config.vaultPath,path.join(userData,'changes'),{folders:config.taskFolders||FOLDERS,rulesPath:config.rulesPath??RULES_PATH,goalsFolder:config.goalsFolder,habitFolder:config.habitFolder,habitScript:config.habitScript});planner=null;agent=new Agent({vault,getKey,getDayPlan:(args,options)=>dayPlanner().command(args,options?.signal),getTrading212:(args,options)=>tradingService.view(args,options),getAI:()=>normalizeAI(config.ai),getCalendarAccess:()=>({token:getCalendarToken(),calendarId:config.calendarId||'',workingHours:workingHours(config.workingHours)}),onActivity:recordActivity});}
+function setupVault() {placesService.clear();invalidateClippings(vault);if(!config.vaultPath) return;vault=new Vault(config.vaultPath,path.join(userData,'changes'),{folders:config.taskFolders||FOLDERS,rulesPath:config.rulesPath??RULES_PATH,goalsFolder:config.goalsFolder,habitFolder:config.habitFolder,habitScript:config.habitScript});planner=null;agent=new Agent({vault,getKey,getDayPlan:(args,options)=>dayPlanner().command(args,options?.signal),getTrading212:(args,options)=>tradingService.view(args,options),getWeather:(args,options)=>weatherService.forecast(args,options),getPlaces:(args,options)=>placesService.command(args,{...options,notify:false}),getAI:()=>normalizeAI(config.ai),getCalendarAccess:()=>({token:getCalendarToken(),calendarId:config.calendarId||'',workingHours:workingHours(config.workingHours)}),getFocus:()=>focusTimer,onActivity:recordActivity});}
 // While a typed chat is answering, its tool steps and visuals are kept with the reply so the chat can be reopened later.
 function recordActivity(data){
   if(data.kind==='change')invalidateClippings(vault);
@@ -53,7 +63,7 @@ function recordActivity(data){
   win?.webContents.send('activity',data);
 }
 const savedSteps=steps=>steps.map(({started,...step})=>({...step,status:step.status==='running'?'failed':step.status}));
-function stop() {speechSession?.interrupt();speechSession=null;controller.abort();controller=new AbortController();calls.clear();generation++;}
+function stop() {for(const pending of placesRequests.values())pending.abort();placesRequests.clear();speechSession?.interrupt();speechSession=null;controller.abort();controller=new AbortController();calls.clear();generation++;}
 function layoutSize(mode,work){
   if(mode==='chat')return {width:Math.min(Math.max(chatSize.width,640),work.width-24),height:Math.min(Math.max(chatSize.height,420),work.height-32)};
   // Reading a knowledge note gets a document-sized window.
@@ -71,15 +81,25 @@ function resize(mode='compact'){
   const y=Math.max(work.y+16,Math.min(Math.round(previous.y+(previous.height-height)/2),work.y+work.height-height-16));
   win.setBounds({x,y,width,height},false);
 }
-function show({voice=true,settings=false}={}) {
+function show({voice=true,settings=false,activate=true}={}) {
   if(!win.isVisible()){
     const work=screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
     const {width,height}=layoutSize(layout,work);
     win.setBounds({x:Math.round(work.x+work.width/2-width/2),y:Math.round(work.y+work.height*(layout==='chat'?.5:.43)-height/2),width,height});
   }
-  win.show();win.focus();
+  // A finished focus session brings the orb back without taking the keyboard.
+  if(activate){win.show();win.focus();}else win.showInactive();
   if(settings){win.webContents.send('open-settings');return;}
   if(voice&&config.autoStart!==false&&publicAI(config).voiceReady){if(rendererReady)win.webContents.send('activate-voice');else pendingActivation=true;}
+}
+// The menu bar shows the minutes left, so a hidden orb still tells the time.
+function updateFocusTray(){const s=focusTimer?.status();tray?.setTitle?.(!s||s.status==='completed'?'':s.status==='paused'?'Paused':`${Math.ceil(s.remainingMs/60000)}m`);}
+function focusChanged(session,event){
+  updateFocusTray();
+  win?.webContents.send('focus',{session,event});
+  if(event!=='complete'||!win)return;
+  if(!win.isVisible())show({voice:false,activate:false});
+  if(!win.isFocused()&&Notification.isSupported()){focusNotice=new Notification({title:'Focus session complete',body:`${session.minutes} min on ${session.title}`});focusNotice.on('click',()=>show({voice:false}));focusNotice.show();}
 }
 function hide(){stop();win.webContents.send('hide-voice');win.hide();}
 function toggle(){win.isVisible()&&win.isFocused()?hide():show();}
@@ -99,9 +119,10 @@ else {
   app.whenReady().then(()=>{
     fs.mkdirSync(userData,{recursive:true,mode:0o700});
     try {config=JSON.parse(fs.readFileSync(configFile,'utf8'));}catch(e){if(e.code!=='ENOENT')dialog.showErrorBox('Settings could not be read',e.message);}
+    focusTimer=new FocusTimer({file:path.join(userData,'focus.json'),onChange:focusChanged});focusTimer.restore();
     try {setupVault();}catch{}
     tradingService.start();
-    powerMonitor.on('resume',()=>tradingService.resume());
+    powerMonitor.on('resume',()=>{tradingService.resume();focusTimer.rearm();updateFocusTray();});
     try {chats=new ChatStore(path.join(userData,'chats.json'));}catch(e){dialog.showErrorBox('Chats could not be read',e.message);chats=new ChatStore(path.join(userData,'chats-recovered.json'));}
     win=new BrowserWindow({width:312,height:350,title:'Vault Orb',frame:false,transparent:true,backgroundColor:'#00000000',hasShadow:false,type:'panel',alwaysOnTop:true,resizable:false,fullscreenable:false,show:false,webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true}});
     win.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});
@@ -109,6 +130,9 @@ else {
     win.webContents.on('will-navigate',e=>e.preventDefault());
     session.defaultSession.setPermissionRequestHandler((contents,permission,callback,details)=>callback(contents===win.webContents&&permission==='media'&&details.mediaTypes?.every(t=>t==='audio')&&win.webContents.getURL()===pathToFileURL(index).href));
     session.defaultSession.setPermissionCheckHandler((contents,permission)=>contents===win.webContents&&permission==='media'&&contents.getURL()===pathToFileURL(index).href);
+    protocol.handle('orbplaces',async request=>{
+      try{if(request.method!=='GET')return new Response('',{status:405});const url=tileURL(request.url,placesKey(config,safeStorage));const response=await fetch(url,{signal:AbortSignal.timeout(10000),redirect:'error'});if(!response.ok)return new Response('',{status:response.status});const bytes=await response.arrayBuffer();if(bytes.byteLength>2000000)return new Response('',{status:502});return new Response(bytes,{headers:{'Content-Type':'image/png','Cache-Control':'private, max-age=3600','Access-Control-Allow-Origin':'*'}});}catch{return new Response('',{status:503});}
+    });
     win.loadFile(index);win.once('ready-to-show',()=>show({voice:false,settings:!config.vaultPath}));
     win.on('close',e=>{if(!quitting){e.preventDefault();hide();}});
     win.on('resized',()=>{if(layout==='chat'){const {width,height}=win.getBounds();chatSize={width,height};}});
@@ -116,6 +140,7 @@ else {
     tray=new Tray(menuImage);tray.setToolTip('Vault Orb · double-tap Control');tray.on('click',toggle);
     tray.on('right-click',()=>tray.popUpContextMenu(Menu.buildFromTemplate([{label:'Show Orb',click:()=>show()},{label:'Settings…',click:()=>show({voice:false,settings:true})},{type:'separator'},{label:'Quit Vault Orb',click:()=>app.quit()}])));
     try {shortcut=require(app.isPackaged?path.join(process.resourcesPath,'orb-shortcut.node'):path.join(__dirname,'../native/orb-shortcut.node'));startShortcut();}catch(e){shortcutError=e.message;shortcutDiagnostics();}
+    updateFocusTray();const focusTray=setInterval(updateFocusTray,15000);focusTray.unref();
     const shortcutTimer=setInterval(()=>{if(!shortcutActive)startShortcut();else shortcutDiagnostics();},3000);shortcutTimer.unref();
     Menu.setApplicationMenu(Menu.buildFromTemplate([
       {label:'Vault Orb',submenu:[{role:'about'},{type:'separator'},{label:'Show Orb',accelerator:'CommandOrControl+Shift+Space',click:()=>show()},{label:'Settings…',accelerator:'CommandOrControl+,',click:()=>show({voice:false,settings:true})},{type:'separator'},{role:'hide'},{role:'hideOthers'},{role:'unhide'},{type:'separator'},{role:'quit'}]},
@@ -164,6 +189,34 @@ else {
       if(calendarToken){if(typeof calendarToken!=='string'||calendarToken.length>2000)throw new Error('Enter a valid Full Calendar access token.');if(!safeStorage.isEncryptionAvailable())throw new Error('macOS key encryption is unavailable.');next.encryptedCalendarToken=safeStorage.encryptString(calendarToken.trim()).toString('base64');}
       atomicWrite(configFile,JSON.stringify(next,null,2));config=next;stop();setupVault();return publicSettings();
     });
+    let locationPending=null;
+    handle('places-location',async()=>{
+      if(locationPending)return locationPending;
+      const location=require(app.isPackaged?path.join(process.resourcesPath,'orb-location.node'):path.join(__dirname,'../native/orb-location.node'));
+      const signal=controller.signal;locationPending=location.locate();
+      try{const fix=await locationPending;signal.throwIfAborted();return await placesService.command({action:'origin',source:'device',...fix});}finally{locationPending=null;}
+    });
+    handle('save-places',input=>{const next=withPlacesSettings(config,input,safeStorage);atomicWrite(configFile,JSON.stringify(next,null,2));config=next;placesService.clear();return {places:readPlacesSettings(config)};});
+    handle('places',async args=>{
+      if(!args||typeof args!=='object')throw new Error('Invalid Places request.');
+      if(args.clientId!==undefined&&(typeof args.clientId!=='string'||!/^[a-f0-9-]{36}$/i.test(args.clientId)))throw new Error('Invalid Places panel.');
+      const clientId=args.clientId;
+      if(args.action==='cancel'){if(clientId){placesRequests.get(clientId)?.abort();placesRequests.delete(clientId);}return true;}
+      let request;
+      if(clientId&&['list','search'].includes(args.action)){placesRequests.get(clientId)?.abort();request=new AbortController();placesRequests.set(clientId,request);}
+      try{const result=await placesService.command(args,{signal:request?AbortSignal.any([controller.signal,request.signal]):controller.signal});
+        if(args.action==='directions'){await shell.openExternal(result.url);return true;}
+        if(args.action==='note'){await shell.openExternal(`obsidian://open?vault=${encodeURIComponent(vault.root)}&file=${encodeURIComponent(result.path)}`);return true;}
+        return result;
+      }finally{if(request&&placesRequests.get(clientId)===request)placesRequests.delete(clientId);}
+    });
+    handle('weather',args=>weatherService.forecast(args||{},{signal:controller.signal}));
+    handle('weather-search',query=>weatherService.search(query,{signal:controller.signal}));
+    handle('save-weather',input=>{
+      const next=withWeather(config,input??null,locale());
+      atomicWrite(configFile,JSON.stringify(next,null,2));config=next;
+      return {weather:readWeather(config,locale())};
+    });
     handle('trading212',args=>tradingService.view(args,{signal:controller.signal}));
     handle('trading212-tracking',input=>tradingService.tracking(input));
     handle('trading212-connect',input=>{
@@ -179,15 +232,28 @@ else {
     handle('knowledge-dismiss',args=>{if(!vault)throw new Error('Choose a valid vault in Settings.');return dismissSuggestion(vault,args);});
     handle('recurring-install',()=>{if(!vault)throw new Error('Choose a valid vault in Settings.');return require('./recurring-install.cjs').installRecurring(vault);});
     handle('recurring',()=>{if(!vault)throw new Error('Choose a valid vault in Settings.');return vault.tasks({include_completed:true});});
-    handle('recurring-write',async args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Orb to finish before editing a task.');const result=vault.recurringTask(args);if(result.change_id)recordActivity({kind:'change',...result});return result;});
-    handle('recurring-create',async args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Orb to finish before editing a task.');const result=vault.createTask(args);recordActivity({kind:'change',...result});return result;});
+    handle('recurring-write',async args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Smith to finish before editing a task.');const result=vault.recurringTask(args);if(result.change_id)recordActivity({kind:'change',...result});return result;});
+    handle('recurring-create',async args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Smith to finish before editing a task.');const result=vault.createTask(args);recordActivity({kind:'change',...result});return result;});
     handle('habits',args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');return agent.showHabits(args);});
-    handle('set-habit',args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Orb to finish before logging a habit.');return agent.execute('set_habit',args);});
-    handle('open-habit-record',async args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Orb to finish before opening a record.');return agent.openHabitRecord(args);});
+    handle('set-habit',args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Smith to finish before logging a habit.');return agent.execute('set_habit',args);});
+    handle('open-habit-record',async args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Smith to finish before opening a record.');return agent.openHabitRecord(args);});
     handle('goals',scope=>{if(!agent)throw new Error('Choose a valid vault in Settings.');return agent.showGoals({scope,date:null});});
-    handle('day-planner',args=>{if(!vault)throw new Error('Choose a valid vault in Settings.');if(!['open','cancel'].includes(args?.action)&&(chatBusy||calls.size||speechSession?.turn))throw new Error('Wait for Orb to finish before editing the planner.');return dayPlanner().command(args,controller.signal);});
+    handle('day-planner',args=>{if(!vault)throw new Error('Choose a valid vault in Settings.');if(!['open','cancel'].includes(args?.action)&&(chatBusy||calls.size||speechSession?.turn))throw new Error('Wait for Smith to finish before editing the planner.');return dayPlanner().command(args,controller.signal);});
     handle('calendar',async()=>{if(!vault)throw new Error('Choose a valid vault in Settings.');return require('./visuals.cjs').calendarVisual(await require('./calendar.cjs').queryCalendar(vault,{include_tasks:false},{skipSync:true,google:{token:getCalendarToken(),calendarId:config.calendarId||''}}));});
     handle('today',()=>{if(planner?.busy)throw new Error('Wait for the planner to finish before refreshing Today.');if(!vault)throw new Error('Choose a valid vault in Settings.');return todaySnapshot(vault,{getCalendarAccess:()=>({token:getCalendarToken(),calendarId:config.calendarId||'',workingHours:workingHours(config.workingHours)})});});
+    handle('focus',({action,path:relative=null,title=null,minutes=null,note=null}={})=>{
+      if(['pause','resume','stop','dismiss'].includes(action))return focusTimer[action]();
+      if(action==='status')return focusTimer.status();
+      if(action==='start')return focusTimer.start({...focusTarget(vault,{path:relative,title}),minutes:minutes??DEFAULT_MINUTES});
+      if(action==='extend')return focusTimer.extend(minutes??5);
+      if(!['log','done'].includes(action))throw new Error('Unknown focus action.');
+      if(!agent)throw new Error('Choose a valid vault in Settings.');
+      if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Smith to finish before editing a task.');
+      const finished=focusTimer.status();if(finished?.status!=='completed'||!finished.path)throw new Error('There is no finished task session to update.');
+      const version=vault.read(finished.path).version;
+      if(action==='log')return agent.execute('log_focus',{path:finished.path,version,minutes:finished.minutes,note});
+      return agent.execute('update_task',{path:finished.path,version,planned:null,due:null,completed:true,category:null,venture:null});
+    });
     handle('history',()=>vault?.publicHistory()||[]);
     handle('undo',id=>{if(chatBusy||calls.size||speechSession?.turn)throw new Error('End the current conversation before undoing from Activity.');return agent.execute('undo_change',{change_id:id});});
     handle('open-link',url=>{if(typeof url!=='string'||url.length>4000)throw new Error('Invalid link.');const parsed=new URL(url);if(!['http:','https:','mailto:'].includes(parsed.protocol))throw new Error('Only web and email links open from notes.');return shell.openExternal(parsed.href);});

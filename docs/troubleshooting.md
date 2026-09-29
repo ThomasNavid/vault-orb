@@ -39,6 +39,10 @@ Start with the exact error or visible result. A failed tool call is not a succes
 
 **Missing tasks:** check `type: task`, `completed`, folder, and filter. Today matches Planned or Deadline today, while past deadlines are separate. Checkbox lines do not become task records.
 
+**Today briefly appears, then switches to past deadlines:** an updated build keeps today at the top and past deadlines in a separate section when both are read in one answer. Check that you are running the updated app copy; rebuilding `dist` alone does not replace an installed app. See [Build and install](development.md#build-and-install).
+
+**The task graph shows a previous knowledge Hub:** expand the corner graph from the displayed task list. It should say **To-do graph** and show those tasks and their areas with the old focus cleared. If it still shows the Hub, check the app copy as above.
+
 **Missing goals:** check `type: goal`, supported status, valid date-only properties, and filter. The starter contains no goals; create one before expecting cards. Invalid YAML or unsupported status/date values can produce warnings.
 
 **Next task is ambiguous or broken:** give the exact path to an unfinished task in a configured task folder. Repair a renamed link rather than creating a duplicate task.
@@ -58,6 +62,17 @@ Start with the exact error or visible result. A failed tool call is not a succes
 **A write timed out:** check Google Calendar before retrying. The event may exist even though Orb did not receive confirmation. Note undo cannot remove it.
 
 **Recurring events or new feed edits are missing:** keep the iCal source for recurring Google events. Feed data is cached for five minutes. Source failures, feed limits, and display timezone can also affect the result.
+
+## Weather
+
+| Symptom | Check or action |
+| --- | --- |
+| “Set your weather location…” | Choose a home location in Settings → Connectors → Weather, or name a place in the request. |
+| “Weather unavailable” | Check the internet connection and press **Retry**. A forecast from the last 2 hours is shown as **offline** when the service can't be reached. |
+| The wrong town was used | Add the region or country, for example “Paris, Texas”, or save the exact place in Settings. |
+| The orb didn't react | Mild, dry weather has no reaction. Check **Orb reacts to the weather** in Settings. Cards in the chat window and saved chats don't react. |
+
+See the [Weather guide](features/weather.md).
 
 ## Trading 212
 
@@ -116,3 +131,9 @@ Check the Habit log folder and Habit dashboard script in Settings. The folder mu
 **A moved block has not updated Planned:** refresh Full Calendar in Obsidian first, then ask for tasks/calendar or refresh Today. A separately edited Planned value requires explicit repair. Missing blocks are not assumed deleted.
 
 **Booking, moving, or removal is pending:** inspect the event, refresh the task, and follow [task scheduling recovery](features/task-scheduling.md#partial-writes-and-recovery). Never create another copy merely because a write timed out. Calendar-linked changes require calendar actions instead of note undo.
+
+## Places
+
+If the map or nearby search is unavailable, check Settings → Connectors → Places for your Geoapify key and account quota. Saved cards and external directions still work. An unpinned place needs both valid numeric coordinates; use Locate on map for a saved address, choose a match, and Save location if you want to persist it. A missing walking time means pedestrian routing was unavailable, not zero minutes.
+
+If current location fails, enter an address/neighbourhood, check macOS Location Services for Vault Orb, and run `npm run build:native` when using a source checkout. No location permission is needed for typed addresses. After a vault or provider change, refresh old Places cards; temporary result handles are deliberately invalidated. Historical chat results need a refreshed search before saving.

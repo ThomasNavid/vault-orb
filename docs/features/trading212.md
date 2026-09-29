@@ -2,7 +2,7 @@
 
 [Documentation](../README.md) · [Privacy](../privacy.md) · [Implementation roadmap](../trading212-improvement-plan.md)
 
-Connect an Invest or Stocks ISA account to browse investments and ask Orb about supported financial data. The connector is read-only: it cannot trade, cancel orders, transfer money or change Pies. Dashboard browsing and local calculations make no AI requests and require no AI-provider key. Investments remain separate from the knowledge system's Portfolio notes.
+Connect an Invest or Stocks ISA account to browse investments and ask Smith about supported financial data. The connector is read-only: it cannot trade, cancel orders, transfer money or change Pies. Dashboard browsing and local calculations make no AI requests and require no AI-provider key. Investments remain separate from the knowledge system's Portfolio notes.
 
 ## Connect
 
@@ -58,7 +58,7 @@ Refresh preserves filter choices. Overview and metric cards refresh approximatel
 
 Reopened chat cards say **Saved snapshot**. Refresh requires the same account identity. Older cards without an identity remain readable; open the current account from Explore instead of refreshing them into a different account.
 
-## Ask Orb
+## Ask Smith
 
 These requests read financial data; they do not change your account:
 

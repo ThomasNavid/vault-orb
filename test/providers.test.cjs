@@ -115,5 +115,5 @@ test('Deepgram picker uses batch-capable canonical model IDs',async()=>{
 });
 test('Realtime model and voice are configurable while its only action delegates to chat',async()=>{
   let body;const agent=new Agent({vault:{read:()=>({content:''})},getAI:()=>normalizeAI({chat:selection,voice:{realtimeModel:'gpt-realtime-test',realtimeVoice:'marin'}}),getKey:provider=>{assert.equal(provider,'openai');return 'test';},fetchImpl:async(_url,options)=>{body=JSON.parse(options.body.get('session'));return {ok:true,text:async()=> 'sdp'};}});
-  assert.equal(await agent.connect('v=0\r\n'),'sdp');assert.equal(body.model,'gpt-realtime-test');assert.equal(body.audio.output.voice,'marin');assert.deepEqual(body.tools.map(t=>t.name),['run_task']);
+  assert.equal(await agent.connect('v=0\r\n'),'sdp');assert.equal(body.model,'gpt-realtime-test');assert.equal(body.audio.output.voice,'marin');assert.deepEqual(body.tools.map(t=>t.name),['weather','run_task']);
 });

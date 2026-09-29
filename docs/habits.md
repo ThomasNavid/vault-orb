@@ -10,7 +10,7 @@ The definition reader recognizes a standalone `const habits = [...];` array in t
 
 Records are addressed by folder plus exact date filename, matching the existing Obsidian implementation. Date/type metadata disagreements are warnings, not alternate identities. Only strict boolean true is counted. Unsupported values produce warnings and remain unrecorded. Parse/read failures produce unknown-day markers and incomplete-week flags, rather than fabricated completions. Warnings are part of the assistant result as well as the UI.
 
-Reads cover the selected year through today, eight weeks around the current Monday, and the selected date. Missing records are not materialized. Non-date filenames and nested log folders are not considered. The Vault layer enforces file size, path, symlink, and journal boundaries. Optional folders are validated without creating anything. Defaults that overlap older custom task/goal layouts disable habits instead of breaking setup.
+Reads cover the selected year through today, the 13-week heatmap window (Monday-aligned, ending with the week that contains `end`, capped at today), eight weeks around the current Monday, and the selected date. Missing records are not materialized. Non-date filenames and nested log folders are not considered. The Vault layer enforces file size, path, symlink, and journal boundaries. Optional folders are validated without creating anything. Defaults that overlap older custom task/goal layouts disable habits instead of breaking setup.
 
 Date-only arithmetic uses UTC calendar days to avoid daylight-saving shifts; today comes from the device's local date. Weekly cards use today's week independently of selection. Future dates never count or accept writes. The supported heatmap range starts at 1900.
 

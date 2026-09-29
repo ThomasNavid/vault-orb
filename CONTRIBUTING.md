@@ -27,7 +27,7 @@ A feature change is ready for review when its documentation is ready too:
 
 - Update its page under `docs/features/`: purpose, setup, requests, expected results, a walkthrough, limits, and troubleshooting.
 - State whether each example reads data, writes vault notes, or changes an external system. Document the exact scope of undo.
-- Add useful copyable examples to [Things to ask Orb](docs/things-to-ask.md), with any prerequisites.
+- Add useful copyable examples to [Things to ask Smith](docs/things-to-ask.md), with any prerequisites.
 - Check examples against the actual tool schemas, validation, and routing. Do not advertise a planned feature as available or call source inspection a live model test.
 - Add or revise fictional sample vault content when it makes the example directly runnable. Existing private notes are not documentation fixtures.
 - Update [Vault format](docs/vault-format.md) for property/layout changes, [Privacy](docs/privacy.md) for data-handling changes, and [Development](docs/development.md) for architecture/build changes.

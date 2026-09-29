@@ -1,5 +1,7 @@
 # Life Admin
 
+[[6. Life Admin/Places|Places]] — save and browse cafés, restaurants, parks, and other places.
+
 Keep your own career documents and certificates in the folders below. No records are included. Link a document from the Life task that needs it instead of copying it.
 
 - `6. Life Admin/Career/CVs`

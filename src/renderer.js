@@ -3,6 +3,8 @@ const visual=window.orbVisual;
 let api=window.orb,settings,connected=false,connecting=false,muted=false,busy=false,peer,channel,microphone,audioContext,analyser,outputAnalyser,outputAudio,sessionGeneration,epoch=0,responseActive=false,pendingContinuation=false,connectionTimer,idleTimer,toolDepth=0;
 let speechClient;
 let cardMode=null,currentVisual=null,homeGeneration=0,preview=!api,chatOpen=false,orbChatId=null;
+const IDLE='Here when you need me.';
+let focusSession=null;
 const transcriptItems=new Map();
 const steps=new Map();
 if(preview){
@@ -10,17 +12,62 @@ if(preview){
  let previewAppearance=window.orbAppearance.readAppearance({});
  api={saveAppearance:async appearance=>({appearance:previewAppearance=window.orbAppearance.withAppearance({},appearance).appearance}),settings:async()=>({appearance:previewAppearance,vaultPath:'/Preview/Main',taskFolders:{life:'0. Home/Life Tasks',business:'0. Home/Business Tasks'},rulesPath:'0. Home/Task Rules.md',goalsFolder:'0. Home/Goals',hasKey:true,chatReady:true,voiceReady:true,googleCalendars:[],hasCalendarToken:false,calendarId:'',fullCalendarServer:false,autoStart:false,shortcutActive:true}),history:async()=>[],chooseVault:async()=>'/Preview/Main',createVault:async()=>{throw new Error('Create a vault in the Mac app. This is a preview.');},saveSettings:async()=>{throw new Error('Preview only. Use Settings in the Mac app.');},openNote:async()=>{},stop:async()=>{},ready:async()=>{},resize:async()=>{},hide:async()=>{},onActivity:()=>{},onActivate:()=>{},onHide:()=>{},onSettings:()=>{},onShortcut:()=>{}};
  api.goals=async scope=>displayVisual(previewGoals(scope));
+ // Fictional weather that cycles through cold, rain, heat, mild and snow so each card and orb reaction can be seen.
+ let previewWeatherSettings={location:{name:'London',detail:'England, United Kingdom',latitude:51.51,longitude:-0.13,timezone:'Europe/London'},units:'metric',orbReactions:true},previewWeatherIndex=0;
+ const previewPlaces=[{name:'London',detail:'England, United Kingdom',latitude:51.51,longitude:-0.13,timezone:'Europe/London'},{name:'Lisbon',detail:'Lisbon District, Portugal',latitude:38.72,longitude:-9.14,timezone:'Europe/Lisbon'},{name:'Edinburgh',detail:'Scotland, United Kingdom',latitude:55.95,longitude:-3.19,timezone:'Europe/London'}];
+ const previewSettings=api.settings;api.settings=async()=>({...await previewSettings(),weather:previewWeatherSettings});
+ api.saveWeather=async patch=>({weather:previewWeatherSettings={...previewWeatherSettings,...patch}});
+ api.weatherSearch=async query=>previewPlaces.filter(p=>p.name.toLowerCase().startsWith(query.trim().toLowerCase()));
+ api.weather=async({place=null}={})=>{
+  const kinds={
+   cold:{temp:3,feels:-1,condition:'Clear',icon:'sun',rain:()=>0,mood:{tint:'cold',colour:'#8fd8ff',wet:false,snow:false},advice:{jacket:'warm',umbrella:false,sun:false,reasons:['feels like -2° at 07:00']}},
+   rain:{temp:11,feels:8,condition:'Rain',icon:'rain',rain:i=>Math.max(10,80-i*6),mood:{tint:null,colour:null,wet:true,snow:false},advice:{jacket:'light',umbrella:true,sun:false,reasons:['feels like 7° at 18:00','80% chance of rain around now']}},
+   heat:{temp:31,feels:33,condition:'Clear',icon:'sun',rain:()=>0,mood:{tint:'heat',colour:'#ff6a3d',wet:false,snow:false},advice:{jacket:'none',umbrella:false,sun:true,reasons:['feels like 24° at 06:00','UV index up to 8']}},
+   mild:{temp:17,feels:17,condition:'Partly cloudy',icon:'cloud-sun',rain:i=>i>5&&i<10?45:5,mood:null,advice:{jacket:'light',umbrella:true,sun:false,reasons:['feels like 12° at 21:00','45% chance of rain around 16:00']}},
+   snow:{temp:0,feels:-4,condition:'Light snow',icon:'snow',rain:i=>Math.max(20,70-i*4),mood:{tint:'cold',colour:'#8fd8ff',wet:false,snow:true},advice:{jacket:'warm',umbrella:true,sun:false,reasons:['feels like -5° at 06:00','70% chance of snow around now']}}
+  };
+  const name=['cold','rain','heat','mild','snow'][previewWeatherIndex++%5],k=kinds[name],where=place?previewPlaces.find(p=>p.name.toLowerCase()===place.toLowerCase())||{name:place,detail:'Preview place'}:previewWeatherSettings.location;
+  const start=new Date();start.setMinutes(0,0,0);const pad=n=>String(n).padStart(2,'0'),stamp=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`;
+  const hours=Array.from({length:24},(_,i)=>{const d=new Date(start.getTime()+i*3600000),swing=Math.round(Math.sin((d.getHours()-9)/24*Math.PI*2)*4),chance=k.rain(i),wet=chance>=40,night=d.getHours()<7||d.getHours()>=19;
+   return {time:stamp(d),temp:k.temp+swing,feelsLike:k.feels+swing,precipChance:chance,condition:wet?k.condition:night?'Clear':'Partly cloudy',icon:wet?k.icon:night?'moon':'cloud-sun'};});
+  const temps=hours.map(h=>h.temp);
+  return {id:'preview-weather-'+name,kind:'weather',title:'Weather',place:{name:where.name,detail:where.detail,saved:!place},when:'now',window:'next 12 hours',units:previewWeatherSettings.units,updatedAt:new Date().toISOString(),stale:false,
+   now:{temp:k.temp,feelsLike:k.feels,condition:k.condition,icon:k.icon,wind:14,isDay:true,time:hours[0].time},today:{high:Math.max(...temps),low:Math.min(...temps),uvMax:name==='heat'?8:2},tomorrow:{high:k.temp+3,low:k.temp-4,condition:'Partly cloudy',icon:'cloud-sun'},
+   hours,advice:k.advice,mood:k.mood,source:'Open-Meteo · fictional preview'};
+ };
+ // Preview focus sessions count seconds instead of minutes, so the ring and celebration can be seen quickly.
+ const focusListeners=[];let previewFocus=null,previewFocusTimer=0;
+ const focusView=()=>previewFocus&&{...previewFocus,durationMs:previewFocus.minutes*1000,remainingMs:Math.max(0,previewFocus.endsAt-(previewFocus.pausedAt??Date.now()))};
+ const focusEmit=event=>{const view=focusView();for(const fn of focusListeners)fn({session:view,event});return view;};
+ api.onFocus=fn=>focusListeners.push(fn);
+ api.focus=async({action,path=null,title=null,minutes=25}={})=>{
+  const now=Date.now(),f=previewFocus;
+  if(action==='status')return focusView();
+  if(['log','done'].includes(action))return {preview:true};
+  if(action==='start')previewFocus={id:'preview',title:title||path.split('/').pop().replace(/\.md$/,''),path,minutes,startedAt:now,endsAt:now+minutes*1000,pausedAt:null,status:'running'};
+  else if(action==='pause')Object.assign(f,{pausedAt:now,status:'paused'});
+  else if(action==='resume')Object.assign(f,{endsAt:now+f.endsAt-f.pausedAt,pausedAt:null,status:'running'});
+  else if(action==='extend')Object.assign(f,{minutes:f.minutes+minutes,endsAt:(f.status==='completed'?now:f.endsAt)+minutes*1000,status:'running'});
+  else previewFocus=null;
+  clearTimeout(previewFocusTimer);
+  if(previewFocus?.status==='running')previewFocusTimer=setTimeout(()=>{previewFocus.status='completed';focusEmit('complete');},previewFocus.endsAt-now);
+  return focusEmit(action);
+ };
 }
 const appearanceEditor=window.orbAppearanceSettings.bind({api,visual,isPreview:preview,onCommit:appearance=>{if(settings)settings.appearance=appearance;}});
+window.placesPreview?.attach(api,preview);
+const placesSettings=window.placesUI.bindSettings({api,onChange:places=>{if(settings)settings.places=places;}});
+const placesActions={places:args=>api.places(args),placesSettings:()=>openConnectorSettings('places-integration').catch(error),locate:()=>api.placesLocation(),openLink:url=>api.openLink(url)};
+const weatherSettings=window.weatherUI.bindSettings({api,onChange:weather=>{if(settings)settings.weather=weather;}});
 window.trading212UI.init();
 window.dayPlannerUI.init({api,preview,show:()=>displayVisual({kind:'day-planner',title:'Plan my day'})});
 // The panel keeps a short trail of views so the header's back button returns to where you came from.
 let panelTrail=[];
 const panelInfo={home:['i-sun','orange','Today'],welcome:['i-sparkle','blue','Explore'],transcript:['i-chat','blue','Conversation'],settings:['i-gear','gray','Settings'],history:['i-clock','purple','Recent changes'],steps:['i-steps','teal','Steps']};
-const visualInfo={'day-planner':['i-sun','orange','Plan my day'],recurring:['i-sun','orange','Recurring tasks'],trading212:['i-chart','teal','Trading 212'],goals:['i-target','red','Goals'],habits:['i-flame','green','Habits'],calendar:['i-calendar','red','Calendar'],table:['i-list','orange','Results'],line:['i-chart','purple','Chart'],area:['i-chart','purple','Chart'],bar:['i-chart','purple','Chart']};
+const visualInfo={places:['i-map','teal','Places'],weather:['i-cloud-sun','blue','Weather'],'day-planner':['i-sun','orange','Plan my day'],recurring:['i-sun','orange','Recurring tasks'],trading212:['i-chart','teal','Trading 212'],goals:['i-target','red','Goals'],focus:['i-clock','purple','Focus session'],habits:['i-flame','green','Habits'],calendar:['i-calendar','red','Calendar'],table:['i-list','orange','Results'],line:['i-chart','purple','Chart'],area:['i-chart','purple','Chart'],bar:['i-chart','purple','Chart']};
 function showPanel(mode,{back=false}={}){
  if(cardMode==='settings'&&mode!=='settings')appearanceEditor.close();
- if(mode!=='settings')window.trading212UI?.clearSecrets();
+ if(mode!=='settings'){window.trading212UI?.clearSecrets();placesSettings.clearSecrets();}
  window.clippingsUI?.close();
  window.knowledgeUI?.closeWorkspace();
  if(mode!=='home')homeGeneration++;
@@ -29,7 +76,7 @@ function showPanel(mode,{back=false}={}){
  for(const name of ['visual','home','welcome','transcript','settings','history','steps'])$(name+'-view').hidden=name!==mode;
  $('home-button').setAttribute('aria-pressed',String(mode==='home'));$('discover-button').setAttribute('aria-pressed',String(mode==='welcome'));
  const titled=['settings','history'].includes(mode);$('ask-form').hidden=titled;$('card-eyebrow').hidden=!titled;$('card-eyebrow').textContent=panelInfo[mode]?.[2]||'';
- $('ask-input').placeholder=mode==='welcome'?'Search tools, connectors, or ask Orb…':'Ask Orb anything…';$('ask-input').setAttribute('aria-expanded',String(mode==='welcome'));
+ $('ask-input').placeholder=mode==='welcome'?'Search tools, connectors, or ask Smith…':'Ask Smith anything…';$('ask-input').setAttribute('aria-expanded',String(mode==='welcome'));
  const backLabel=panelTrail.length?`Back to ${panelInfo[panelTrail.at(-1)]?.[2]||'previous view'}`:'Close panel';$('close-card').setAttribute('aria-label',backLabel);$('close-card').title=backLabel;
  if(mode!=='settings')$('settings-error').hidden=true;
  if(mode==='welcome')renderCommands();else $('ask-input').removeAttribute('aria-activedescendant');
@@ -43,13 +90,13 @@ function updateFooter(){
  const [icon,tint,title]=cardMode==='visual'?visualInfo[currentVisual?.kind]||['i-sparkle','blue','In view']:panelInfo[cardMode];
  $('footer-icon').dataset.tint=tint;$('footer-icon').querySelector('use').setAttribute('href','#'+icon);$('footer-title').textContent=title;
  const selected=cardMode==='welcome'?commandItems[commandIndex]:null;
- const primary=cardMode==='settings'?'Save settings':cardMode==='history'?'':selected?.accessory==='Ask'?'Ask Orb':selected?.accessory==='Set up'?'Set up':selected?'Open':'Ask Orb';
+ const primary=cardMode==='settings'?'Save settings':cardMode==='history'?'':selected?.accessory==='Ask'?'Ask Smith':selected?.accessory==='Set up'?'Set up':selected?'Open':'Ask Smith';
  $('footer-primary').hidden=!primary;$('footer-primary').firstChild.textContent=primary;
  $('card-footer').querySelector('.action-divider').hidden=!primary;
  $('footer-secondary').firstChild.textContent=cardMode!=='welcome'?'Explore':panelTrail.length?'Back':'Close';
 }
 function error(e){const message=(e?.message||String(e)).replace(/^Error invoking remote method '[^']+': Error: /,'');$('error-text').textContent=message;$('error').hidden=false;addMessage('tool',message);if(chatOpen)chatToast(message);else if(!cardMode)showPanel('transcript');}
-function setStatus(state,text,detail=''){visual.setState(state);$('status-wrap').dataset.state=state;const node=$('status'),key=text+'\n'+detail;if((node.dataset.key??node.textContent)===key)return;node.dataset.key=key;node.textContent=text;if(detail){const d=document.createElement('span');d.className='status-detail';d.textContent=detail;node.append(' · ',d);}node.classList.remove('swap');void node.offsetWidth;node.classList.add('swap');}
+function setStatus(state,text,detail=''){visual.setState(state);$('status-wrap').dataset.state=state;const node=$('status');node.dataset.idle=String(state==='idle'&&text===IDLE);const line=node.dataset.idle==='true'&&focusLine();if(line)[text,detail]=line;const key=text+'\n'+detail;if((node.dataset.key??node.textContent)===key)return;node.dataset.key=key;node.textContent=text;if(detail){const d=document.createElement('span');d.className='status-detail';d.textContent=detail;node.append(' · ',d);}node.classList.remove('swap');void node.offsetWidth;node.classList.add('swap');}
 const stepName=path=>path?path.split('/').pop().replace(/\.md$/i,''):'';
 function clearToolActivity(){steps.clear();$('tool-orbit').replaceChildren();$('tool-orbit').classList.remove('active');$('moon-tip').hidden=true;updateStepsChip();if(cardMode==='steps')renderSteps();}
 // Each tool call is a small moon orbiting the orb; the status line carries its words.
@@ -99,7 +146,7 @@ function renderSteps(){
 }
 function addMessage(role,text,id=crypto.randomUUID()){
  let item=transcriptItems.get(id);
- if(!item){item=document.createElement('div');item.className=`message ${role}`;const label=document.createElement('span');label.className='message-label';label.textContent={user:'You',assistant:'Orb',deep:'Deeper thinking',tool:'In your vault'}[role]||'Orb';const content=document.createElement('span');item.append(label,content);$('transcript').append(item);transcriptItems.set(id,item);}
+ if(!item){item=document.createElement('div');item.className=`message ${role}`;const label=document.createElement('span');label.className='message-label';label.textContent={user:'You',assistant:'Smith',deep:'Deeper thinking',tool:'In your vault'}[role]||'Smith';const content=document.createElement('span');item.append(label,content);$('transcript').append(item);transcriptItems.set(id,item);}
  item.lastChild.textContent=text;$('transcript-view').scrollTop=$('transcript-view').scrollHeight;return item;
 }
 function liveUI(){
@@ -108,7 +155,30 @@ function liveUI(){
 }
 function openDayPlanner(){displayVisual({kind:'day-planner',title:'Plan my day'});}
 function openRecurring(){currentVisual={kind:'recurring',title:'Recurring tasks'};window.renderVisual($('visual-view'),currentVisual,path=>api.openNote(path));showPanel('visual');}
-function displayVisual(v){if(chatOpen){chatVisual(v);return;}currentVisual=v;if(!v){if(cardMode==='visual')panelBack();return;}window.renderVisual($('visual-view'),v,path=>api.openNote(path).catch(error),{trading212:args=>api.trading212(args),settings:()=>openSettings(),habits:args=>api.habits(args),setHabit:async args=>{await api.setHabit(args);const status=$('visual-view').querySelector('.habit-status');if(status)status.textContent='Saved to your vault.';},openHabitRecord:async args=>{const result=await api.openHabitRecord(args);await api.openNote(result.path);},filterGoals:scope=>api.goals(scope).catch(error),request:text=>submit(text).catch(error)});showPanel('visual');}
+// Focus sessions: the timer lives in the main process. The orb ring, the status line and the finish card mirror it.
+function focusLine(){
+ const s=focusSession;if(!s||s.status==='completed')return null;
+ const remaining=Math.max(0,s.endsAt-(s.pausedAt??Date.now())),title=s.title.length>20?s.title.slice(0,19)+'…':s.title;
+ return [`${s.status==='paused'?'Paused':'Focus'} · ${title}`,remaining<60000?'under a minute left':`${Math.ceil(remaining/60000)} min left`];
+}
+function refreshFocusStatus(){const node=$('status');if($('status-wrap').dataset.state==='idle'&&node.dataset.idle!=='false')setStatus('idle',IDLE);}
+function showFocusCard(session){if(chatOpen){chatToast(`Focus session complete · ${session.minutes} min on ${session.title}. Close chat to log progress.`);return;}displayVisual({kind:'focus',mode:'done',title:'Nice work.',subtitle:`${session.minutes} minutes of focus`,session});}
+function openFocusSetup(){if(focusSession&&focusSession.status!=='completed'){error(`A focus session is already running: ${focusSession.title}.`);return;}displayVisual({kind:'focus',mode:'setup',title:'Focus session',subtitle:'A thin ring around the orb shows your progress.'});}
+function applyFocus(session,event){
+ focusSession=session;
+ const active=!!session&&session.status!=='completed';
+ visual.setFocus(active?{durationMs:session.durationMs,endsAt:session.endsAt,pausedAt:session.pausedAt}:null);
+ $('focus-controls').hidden=!active;
+ if(active){const paused=session.status==='paused',label=paused?'Resume focus':'Pause focus';$('focus-toggle').querySelector('use').setAttribute('href',paused?'#i-play':'#i-pause');$('focus-toggle').setAttribute('aria-label',label);$('focus-toggle').title=label;}
+ refreshFocusStatus();
+ if(session?.status==='completed'){if(event==='complete')visual.celebrate();showFocusCard(session);}
+ else if(cardMode==='visual'&&currentVisual?.kind==='focus'&&!(currentVisual.mode==='setup'&&!session))panelBack();
+}
+function focusAction(args){return api.focus(args);}
+$('focus-toggle').onclick=()=>focusAction({action:focusSession?.status==='paused'?'resume':'pause'}).catch(error);
+$('focus-stop').onclick=()=>focusAction({action:'stop'}).catch(error);
+setInterval(refreshFocusStatus,15000);
+function displayVisual(v){if(chatOpen){chatVisual(v);return;}currentVisual=v;if(!v){if(cardMode==='visual')panelBack();return;}window.renderVisual($('visual-view'),v,path=>api.openNote(path).catch(error),{...placesActions,weather:args=>api.weather(args),weatherSettings:()=>openConnectorSettings('weather-integration').catch(error),trading212:args=>api.trading212(args),settings:()=>openSettings(),habits:args=>api.habits(args),setHabit:async args=>{await api.setHabit(args);const status=$('visual-view').querySelector('.habit-status');if(status)status.textContent='Saved to your vault.';},openHabitRecord:async args=>{const result=await api.openHabitRecord(args);await api.openNote(result.path);},filterGoals:scope=>api.goals(scope).catch(error),focus:focusAction,request:text=>submit(text).catch(error)});showPanel('visual');}
 const node=(tag,cls,text)=>{const element=document.createElement(tag);if(cls)element.className=cls;if(text!==undefined)element.textContent=String(text);return element;};
 const dateText=value=>{if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return '';const date=new Date(value+'T12:00:00Z');return Number.isNaN(date.getTime())?'':date.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'});};
 const entries=value=>Array.isArray(value)?value:Array.isArray(value?.tasks)?value.tasks:[];
@@ -132,7 +202,7 @@ function renderHome(data){
   if(item.venture||item.list)main.append(node('span','tag tag-0',item.venture||item.list));
   const when=node('div','task-when'),dueToday=item.due?.slice(0,10)===date;if(isOverdue)when.append(node('span','due','Past deadline'));else if(dueToday)when.append(node('span',null,'Due today'));else when.append(node('span',null,'Planned today'));
   row.append(main,when);list.append(row);
- }taskSection.append(list);if(tasks.length>8)say(taskSection,`${tasks.length-8} more tasks. Ask Orb to show all of them.`);}
+ }taskSection.append(list);if(tasks.length>8)say(taskSection,`${tasks.length-8} more tasks. Ask Smith to show all of them.`);}
  for(const message of [data?.today?.error,data?.overdue?.error,...warningMessages(data?.today?.warnings),...warningMessages(data?.overdue?.warnings)])say(taskSection,message);
  taskSection.append(action('Manage recurring tasks',()=>openRecurring()));
  taskSection.append(action('Ask about today’s tasks',()=>submit('Show all my tasks planned or due today, plus past deadlines.').catch(error)));content.append(taskSection);
@@ -155,7 +225,7 @@ function renderHome(data){
  if(data?.knowledge?.notes?.length){const box=section('Revisit your knowledge');for(const n of data.knowledge.notes.slice(0,5))box.append(action(n.title,()=>window.knowledgeUI.open(n.kind,n.path)));if(data.knowledge.notes.length>5)notice(box,`${data.knowledge.notes.length-5} more notes to revisit.`);content.append(box);}
  const warnings=warningMessages(data?.warnings).filter(message=>!shownNotices.has(message));if(warnings.length){const box=section('Needs attention');for(const message of warnings)say(box,message);content.append(box);}
 }
-async function openHome(){const generation=++homeGeneration;showPanel('home');$('home-content').replaceChildren(node('p','empty','Gathering your day…'));$('home-date').textContent='';$('refresh-home').disabled=true;try{const data=await api.today();if(generation===homeGeneration&&cardMode==='home')renderHome(data);}catch(e){if(generation===homeGeneration&&cardMode==='home')$('home-content').replaceChildren(node('p','home-note','Today could not be loaded. '+(e?.message||String(e))));}finally{if(generation===homeGeneration)$('refresh-home').disabled=false;}}
+async function openHome(){const generation=++homeGeneration;showPanel('home');$('home-weather')?.remove();homeWeather(generation);$('home-content').replaceChildren(node('p','empty','Gathering your day…'));$('home-date').textContent='';$('refresh-home').disabled=true;try{const data=await api.today();if(generation===homeGeneration&&cardMode==='home')renderHome(data);}catch(e){if(generation===homeGeneration&&cardMode==='home')$('home-content').replaceChildren(node('p','home-note','Today could not be loaded. '+(e?.message||String(e))));}finally{if(generation===homeGeneration)$('refresh-home').disabled=false;}}
 const prompts=[
  ['Plan','What needs my attention today?','Show what is planned or due today, plus anything past its deadline.','i-list','orange'],
  ['Goals','Move a goal forward','What can I do today to move my active goals forward?','i-target','red'],
@@ -172,22 +242,43 @@ function exploreCommands(){
  {group:'Planning',icon:'i-sun',tint:'orange',title:'Today',subtitle:'Your tasks, goals, habits and events at a glance',accessory:'Open',run:()=>openHome()},
  {group:'Planning',icon:'i-sun',tint:'orange',title:'Plan my day',subtitle:'Build a daily plan with AI',accessory:'Open',run:()=>openDayPlanner()},
  {group:'Planning',icon:'i-list',tint:'orange',title:'Recurring tasks',subtitle:'Repeat schedules, completion and history',accessory:'Open',keywords:'repeat routines',run:()=>openRecurring()},
+ {group:'Planning',icon:'i-clock',tint:'purple',title:'Focus session',subtitle:'Time a stretch of work with a ring around the orb',accessory:'Open',keywords:'timer pomodoro focus concentrate',run:()=>openFocusSetup()},
  {group:'Planning',icon:'i-target',tint:'red',title:'Goals',subtitle:'Active goals and reviews',accessory:'Open',run:()=>api.goals('active')},
  {group:'Planning',icon:'i-flame',tint:'green',title:'Habits',subtitle:'Log a day and see your year',accessory:'Open',run:()=>api.habits({date:null,year:null})},
+ {group:'Knowledge',icon:'i-map',tint:'teal',title:'Places',subtitle:'Saved places, nearby discoveries and walking directions',accessory:'Open',keywords:'map nearby cafe coffee restaurant park',run:()=>openPlaces()},
  {group:'Knowledge',icon:'i-doc',tint:'teal',title:'Web Clippings',subtitle:'Search saved articles, videos and posts',accessory:'Open',keywords:'snippets clipper websites x posts',run:()=>window.clippingsUI.open()},
  {group:'Knowledge',icon:'i-doc',tint:'blue',title:'Knowledge',subtitle:'Capture and explore your notes',accessory:'Open',keywords:'library hubs topics',run:()=>window.knowledgeUI.open()},
  {group:'Knowledge',icon:'i-compose',tint:'green',title:'Writing portfolio',subtitle:'Your ideas and working drafts',accessory:'Open',run:()=>window.knowledgeUI.open('portfolio')},
  {group:'Knowledge',icon:'i-steps',tint:'purple',title:'Knowledge graph',subtitle:'Explore connections between notes',accessory:'Open',run:()=>window.knowledgeUI.expand()},
- {group:'Connectors',icon:'i-chart',tint:'teal',title:'Trading 212',subtitle:'Investments, holdings, dividends and activity',status:connections.trading.label,ready:connections.trading.ready,accessory:connections.trading.ready?'Open':'Set up',keywords:'t212 investments financial portfolio integration',run:()=>connections.trading.ready?window.trading212UI.open():openConnectorSettings('trading212-integration')},
- {group:'Connectors',icon:'i-calendar',tint:'red',title:'Google Calendar',subtitle:connections.calendar.ready?'Upcoming events from your calendar sources':'Connect through Obsidian Full Calendar',status:connections.calendar.label,ready:connections.calendar.ready,accessory:connections.calendar.ready?'Open':'Set up',keywords:'schedule events meetings integration',run:()=>connections.calendar.ready?openCalendar():openConnectorSettings('google-calendar-integration')},
+ {group:'Connectors',icon:'i-logo-t212',tint:'teal',title:'Trading 212',subtitle:'Investments, holdings, dividends and activity',status:connections.trading.label,ready:connections.trading.ready,accessory:connections.trading.ready?'':'Set up',keywords:'t212 investments financial portfolio integration',run:()=>connections.trading.ready?window.trading212UI.open():openConnectorSettings('trading212-integration')},
+ {group:'Connectors',icon:'i-cloud-sun',tint:'blue',title:'Weather',subtitle:connections.weather.ready?'Forecast, feels-like and what to wear':'Choose a place for live forecasts',status:connections.weather.label,ready:connections.weather.ready,accessory:connections.weather.ready?'':'Set up',keywords:'forecast rain temperature jacket umbrella coat integration',run:()=>openWeather()},
+ {group:'Connectors',icon:'i-logo-gcal',tint:'red',title:'Google Calendar',subtitle:connections.calendar.ready?'Upcoming events from your calendar sources':'Connect through Obsidian Full Calendar',status:connections.calendar.label,ready:connections.calendar.ready,accessory:connections.calendar.ready?'':'Set up',keywords:'schedule events meetings integration',run:()=>connections.calendar.ready?openCalendar():openConnectorSettings('google-calendar-integration')},
  {group:'Orb',icon:'i-chat',tint:'blue',title:'Chats',subtitle:'Typed conversations and archive',accessory:'Open',run:()=>openChat()},
  {group:'Orb',icon:'i-steps',tint:'teal',title:'Conversation',subtitle:'This session’s voice transcript',accessory:'Open',run:()=>showPanel('transcript')},
- {group:'Orb',icon:'i-clock',tint:'purple',title:'Recent changes',subtitle:'Review and undo Orb’s edits',accessory:'Open',run:()=>{showPanel('history');return refreshHistory();}},
+ {group:'Orb',icon:'i-clock',tint:'purple',title:'Recent changes',subtitle:'Review and undo Smith’s edits',accessory:'Open',run:()=>{showPanel('history');return refreshHistory();}},
  {group:'Orb',icon:'i-gear',tint:'gray',title:'Settings',subtitle:'Vault, connectors and preferences',accessory:'Open',run:()=>openSettings()},
- ...prompts.map(([category,label,request,icon,tint])=>({group:'Try asking',icon,tint,title:label,subtitle:category+' · Sends a request to Orb',keywords:request,accessory:'Ask',run:()=>submit(request)}))
+ ...prompts.map(([category,label,request,icon,tint])=>({group:'Try asking',icon,tint,title:label,subtitle:category+' · Sends a request to Smith',keywords:request,accessory:'Ask',run:()=>submit(request)}))
  ];
 }
-async function openConnectorSettings(id){await openSettings();const integration=$(id);integration.open=true;integration.scrollIntoView({block:'start'});integration.querySelector('summary').focus();}
+async function openPlaces(){const pending={kind:'places'};currentVisual=pending;showPanel('visual');$('visual-view').replaceChildren(node('p','empty','Finding your places…'));try{const v=await api.places({action:'list'});if(cardMode==='visual'&&currentVisual===pending)displayVisual(v);}catch(e){error(e);}}
+async function openConnectorSettings(id){await openSettings();const integration=$(id);integration.open=true;window.orbSettingsLayout.reveal(integration);integration.querySelector('summary').focus();}
+// Weather: the card beside the orb, a short orb reaction when it arrives live, and a chip on Today.
+function reactToWeather(v){if(v?.kind==='weather'&&!chatOpen&&settings?.weather?.orbReactions!==false)visual.react(v.mood);}
+function showWeather(v){displayVisual(v);reactToWeather(v);}
+async function openWeather(){
+ if(!settings?.weather?.location)return openConnectorSettings('weather-integration');
+ const loading={kind:'weather',title:'Weather'};currentVisual=loading;showPanel('visual');$('visual-view').replaceChildren(node('p','empty','Checking the weather…'));
+ try{const result=await api.weather({place:null,when:'now'});if(currentVisual===loading&&cardMode==='visual')showWeather(result);}
+ catch(e){if(currentVisual===loading&&cardMode==='visual')window.weatherUI.unavailable($('visual-view'),(e?.message||String(e)).replace(/^Error invoking remote method '[^']+': Error: /,''),{retry:()=>openWeather().catch(error),settings:()=>openConnectorSettings('weather-integration').catch(error)});}
+}
+async function homeWeather(generation){
+ if(!settings?.weather?.location)return;
+ let v;try{v=await api.weather({place:null,when:'now'});}catch{return;}
+ if(generation!==homeGeneration||cardMode!=='home')return;
+ const line=window.weatherUI.headline(v),chip=node('button','home-weather');chip.type='button';chip.id='home-weather';
+ chip.append(window.weatherUI.icon(v.now.icon),document.createTextNode(line));chip.setAttribute('aria-label',`Weather in ${v.place.name}: ${line}. Open the forecast.`);chip.onclick=()=>showWeather(v);
+ $('home-weather')?.remove();$('home-date').after(chip);
+}
 async function openCalendar(){
  const loading={kind:'calendar',title:'Calendar'};currentVisual=loading;showPanel('visual');$('visual-view').replaceChildren(node('p','empty','Loading your calendar…'));
  try{const result=await api.calendar();if(currentVisual===loading&&cardMode==='visual')displayVisual(result);}
@@ -199,16 +290,16 @@ function renderCommands(){
  const query=$('ask-input').value.trim(),list=$('command-list');
  commandItems=window.orbExplore.filterCommands(exploreCommands(),query,commandCategory);
  const matches=commandItems.length;
- if(query)commandItems.push({group:'Ask Orb',icon:'i-sparkle',tint:'blue',title:query,subtitle:'Send this as a request to Orb',accessory:'Ask',run:()=>submit(query)});
- $('command-context').textContent=query?(matches?`${matches} ${matches===1?'match':'matches'}${commandCategory==='All'?'':' in '+commandCategory}`:'No matching tools. You can still ask Orb.'):
-  commandCategory==='Try asking'?'Choose a starting request to send to Orb.':commandCategory==='Connectors'?'Your connected services. Choose one to open or set up.':'Open a tool, or choose a category to explore.';
+ if(query)commandItems.push({group:'Ask Smith',icon:'i-sparkle',tint:'blue',title:query,subtitle:'Send this as a request to Smith',accessory:'Ask',run:()=>submit(query)});
+ $('command-context').textContent=query?(matches?`${matches} ${matches===1?'match':'matches'}${commandCategory==='All'?'':' in '+commandCategory}`:'No matching tools. You can still ask Smith.'):
+  commandCategory==='Try asking'?'Choose a starting request to send to Smith.':commandCategory==='Connectors'?'Your connected services. Choose one to open or set up.':'Open a tool, or choose a category to explore.';
  $('command-categories').querySelectorAll('button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.category===commandCategory)));
  commandIndex=Math.max(0,Math.min(commandIndex,commandItems.length-1));list.replaceChildren();let group=null;
  commandItems.forEach((c,i)=>{
   if(c.group!==group){group=c.group;const heading=node('li','command-group',group);heading.setAttribute('role','presentation');list.append(heading);}
   const row=node('li','command'),copy=node('span','command-copy');row.id='command-'+i;row.setAttribute('role','option');copy.append(node('span','command-title',c.title),node('span','command-subtitle',c.subtitle));row.append(appIcon(c.icon,c.tint),copy);
   if(c.status){const status=node('span','command-status',c.status);status.classList.toggle('is-ready',c.ready);row.append(status);}
-  row.append(node('span','command-accessory',c.accessory));
+  if(c.accessory)row.append(node('span','command-accessory',c.accessory));
   row.onpointermove=()=>{if(commandIndex!==i)selectCommand(i,false);};row.onclick=()=>runCommand(i);list.append(row);
  });
  selectCommand(commandIndex);
@@ -220,7 +311,7 @@ function selectCommand(i,scroll=true){
 }
 function runCommand(i=commandIndex){const command=commandItems[i];if(!command)return;if(command.accessory!=='Ask')$('ask-input').value='';Promise.resolve().then(()=>command.run()).catch(error);}
 function openWelcome(){commandCategory='All';commandIndex=0;$('ask-input').value='';showPanel('welcome');$('ask-input').focus();try{localStorage.setItem('orb-welcome-seen','1');}catch{};}
-function updateShortcut(active){if(settings)settings.shortcutActive=active;$('shortcut-hint').querySelector('span').textContent=active?'summon Orb':'set up shortcut';$('shortcut-hint').classList.toggle('needs-setup',!active);$('shortcut-status').textContent=active?'Ready. Double-tap Control from any app.':'The shortcut listener could not start. Try restarting it below.';$('enable-shortcut').textContent=active?'Ready':'Retry';$('enable-shortcut').disabled=active;}
+function updateShortcut(active){if(settings)settings.shortcutActive=active;$('shortcut-hint').querySelector('span').textContent=active?'summon Smith':'set up shortcut';$('shortcut-hint').classList.toggle('needs-setup',!active);$('shortcut-status').textContent=active?'Ready. Double-tap Control from any app.':'The shortcut listener could not start. Try restarting it below.';$('enable-shortcut').textContent=active?'Ready':'Retry';$('enable-shortcut').disabled=active;}
 function touch(){clearTimeout(idleTimer);if(connected)idleTimer=setTimeout(()=>{endVoice();setStatus('idle','Conversation ended after five quiet minutes.');},5*60*1000);}
 function send(event){if(channel?.readyState==='open')channel.send(JSON.stringify(event));}
 function continueResponse(){if(pendingContinuation&&!responseActive&&connected&&!toolDepth){pendingContinuation=false;send({type:'response.create'});}}
@@ -249,13 +340,13 @@ async function startVoice(){
       clearTimeout(connectionTimer);connecting=false;connected=true;liveUI();touch();return;
     }
     const connection=new RTCPeerConnection();peer=connection;outputAudio=new Audio();outputAudio.autoplay=true;
-    peer.ontrack=e=>{if(token!==epoch)return;outputAudio.srcObject=e.streams[0]||new MediaStream([e.track]);monitorOutput(outputAudio.srcObject);outputAudio.play().catch(()=>error('Audio could not play. End the conversation and click Talk to Orb again.'));};
+    peer.ontrack=e=>{if(token!==epoch)return;outputAudio.srcObject=e.streams[0]||new MediaStream([e.track]);monitorOutput(outputAudio.srcObject);outputAudio.play().catch(()=>error('Audio could not play. End the conversation and click Talk to Smith again.'));};
     microphone.getTracks().forEach(track=>peer.addTrack(track,microphone));
     channel=peer.createDataChannel('oai-events');
     channel.onopen=()=>{if(token!==epoch)return;clearTimeout(connectionTimer);connecting=false;connected=true;liveUI();setStatus('listening','Go ahead. I’m listening.');touch();};
     channel.onmessage=e=>{if(token!==epoch)return;try{onRealtime(JSON.parse(e.data),token).catch(error);}catch(err){error(err);}};
     channel.onclose=()=>{if(token===epoch){endVoice();setStatus('idle','Conversation ended. Click to reconnect.');}};
-    peer.onconnectionstatechange=()=>{if(token===epoch&&['failed','disconnected'].includes(connection.connectionState)){endVoice();error('Voice disconnected. Click Talk to Orb to reconnect.');}};
+    peer.onconnectionstatechange=()=>{if(token===epoch&&['failed','disconnected'].includes(connection.connectionState)){endVoice();error('Voice disconnected. Click Talk to Smith to reconnect.');}};
     const offer=await peer.createOffer();await peer.setLocalDescription(offer);
     const result=await api.connect(offer.sdp);if(token!==epoch)return;
     sessionGeneration=result.generation;await peer.setRemoteDescription({type:'answer',sdp:result.sdp});
@@ -305,7 +396,7 @@ async function submit(text){
   if(preview){previewAnswer(text);return;}
   if(!settings?.chatReady){openSettings();return;}
   if(connecting){error('Wait for voice to connect, or cancel it first.');return;}
-  if(connected&&(responseActive||toolDepth)){error('Wait for Orb to finish, or interrupt by speaking.');return;}
+  if(connected&&(responseActive||toolDepth)){error('Wait for Smith to finish, or interrupt by speaking.');return;}
   $('ask-input').value='';$('error').hidden=true;clearToolActivity();if(!speechClient)addMessage('user',text);
   if(connected&&speechClient){speechClient.answer({text});touch();return;}
   if(connected){
@@ -326,7 +417,7 @@ async function refreshHistory(){
   if(entry.status==='applied'&&entry.undoable!==false){const undo=document.createElement('button');undo.textContent='Undo';undo.disabled=connected||busy;undo.onclick=async()=>{try{await api.undo(entry.id);await refreshHistory();}catch(e){error(e);}};item.append(undo);}else if(entry.status!=='undone'){const span=document.createElement('span');span.textContent=entry.undoable===false?'Use calendar actions':entry.status;item.append(span);}$('activity-list').append(item);
  }
 }
-async function openSettings(){if(connected||connecting)endVoice();settings=await api.settings();appearanceEditor.open(settings.appearance);window.orbProviderSettings.load(settings,api,preview);window.trading212UI.loadSettings();$('vault-path').value=settings.vaultPath;$('life-folder').value=settings.taskFolders.life;$('business-folder').value=settings.taskFolders.business;$('rules-path').value=settings.rulesPath;$('goals-folder').value=settings.goalsFolder??'0. Home/Goals';$('habit-folder').value=settings.habitFolder??'0. Home/Habit Log';$('habit-script').value=settings.habitScript??'99. System/99.4 Scripts/habits/view.js';$('auto-start').checked=settings.autoStart;const hours=settings.workingHours||{start:'09:00',end:'17:00',days:[1,2,3,4,5]};$('work-start').value=hours.start;$('work-end').value=hours.end;document.querySelectorAll('[name=work-day]').forEach(input=>input.checked=hours.days.includes(Number(input.value)));$('calendar-token').value='';$('calendar-token').placeholder=settings.hasCalendarToken?'Token saved':'Paste token from Obsidian';const calendars=settings.googleCalendars||[],select=$('calendar-id');select.replaceChildren(new Option('Choose a Google calendar',''));for(const calendar of calendars)select.add(new Option(calendar.name,calendar.id));select.value=settings.calendarId||(calendars.length===1?calendars[0].id:'');const calendarConnected=calendars.length>0&&settings.fullCalendarServer&&settings.hasCalendarToken&&!!settings.calendarId,status=$('calendar-status'),integration=$('google-calendar-integration');status.textContent=calendarConnected?'Connected':calendars.length||settings.hasCalendarToken?'Finish setup':'Set up';status.className='integration-status '+(calendarConnected?'connected':calendars.length||settings.hasCalendarToken?'attention':'');integration.open=!calendarConnected;$('calendar-setup').textContent=!calendars.length?'Connect a Google calendar in Obsidian Full Calendar first. Then reopen Orb Settings.':!settings.fullCalendarServer?'Enable Local REST Server in Obsidian Full Calendar → Integrations. Generate a token with Read events, Write events and Read providers.':!settings.hasCalendarToken?'Paste a Full Calendar token with Read events, Write events and Read providers.':'Choose the default calendar Orb should use when creating events.';$('settings-error').hidden=true;updateShortcut(settings.shortcutActive);showPanel('settings');}
+async function openSettings(){if(connected||connecting)endVoice();settings=await api.settings();appearanceEditor.open(settings.appearance);weatherSettings.load(settings.weather);placesSettings.load(settings.places);window.orbProviderSettings.load(settings,api,preview);window.trading212UI.loadSettings();$('vault-path').value=settings.vaultPath;$('life-folder').value=settings.taskFolders.life;$('business-folder').value=settings.taskFolders.business;$('rules-path').value=settings.rulesPath;$('goals-folder').value=settings.goalsFolder??'0. Home/Goals';$('habit-folder').value=settings.habitFolder??'0. Home/Habit Log';$('habit-script').value=settings.habitScript??'99. System/99.4 Scripts/habits/view.js';$('auto-start').checked=settings.autoStart;const hours=settings.workingHours||{start:'09:00',end:'17:00',days:[1,2,3,4,5]};$('work-start').value=hours.start;$('work-end').value=hours.end;document.querySelectorAll('[name=work-day]').forEach(input=>input.checked=hours.days.includes(Number(input.value)));$('calendar-token').value='';$('calendar-token').placeholder=settings.hasCalendarToken?'Token saved':'Paste token from Obsidian';const calendars=settings.googleCalendars||[],select=$('calendar-id');select.replaceChildren(new Option('Choose a Google calendar',''));for(const calendar of calendars)select.add(new Option(calendar.name,calendar.id));select.value=settings.calendarId||(calendars.length===1?calendars[0].id:'');const calendarConnected=calendars.length>0&&settings.fullCalendarServer&&settings.hasCalendarToken&&!!settings.calendarId,status=$('calendar-status'),integration=$('google-calendar-integration');status.textContent=calendarConnected?'Connected':calendars.length||settings.hasCalendarToken?'Finish setup':'Set up';status.className='integration-status '+(calendarConnected?'connected':calendars.length||settings.hasCalendarToken?'attention':'');integration.open=!calendarConnected;$('calendar-setup').textContent=!calendars.length?'Connect a Google calendar in Obsidian Full Calendar first. Then reopen Orb Settings.':!settings.fullCalendarServer?'Enable Local REST Server in Obsidian Full Calendar → Integrations. Generate a token with Read events, Write events and Read providers.':!settings.hasCalendarToken?'Paste a Full Calendar token with Read events, Write events and Read providers.':'Choose the default calendar Smith should use when creating events.';$('settings-error').hidden=true;updateShortcut(settings.shortcutActive);showPanel('settings');}
 $('home-button').onclick=()=>{if(cardMode==='home')showPanel(null);else openHome().catch(error);};
 $('discover-button').onclick=()=>toggleExplore();
 $('refresh-home').onclick=()=>openHome().catch(error);
@@ -372,10 +463,12 @@ function routeActivity(data){
  if(data.kind==='change'){addMessage('tool',data.action+' · '+data.path);if(cardMode==='history')refreshHistory().catch(error);if(cardMode==='home')openHome().catch(error);}
  if(data.kind==='voice-transcript')addMessage(data.role,data.text);
  if(data.kind==='deep')addMessage('deep',data.text);
- if(data.kind==='visual')displayVisual(data.visual);
+ if(data.kind==='visual'){displayVisual(data.visual);reactToWeather(data.visual);}
  if(data.kind==='visual-error')error(data.message);
 }
 api.onActivity(routeActivity);
+api.onFocus?.(({session,event})=>applyFocus(session,event));
+api.focus?.({action:'status'}).then(session=>applyFocus(session,'restore')).catch(()=>{});
 api.onActivate(()=>{if(chatOpen){$('chat-input').focus();return;}if(settings&&!connected&&!connecting&&!busy&&cardMode!=='settings')startVoice();});
 api.onHide(()=>{endVoice();clearToolActivity();showPanel(null);$('error').hidden=true;});
 api.onSettings(()=>openSettings().catch(error));api.onShortcut(updateShortcut);
@@ -397,7 +490,10 @@ async function previewSteps(){
 }
 async function previewAnswer(text){
  $('ask-input').value='';addMessage('user',text);await previewSteps();
- if(/trading\s?212/i.test(text))displayVisual(await api.trading212({view:/dividend/i.test(text)?'dividends':/deposit|interest|cash movement/i.test(text)?'cash':/pending|order/i.test(text)?'pending':'overview'}));
+ if(/\b(places|nearby|coffee|café|cafe|restaurant|park|maps?)\b/i.test(text)){displayVisual(await api.places({action:'search',query:text}));return;}
+ if(/\bfocus\b|minutes on/i.test(text)){await api.focus({action:'start',path:'0. Home/Business Tasks/Finish launch notes.md',minutes:12});return;}
+ if(/\b(weather|forecast|jacket|umbrella|coat|rain|cold|hot|snow)\b/i.test(text))showWeather(await api.weather({place:null,when:'now'}));
+ else if(/trading\s?212/i.test(text))displayVisual(await api.trading212({view:/dividend/i.test(text)?'dividends':/deposit|interest|cash movement/i.test(text)?'cash':/pending|order/i.test(text)?'pending':'overview'}));
  else if(/recurr|repeat/i.test(text))displayVisual({kind:'recurring',title:'Recurring tasks'});
  else if(/plan.*(day|today|tomorrow)|replan/i.test(text))openDayPlanner();
  else if(/habit|pull.up|mandarin|heatmap/i.test(text))displayVisual(previewHabits());
@@ -408,7 +504,7 @@ async function previewAnswer(text){
   {date:'2026-09-28',items:[{kind:'event',title:'Time off',start:'2026-09-27',end:'2026-09-29',allDay:true,calendar:'Personal'},{kind:'event',title:'Team meeting',start:'2026-09-28T09:00:00',end:'2026-09-28T10:00:00',allDay:false,calendar:'Work',location:'Office'}]},
   {date:'2026-09-29',items:[{kind:'event',title:'Draft proposal',start:'2026-09-29T10:00:00',end:'2026-09-29T10:45:00',allDay:false,calendar:'Work',taskPath:'0. Home/Business Tasks/Draft proposal.md',taskCompleted:false,linkState:'linked'},{kind:'event',title:'Send outline',start:'2026-09-29T14:00:00',end:'2026-09-29T14:30:00',allDay:false,calendar:'Work',taskPath:'0. Home/Business Tasks/Send outline.md',taskCompleted:true,linkState:'linked'},{kind:'task',title:'File report',start:'2026-09-29',allDay:true,dateType:'due',list:'business',path:'0. Home/Business Tasks/File report.md'}]}],warnings:[],truncated:false,total:5,shown:5,sources:[]});
  else if(/chart|saving|graph|spreadsheet|trend/i.test(text))displayVisual({id:'preview',kind:'area',title:'A little more set aside.',subtitle:'Example data · savings balance, January–June',series:['Savings'],points:[{label:'Jan',values:[3200]},{label:'Feb',values:[3700]},{label:'Mar',values:[3550]},{label:'Apr',values:[4400]},{label:'May',values:[4900]},{label:'Jun',values:[5650]}],unit:'GBP',x_label:'2026',y_label:'Balance',sources:[{path:'Example savings.csv',detail:'Illustrative data'}]});
- else displayVisual({id:'preview',kind:'table',title:'Today’s tasks',subtitle:'Example data · 3 tasks',columns:['Task','Area','Planned'],rows:[['Call the dentist','Life','10:00'],['Finish launch notes','Studio','14:00'],['Take a long walk','Life','17:30']],sources:[]});
+ else displayVisual({id:'preview',kind:'table',title:'Today’s tasks',subtitle:'Example data · 3 tasks',columns:['Task','Area','Planned','Deadline'],rows:[['Call the dentist','Life','10:00',null],['Finish launch notes','Studio','14:00','2 Oct'],['Take a long walk','Life',null,null]],sources:[]});
  setStatus('idle','Here’s the picture.');
 }
 function previewGoals(scope='active'){
@@ -423,12 +519,12 @@ function previewGoals(scope='active'){
 
 // Fictional, in-memory preview. No vault or API calls are made here.
 const previewHabitRecords=new Map();
-function previewHabits({date='2026-09-28',year=Number(date.slice(0,4))}={}){
+function previewHabits({date='2026-09-28',year=Number(date.slice(0,4)),end=date}={}){
  const today='2026-09-28',plus=(date,n)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
  const weekStart=date=>plus(date,-((new Date(date+'T12:00:00Z').getUTCDay()+6)%7)),start=weekStart(today);
  const habits=[{key:'pull_ups',label:'Pull-ups',target:7,cadence:'Daily',color:'#31995b'},{key:'study_mandarin',label:'Study Mandarin',target:2,cadence:'Twice a week',color:'#6387db'}];
  const count=(a,b,key)=>[...previewHabitRecords.values()].filter(r=>r.date>=a&&r.date<=b&&r.values[key]).length;
- return {id:'preview-habits',kind:'habits',title:'Your habits',subtitle:'Fictional preview · Small actions, a little more often.',today,date,year,week_start:start,definitions_version:'preview',habits:habits.map(h=>({...h,week_count:count(start,today,h.key),year_count:count(`${year}-01-01`,`${year}-12-31`,h.key)})),records:[...previewHabitRecords.values()],selected:previewHabitRecords.get(date)||{path:`0. Home/Habit Log/${date}.md`,date,version:null,values:{pull_ups:false,study_mandarin:false}},weeks:Array.from({length:8},(_,i)=>{const s=plus(start,-i*7),end=plus(s,6);return {start:s,end,current:i===0,counts:Object.fromEntries(habits.map(h=>[h.key,count(s,end,h.key)]))};}),warnings:[],sources:[]};
+ return {id:'preview-habits',kind:'habits',title:'Your habits',subtitle:'Fictional preview · Small actions, a little more often.',today,date,year,range:{start:plus(weekStart(end>today?today:end),-84),end:plus(weekStart(end>today?today:end),6)},week_start:start,definitions_version:'preview',habits:habits.map(h=>({...h,week_count:count(start,today,h.key),year_count:count(`${year}-01-01`,`${year}-12-31`,h.key)})),records:[...previewHabitRecords.values()],selected:previewHabitRecords.get(date)||{path:`0. Home/Habit Log/${date}.md`,date,version:null,values:{pull_ups:false,study_mandarin:false}},weeks:Array.from({length:8},(_,i)=>{const s=plus(start,-i*7),end=plus(s,6);return {start:s,end,current:i===0,counts:Object.fromEntries(habits.map(h=>[h.key,count(s,end,h.key)]))};}),warnings:[],sources:[]};
 }
 if(preview){
  const recurringNotes=new Map(),R=window.OrbRecurring.core;let recurringRevision=0;
@@ -442,7 +538,7 @@ if(preview){
   const d=new Date('2026-01-01T12:00:00Z');d.setUTCDate(d.getUTCDate()+i);const date=d.toISOString().slice(0,10);
   if(i%7!==0&&i%11!==0)previewHabitRecords.set(date,{path:`0. Home/Habit Log/${date}.md`,date,version:'preview',values:{pull_ups:i%5!==0,study_mandarin:i%3===0}});
  }
- api.habits=async args=>displayVisual(previewHabits({date:args?.date||'2026-09-28',year:args?.year??Number((args?.date||'2026-09-28').slice(0,4))}));
+ api.habits=async args=>displayVisual(previewHabits({date:args?.date||'2026-09-28',year:args?.year??Number((args?.date||'2026-09-28').slice(0,4)),end:args?.end||args?.date||'2026-09-28'}));
  api.setHabit=async args=>{const r=previewHabitRecords.get(args.date)||{path:`0. Home/Habit Log/${args.date}.md`,date:args.date,version:'preview',values:{pull_ups:false,study_mandarin:false}};r.values[args.key]=args.completed;previewHabitRecords.set(args.date,r);displayVisual(previewHabits({date:args.date,year:currentVisual.year}));};
  api.openHabitRecord=async args=>({path:`0. Home/Habit Log/${args.date}.md`});
 }

@@ -1,6 +1,6 @@
 # Tasks
 
-[Documentation](../README.md) · [Things to ask Orb](../things-to-ask.md) · [Vault format](../vault-format.md)
+[Documentation](../README.md) · [Things to ask Smith](../things-to-ask.md) · [Vault format](../vault-format.md)
 
 Use Orb to see work you have planned, capture new actions, change dates and grouping, and explicitly complete or reopen tasks. A task is one Markdown note in your configured personal or work folder.
 
@@ -8,7 +8,7 @@ Use Orb to see work you have planned, capture new actions, change dates and grou
 
 ## Setup
 
-Orb creates `0. Home/Life Tasks` and `0. Home/Business Tasks` automatically. New vaults use these fixed paths; older saved installations keep their existing paths. Each task is a Markdown note with `type: task`. The starter is empty. For the examples below, first ask Orb to create a personal task called Example errand and a business task called Example project task in a disposable vault, or substitute your own records.
+Orb creates `0. Home/Life Tasks` and `0. Home/Business Tasks` automatically. New vaults use these fixed paths; older saved installations keep their existing paths. Each task is a Markdown note with `type: task`. The starter is empty. For the examples below, first ask Smith to create a personal task called Example errand and a business task called Example project task in a disposable vault, or substitute your own records.
 
 ## Things to ask
 
@@ -18,6 +18,7 @@ Names below are illustrative, not preloaded records. These are flexible natural-
 | --- | --- | --- |
 | “Show my tasks.” | Lists unfinished tasks across both lists. | No |
 | “Show today's tasks.” | Shows unfinished tasks planned **or due** today. | No |
+| “Show today's tasks and past deadlines.” | Keeps today’s tasks first, with past deadlines in a separate section below. | No |
 | “Which tasks have past deadlines?” | Lists unfinished tasks whose Deadline is before today. | No |
 | “Show my work tasks.” | Lists the work/business folder's unfinished tasks. | No |
 | “Show all my tasks, including completed ones.” | Includes completed task records. | No |
@@ -29,7 +30,7 @@ Names below are illustrative, not preloaded records. These are flexible natural-
 | “Mark Example errand complete.” | Sets `completed: true`. | Vault note |
 | “Reopen Example errand.” | Sets `completed: false`. | Vault note |
 
-Relative dates use the current local date. Example absolute dates are illustrative; choose your intended date. Orb should clarify ambiguous identities and missing information rather than invent a commitment.
+Relative dates use the current local date. Example absolute dates are illustrative; choose your intended date. Smith should clarify ambiguous identities and missing information rather than invent a commitment.
 
 ## What happens
 
@@ -37,7 +38,9 @@ Task reads open a companion list with task title, area, Planned, and Deadline. C
 
 A successful edit is recorded in Recent changes. Visible task lists refresh after edits and undo. Completed tasks disappear from the default unfinished list. If a new task falls outside the current Today filter, Orb switches to all tasks so you can see it. Completion also refreshes a visible calendar that includes task dates or linked blocks or a Goals panel linking that task.
 
-**Planned** means when you intend to work. **Deadline** means a real latest date. A past Planned date does not itself make a task overdue. Today and past deadlines are separate lists.
+**Planned** means when you intend to work. **Deadline** means a real latest date. A past Planned date does not itself make a task overdue. Today and past deadlines are separate lists. When one answer reads both for the same date and completion filter, today’s tasks stay at the top and past deadlines appear below; the second query does not replace the first list. A later request for only past deadlines opens that list on its own.
+
+The corner graph follows the displayed task list. Expand it to see **To-dos** linked to their **Areas** (the displayed venture or task list). A task appearing in both sections has one graph node. Opening a different task view clears the previous graph focus and filters; an empty list shows an empty to-do graph. Click a task node to preview its dates or open its source note in Obsidian. These area connections do not create links in your notes. See [Corner graph](knowledge.md#corner-graph).
 
 ## Try a complete workflow
 
@@ -49,11 +52,15 @@ After creating the two practice tasks above:
 4. **“Mark Example errand complete.”** Expect it to leave unfinished lists.
 5. **“Undo your last note edit.”** Expect the completion to be undone, while the earlier Planned change remains.
 
-An edit is authorized by your request; you do not need to confirm the same unambiguous edit again. If Orb asks which note you mean, give its path.
+An edit is authorized by your request; you do not need to confirm the same unambiguous edit again. If Smith asks which note you mean, give its path.
 
 ## Recurring tasks
 
 Use **Today → Manage recurring tasks**, or the vault’s **Recurring Tasks** dashboard in desktop Obsidian. Both interfaces support fixed schedules, intervals after completion, skip, history and portable undo. Completing a recurring task logs its occurrence and advances the same note; the next occurrence stays open. See [Recurring tasks](recurring-tasks.md) for setup, examples and date rules.
+
+## Focus on a task
+
+Hover over an unfinished task in any task list and press the clock beside its title to start a 25-minute focus session, or ask Smith for time on it. When the session ends you can log progress under the task's `## Focus log` heading or mark it done. See [Focus sessions](focus-sessions.md).
 
 ## Limits
 
@@ -70,7 +77,7 @@ Use **Today → Manage recurring tasks**, or the vault’s **Recurring Tasks** d
 
 **The dates look wrong:** inspect `planned` and `due` in the note; display labels in Obsidian do not change the underlying property names. A real deadline should be stored in `due`.
 
-**“Task changed” or undo refuses:** another edit changed the file version. Ask Orb to read the task again. See [Changes and undo](changes-and-undo.md).
+**“Task changed” or undo refuses:** another edit changed the file version. Ask Smith to read the task again. See [Changes and undo](changes-and-undo.md).
 
 Implementation: [vault.cjs](../../src/vault.cjs), [agent.cjs](../../src/agent.cjs), and [vault tests](../../test/vault.test.cjs).
 

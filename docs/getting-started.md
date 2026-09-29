@@ -1,11 +1,13 @@
 # Getting started
 
-[Documentation](README.md) · [Things to ask Orb](things-to-ask.md)
+[Documentation](README.md) · [Things to ask Smith](things-to-ask.md)
+
+Meet **Smith (Agent Smith)**, your assistant inside **Vault Orb**. Talk to Smith by voice or send a typed request; both use the same vault tools. The app, menu-bar icon, and vault structure are still called Vault Orb or Orb.
 
 ## What you need
 
 - An Apple Silicon Mac. Windows, Linux, and Intel Macs are not currently supported.
-- Node.js 22 or newer, npm, and Xcode Command Line Tools to build and run the source.
+- Node.js 24 or newer, npm, and Xcode Command Line Tools to build and run the source.
 - A location for your Markdown vault; Orb creates it for you, including in an iCloud-synced folder if desired.
 - Your own OpenAI or OpenRouter API key, a compatible tool model, and an internet connection. API charges are separate from consumer chat subscriptions. See [Models and providers](providers.md) for independent voice setup.
 - Obsidian installed if you want source-note buttons to open Markdown notes there.
@@ -51,10 +53,14 @@ Click the orb to start voice and allow macOS microphone access. Double-tap Contr
 
 To read calendar feeds or create Google Calendar events, open **Settings → Integrations → Google Calendar** and follow [Calendar setup](features/calendar.md#setup). Setting a task's Planned date alone does not create an event. To reserve work time, set working hours and follow [linked task scheduling](features/task-scheduling.md).
 
+## Optional weather setup
+
+Open **Settings → Connectors → Weather**, search for your town or city, and pick the right match. It saves straight away, with no account or key needed. Then ask “Do I need a jacket?”, open **Explore → Connectors → Weather**, or click the weather chip on **Today**. See [Weather](features/weather.md).
+
 ## Optional Trading 212 setup
 
 Open **Settings → Integrations → Trading 212**. Choose Live or Demo, enter your Trading 212 **API key and API secret** with read-only permissions, and click **Connect & save**. This saves the connection independently of the other Settings fields. The connection test reads the account summary; other views also need their relevant read permissions.
 
-Open **Explore → Trading 212** for Overview, Holdings, Dividends and Activity. The connector supports Invest and Stocks ISA accounts and cannot place trades. This financial portfolio is separate from the knowledge system's **Portfolio** notes. Dashboard browsing makes no AI request; asking Orb about investments shares relevant account data with your selected AI provider. See [Trading 212](features/trading212.md) for key generation, permissions, history loading and disconnect behaviour.
+Open **Explore → Trading 212** for Overview, Holdings, Dividends and Activity. The connector supports Invest and Stocks ISA accounts and cannot place trades. This financial portfolio is separate from the knowledge system's **Portfolio** notes. Dashboard browsing makes no AI request; asking Smith about investments shares relevant account data with your selected AI provider. See [Trading 212](features/trading212.md) for key generation, permissions, history loading and disconnect behaviour.
 
 If setup fails, start with [Troubleshooting](troubleshooting.md). For local storage and network use, see [Privacy and data](privacy.md).

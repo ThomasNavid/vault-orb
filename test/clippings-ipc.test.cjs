@@ -8,7 +8,7 @@ async function boot(t){
  const layout=createWorkspace(path.join(dir,'vault')),userData=path.join(dir,'app');fs.mkdirSync(userData);fs.writeFileSync(path.join(userData,'settings.json'),JSON.stringify(layout));
  const handlers=new Map(),opened=[],webContents=Object.assign(new EventEmitter(),{setWindowOpenHandler(){},send(){}});let ready;
  const app=Object.assign(new EventEmitter(),{getPath:()=>userData,requestSingleInstanceLock:()=>true,whenReady:()=>({then:fn=>{ready=Promise.resolve().then(fn);}})});
- const electron={app,powerMonitor:new EventEmitter(),ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},shell:{openExternal:async url=>opened.push(url)},
+ const electron={app,protocol:{registerSchemesAsPrivileged(){},handle(){}},powerMonitor:new EventEmitter(),ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},shell:{openExternal:async url=>opened.push(url)},
   BrowserWindow:class extends EventEmitter{constructor(){super();this.webContents=webContents;}setVisibleOnAllWorkspaces(){}loadFile(){}},
   Tray:class extends EventEmitter{setToolTip(){}},nativeImage:{createFromPath:()=>({setTemplateImage(){}})},Menu:{buildFromTemplate:x=>x,setApplicationMenu(){}},globalShortcut:{register(){}},session:{defaultSession:{setPermissionRequestHandler(){},setPermissionCheckHandler(){}}},dialog:{showErrorBox:(_t,m)=>assert.fail(m)},safeStorage:{isEncryptionAvailable:()=>true}};
  vm.runInNewContext(fs.readFileSync(main,'utf8'),{require:name=>name==='electron'?electron:name.endsWith('orb-shortcut.node')?{start:()=>true,status:()=>({})}:realRequire(name),__dirname:path.dirname(main),Buffer,AbortController,process,setTimeout,clearTimeout,setInterval:()=>({unref(){}}),console},{filename:main});await ready;

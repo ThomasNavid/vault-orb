@@ -1,14 +1,18 @@
-# Vault Orb
+# Vault Orb - Smith
 
-A compact Mac voice assistant for your Obsidian vault. Talk or type to find notes, manage tasks, work towards goals, track habits, review your calendar, view Trading 212 investments, and explore data. Orb shows a companion panel when a task list, goal card, calendar, or chart helps.
+A compact Mac app for your Obsidian vault, with **Smith (Agent Smith)** as your voice and chat companion—a playful nod to *The Matrix*. Talk or type to find notes and saved articles, manage tasks, work towards goals, track habits, plan your day, and start focus sessions. Check your calendar and the weather, view Trading 212 investments, or explore data in companion panels beside the orb.
+
+**Vault Orb** is the app; **Smith** is the assistant you talk to in chat and voice. Look for **Ask Smith**, **Talk to Smith**, and **Draft with Smith** in the interface.
 
 Your vault stays in Markdown. Orb reads it directly and records its note edits with undo. Choose OpenAI or OpenRouter for chat and tools, with an optional separate reasoning model. Voice can use OpenAI Realtime or a Deepgram → chosen chat model → ElevenLabs pipeline. [Provider setup](docs/providers.md) explains each combination.
 
-[![Vault Orb showing goals with fictional example data](docs/images/goals-view.png)](docs/images/goals-view.png)
+[![Vault Orb - Smith showing the Today dashboard with fictional example data](docs/images/smith-today.jpg)](docs/images/smith-today.jpg)
+
+*Smith and the Today dashboard. Screenshot from the app’s browser preview with fictional example data.*
 
 ## Quick start
 
-You need an **Apple Silicon Mac**, **Node.js 22+**, **npm**, **Xcode Command Line Tools**, a location for your vault, and an OpenAI or OpenRouter API key with access to a tool-capable text model. Voice needs the credentials for your chosen voice mode. Provider API billing is separate from consumer chat subscriptions. Windows, Linux, and Intel Macs are not supported.
+You need an **Apple Silicon Mac**, **Node.js 24+**, **npm**, **Xcode Command Line Tools**, a location for your vault, and an OpenAI or OpenRouter API key with access to a tool-capable text model. Voice needs the credentials for your chosen voice mode. Provider API billing is separate from consumer chat subscriptions. Windows, Linux, and Intel Macs are not supported.
 
 From a checkout of this repository:
 
@@ -30,7 +34,7 @@ See [Getting started](docs/getting-started.md) for the complete setup, optional 
 
 ## What can I ask?
 
-These are natural-language examples, not fixed commands. Orb uses current vault data and may ask for missing details. Requests to create or edit items make real changes; each guide explains the destination and prerequisites.
+These are natural-language examples, not fixed commands. Smith uses current vault data and may ask for missing details. Requests to create or edit items make real changes; each guide explains the destination and prerequisites.
 
 | Feature | Try saying | Guide |
 | --- | --- | --- |
@@ -38,24 +42,28 @@ These are natural-language examples, not fixed commands. Orb uses current vault 
 | Tasks | “Show today's tasks.” | [Tasks](docs/features/tasks.md) |
 | Goals | “Let's review my goals.” | [Goals and weekly reviews](docs/features/goals.md) |
 | Habits | “Show my habits.” | [Habits and heatmaps](docs/features/habits.md) |
+| Focus sessions | “Give me 25 minutes on Draft proposal.” | [Focus sessions](docs/features/focus-sessions.md) |
 | Task scheduling | “Find me 45 minutes this week for Draft proposal.” | [Linked task blocks](docs/features/task-scheduling.md) |
 | Calendar | “What's on my calendar next week?” | [Calendar](docs/features/calendar.md) |
 | Knowledge and graph | Open **Explore → Knowledge**, or “Show my knowledge graph.” | [Knowledge system](docs/features/knowledge.md) |
+| Maps and places | “Find a quiet coffee shop nearby.” | [Maps and nearby places](docs/features/maps-and-places.md) |
 | Notes | “Find my notes about pricing.” | [Finding and updating notes](docs/features/notes.md) |
+| Web Clippings | Open **Explore → Web Clippings** to search saved articles, videos, and posts. | [Web Clippings](docs/features/web-clippings.md) |
+| Weather | “Do I need a jacket?” | [Weather](docs/features/weather.md) |
 | Trading 212 | “Show my Trading 212 portfolio.” | [Trading 212](docs/features/trading212.md) |
 | Data and charts | “Find my CSV and help me chart it.” | [Spreadsheets and visuals](docs/features/spreadsheets-and-visuals.md) |
 | AI daily planner | “Help me plan today; finish by three.” | [Plan my day](docs/features/daily-planner.md) |
 | Planning | “What can I do today to move my goals forward?” | [Planning across notes](docs/features/planning.md) |
-| Voice and controls | Double-tap Control to summon Orb. | [Voice and controls](docs/features/voice-and-controls.md) |
+| Voice and controls | Double-tap Control to summon Smith. | [Voice and controls](docs/features/voice-and-controls.md) |
 | Change history | “Undo your last note edit.” | [Changes and undo](docs/features/changes-and-undo.md) |
 
-The [Things to ask Orb cookbook](docs/things-to-ask.md) has copyable examples and workflows you can try in your own vault. The [documentation index](docs/README.md) lists all guides.
+The [Things to ask Smith cookbook](docs/things-to-ask.md) has copyable examples and workflows you can try in your own vault. The [documentation index](docs/README.md) lists all guides.
 
 ## Everyday use
 
 Click the menu-bar Orb, use the Dock icon, or double-tap Control. **⌘⇧Space** is the fallback shortcut. Click the orb to talk or the keyboard icon to type. **Today** opens a daily dashboard (refreshing existing calendar links), while **Explore** (⌘K) is a searchable list of views and starting prompts, so you do not need to memorize commands. **Escape** or × hides Orb and stops voice and pending work. Settings contains Recent changes and the conversation transcript. **Settings → Appearance** offers colour presets and a custom picker, with live preview and a choice saved on this Mac; see [colour controls](docs/features/voice-and-controls.md#choose-your-orb-colour).
 
-Today brings together tasks planned or due today, past deadlines, active goals, habit progress, calendar events, and knowledge notes you chose to revisit. Knowledge adds Hub/Topic browsing, capture, source-based learning, Portfolio drafts, and connection review. A corner graph expands into an interactive view of your linked notes. Its sections stay independent, so an unavailable optional integration is reported without hiding the rest of the day. Goals, habits with heatmaps, task lists, calendar agendas, and charts also appear beside the orb as needed. Source links open Markdown notes in Obsidian; spreadsheet links open in the default local application.
+Today brings together tasks planned or due today, past deadlines, active goals, habit progress, calendar events, and knowledge notes you chose to revisit. Knowledge adds Hub/Topic browsing, capture, source-based learning, Portfolio drafts, and connection review. A corner graph expands into linked knowledge notes or, while a task list is displayed, its to-dos grouped by area. Its sections stay independent, so an unavailable optional integration is reported without hiding the rest of the day. Goals, habits with heatmaps, task lists, calendar agendas, and charts also appear beside the orb as needed. Source links open Markdown notes in Obsidian; spreadsheet links open in the default local application.
 
 ## Your data and current limits
 

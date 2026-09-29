@@ -1,8 +1,8 @@
 # Spreadsheets and visuals
 
-[Documentation](../README.md) · [Things to ask Orb](../things-to-ask.md) · [Privacy](../privacy.md)
+[Documentation](../README.md) · [Things to ask Smith](../things-to-ask.md) · [Privacy](../privacy.md)
 
-Inspect spreadsheet data stored in the vault and ask Orb to show a sourced table or chart. Orb can also extract comparisons and numeric observations from ordinary notes.
+Inspect spreadsheet data stored in the vault and ask Smith to show a sourced table or chart. Orb can also extract comparisons and numeric observations from ordinary notes.
 
 ## Setup
 
@@ -37,7 +37,7 @@ For Excel, Orb first sees sheet names and dimensions, then reads the selected ra
 
 Visuals support tables and line, area, or bar charts. Charts include source links, units, hover/focus values, and a View data table. Missing numeric observations remain missing rather than becoming zero. Sources can identify a workbook sheet/range.
 
-When a question involves at least two comparable sourced numbers, Orb is instructed to show a chart proactively if it helps, even if you did not explicitly say “chart”. For a single number, it can answer plainly. You can always explicitly ask for a supported visual.
+When a question involves at least two comparable sourced numbers, Smith is instructed to show a chart proactively if it helps, even if you did not explicitly say “chart”. For a single number, it can answer plainly. You can always explicitly ask for a supported visual.
 
 Task lists, goal cards, and calendars are built directly from tool results. General charts and comparison tables are model-supplied data validated for shape and source access. That validation does not prove every interpretation or calculation; inspect the linked source and View data for important decisions.
 

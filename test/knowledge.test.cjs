@@ -109,3 +109,17 @@ test('knowledge writes do not reopen a stale goal or habit panel',async t=>{
  const v=fixture(t),events=[],agent=new Agent({vault:v,getKey:()=>'',onActivity:e=>events.push(e)});agent.goalView={scope:'all'};agent.habitView={};
  const result=await agent.execute('create_knowledge',{kind:'knowledge',title:'New capture'});assert.ok(result.change_id);assert.ok(events.some(e=>e.kind==='change'));assert.equal(events.some(e=>e.kind==='visual'||e.kind==='visual-error'),false);
 });
+
+test('to-do graphs use only displayed tasks, deduplicate overlapping sections and retain exact note paths',()=>{
+ const vm=require('node:vm'),sandbox={window:{}};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../src/knowledge-graph.js'),'utf8'),sandbox);
+ const {tasks,filter}=sandbox.window.KnowledgeGraph,{tasksVisual}=require('../src/visuals.cjs');
+ const task={title:'Send report',path:'Work/Send report.md',list:'business',planned:'2026-09-29',due:'2026-09-28'};
+ const today=tasksVisual({date:'2026-09-29',tasks:[task],warnings:[]},'today');
+ const overdue=tasksVisual({date:'2026-09-29',tasks:[task,{title:'Book train',path:'Life/Book train.md',list:'life',due:'2026-09-27'}],warnings:[]},'overdue');
+ const graph=tasks({...today,taskSections:[today,overdue]});
+ assert.deepEqual(Array.from(graph.notes.filter(n=>n.kind==='task'),n=>n.path),[task.path,'Life/Book train.md']);
+ assert.equal(graph.edges.length,2);assert.equal(filter(graph).nodes.length,4);
+ assert.match(graph.notes.find(n=>n.path===task.path).excerpt,/Deadline: 28 Sept?/);
+ assert.equal(tasks({kind:'calendar'}),null);
+ assert.equal(tasks(tasksVisual({date:'2026-09-29',tasks:[],warnings:[]},'today')).notes.length,0);
+});

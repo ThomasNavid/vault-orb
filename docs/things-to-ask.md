@@ -1,8 +1,10 @@
-# Things to ask Orb
+# Things to ask Smith
 
 [Documentation](README.md) · [Getting started](getting-started.md)
 
-These are copyable examples of supported requests, checked against the app's tools and behavior. They are not fixed commands, exhaustive phrasing rules, or transcripts of live model tests. Orb may ask for missing details or an exact note path. Speech and typing support the same feature requests.
+Smith (Agent Smith) is the assistant in Vault Orb. Use **Ask Smith** or **Talk to Smith** to make a request.
+
+These are copyable examples of supported requests, checked against the app's tools and behavior. They are not fixed commands, exhaustive phrasing rules, or transcripts of live model tests. Smith may ask for missing details or an exact note path. Speech and typing support the same feature requests.
 
 The [starter](../vault-template/) begins empty. Names below are illustrative, not included records. Create your own tasks, goals, habits, and notes first, or use a disposable vault for practice. Requests marked **writes** change actual records. Substitute existing paths and intended dates.
 
@@ -42,9 +44,37 @@ Click **Today** beneath the orb for a read-only overview of today's tasks, past 
 >
 > Reopen Example errand.
 
-**Writes:** creates or updates task Markdown. Planned dates do not book calendar events. Updating a task requires it to exist; Orb should clarify duplicate names.
+**Writes:** creates or updates task Markdown. Planned dates do not book calendar events. Updating a task requires it to exist; Smith should clarify duplicate names.
 
 [Task guide](features/tasks.md) · [Undo](features/changes-and-undo.md)
+
+## Check the weather
+
+> Do I need a jacket?
+>
+> Will I need an umbrella this afternoon?
+>
+> Weather in Lisbon tomorrow.
+
+**Requires:** a home location in Settings → Connectors → Weather, or a named place. **Result:** a forecast card with feels-like temperature, advice chips and the next 24 hours. The orb briefly turns icy blue in the cold, amber or red in the heat, and shimmers when it's wet. **Writes:** nothing.
+
+[Weather guide](features/weather.md)
+
+## Focus on a task
+
+> Give me 25 minutes on Example project task.
+>
+> Focus on this for 45 minutes.
+>
+> 20 minutes on email.
+>
+> How long is left? Pause my focus session. Add 10 minutes. Stop the timer.
+>
+> Log that I drafted the intro.
+
+**Requires:** an unfinished task note for task-linked sessions. A title works for anything else. **Result:** a progress ring around the orb and minutes left in the menu bar. When time is up, a card offers Log progress, Mark done, +5 min and Done. **Writes:** only logging (a line under `## Focus log` in the task note) and Mark done change the vault.
+
+[Focus sessions guide](features/focus-sessions.md)
 
 ## Work towards a goal
 
@@ -68,7 +98,7 @@ Click **Today** beneath the orb for a read-only overview of today's tasks, past 
 
 > Help me create a goal to launch my portfolio.
 
-Orb should ask for missing information, such as what “launched” means. You could then supply:
+Smith should ask for missing information, such as what “launched” means. You could then supply:
 
 > Create it as an active goal called Launch my portfolio. Done means three case studies and a working contact page are published. No target date yet. Link Example project task as the next action.
 
@@ -249,3 +279,12 @@ These requests search and read saved notes without changing them or fetching the
 ## Build a realistic day
 
 Open **Today → Plan my day**, or ask “Help me plan today.” Try “Plan tomorrow and finish by three,” “Keep the proposal first; it needs 90 minutes,” or “Replan the remaining day.” These requests produce drafts. Use the planner’s **Save plan** or reviewed **Apply to tasks…** controls to make the selected note/date/calendar changes. See [AI daily planner](features/daily-planner.md) for estimate provenance, calendar requirements, and recovery.
+
+## Maps and nearby places
+
+- “Find a quiet coffee shop nearby.” — choose a starting point; nearby discovery and walking times need a Geoapify key. Quietness is sourced from notes or marked unverified.
+- “Show my saved places.” — browses place notes without a Geoapify connection; Explore → Places opens the same view directly.
+- “Save that café to Places.” — saves the selected result as an undoable Markdown note.
+- “Find parks near Soho, London.” — resolves the starting area, with a chooser for ambiguous results.
+
+Use the card's Directions / Open in controls for Apple or Google Maps, and Widen to 3 km to extend the search. [Feature guide](features/maps-and-places.md).

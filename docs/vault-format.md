@@ -220,8 +220,26 @@ Desktop Obsidian assets are in `99. System/99.4 Scripts/recurring-tasks`; its `c
 
 Orb searches visible Markdown recursively within `4. Knowledge Library/Web Clippings`, including untagged notes. The starter dashboard is excluded. Keep captures in Websites, Videos, or X Posts and preserve `source`, optional `author`/`type`/`topic`/`tags`, and `created` as the capture date. A `title` property overrides the display filename, and a valid HTTP(S) `url` property is accepted when `source` is unavailable. These are read-time conventions; browsing never migrates existing notes. See [Web Clippings](features/web-clippings.md) for accepted dates, aliases, missing-metadata behaviour, and limits.
 
+## Focus log
+
+Logging a [focus session](features/focus-sessions.md) appends one line under a `## Focus log` heading in the task note. The heading is created at the end of the note if it is missing:
+
+```markdown
+## Focus log
+
+- 2026-09-29 14:30 · 25 min — Outlined the three sections
+```
+
+Each line holds the local date and time, the whole minutes, and an optional single-line note of up to 500 characters. New lines go at the end of the section, before any later heading. Nothing is added to the frontmatter. Each entry is a separate, undoable change.
+
 ## Daily planning
 
 Task notes may include optional `estimated_minutes`, a whole number from 1 to 10080 representing estimated remaining work. Missing values remain unknown. Planner edits stay in a draft until the user chooses to save an estimate; AI suggestions are labelled. Other task properties and note bodies are preserved.
 
 Saved plans live in optional `0. Home/Daily Plans/YYYY-MM-DD.md` notes with `type: day-plan`, `plan_schema: 1`, `plan_id`, `plan_revision`, `date`, and `timezone`. A managed section between `<!-- orb-day-plan:v1 -->` and `<!-- /orb-day-plan -->` contains the readable plan; text outside it is preserved. Its proposed times do not imply calendar bookings or completed work. The folder is created on first save and is not required to connect an existing vault. See [AI daily planner](features/daily-planner.md).
+
+## Places
+
+`6. Life Admin/Places/<Place Name>.md` uses `type: place`, free-text `category` (default `Uncategorized`), free-text `location`, optional `website`, and optional decimal-number `latitude`/`longitude`. Unknown coordinates stay empty; a map pin needs both valid numbers. Latitude is −90…90; longitude −180…180. Additional notes go in the body. Orb preserves custom fields when saving a resolved location and journals writes for undo. The sibling `Places.md` directory embeds `Places.base`; the Base includes only Markdown place notes inside the Places folder and provides All, By category, and With coordinates views.
+
+The template is `99. System/99.1 Templates/10. Place Template.md`. Templater applies it in Obsidian when mapped to the folder; agents and Orb must write complete YAML themselves. Older vaults without Places remain valid. See [Maps and nearby places](features/maps-and-places.md).

@@ -12,8 +12,8 @@ test('calendar browsing requires all read prerequisites, not a default write cal
 
 test('Trading 212 distinguishes missing credentials, saved environments and fictional previews',()=>{
  assert.equal(connectorState({}).trading.ready,false);
- assert.deepEqual(connectorState({trading212:{configured:true,environment:'demo'}}).trading,{ready:true,label:'Configured · Demo'});
- assert.equal(connectorState({trading212:{configured:true,environment:'live'}}).trading.label,'Configured · Live');
+ assert.deepEqual(connectorState({trading212:{configured:true,environment:'demo'}}).trading,{ready:true,label:'Connected'});
+ assert.equal(connectorState({trading212:{configured:true,environment:'live'}}).trading.label,'Connected');
  assert.deepEqual(connectorState({},true).trading,{ready:true,label:'Preview'});
 });
 

@@ -1,7 +1,9 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {atomicWrite,hash,parseNote,localDate}=require('./vault.cjs');
 const {instant,timestamp}=require('./calendar-time.cjs');
-const {planningSnapshot,draftFromSnapshot,allocate,editDraft,day,text}=require('./day-planner.cjs');
+const {planningSnapshot,draftFromSnapshot,allocate,editDraft,day,text,preferences}=require('./day-planner.cjs');
+// Hours, reserve, task list and breaks carry over to new days; energy and one-off commitments do not.
+const REMEMBERED=['start','end','buffer','scope','breaks'];
 const {suggestDay}=require('./day-planner-ai.cjs');
 const {scheduleTask}=require('./scheduling.cjs');
 const BEGIN='<!-- orb-day-plan:v1 -->',END='<!-- /orb-day-plan -->';
@@ -45,6 +47,8 @@ class DayPlans {
     // Expire ordinary cached drafts after 30 days. Never discard an unfinished operation.
     for(const file of fs.readdirSync(this.directory).filter(n=>/^\d{4}-\d{2}-\d{2}\.json$/.test(n))){try{const p=path.join(this.directory,file);if(this.now()-fs.statSync(p).mtimeMs>30*86400000){const e=JSON.parse(fs.readFileSync(p,'utf8'));if(!e.operation||['complete','closed'].includes(e.operation.status))fs.unlinkSync(p);}}catch{}}
   }
+  remembered(){try{const saved=JSON.parse(fs.readFileSync(path.join(this.directory,'preferences.json'),'utf8')),p=preferences(Object.fromEntries(REMEMBERED.filter(k=>k in saved).map(k=>[k,saved[k]])));return Object.fromEntries(REMEMBERED.filter(k=>k in saved).map(k=>[k,p[k]]));}catch{return {};}}
+  remember(p){try{atomicWrite(path.join(this.directory,'preferences.json'),JSON.stringify(Object.fromEntries(REMEMBERED.map(k=>[k,p[k]]))));}catch{}}
   persist(e){atomicWrite(path.join(this.directory,day(e.draft.date)+'.json'),JSON.stringify(e));this.memory.set(e.draft.date,e);return this.public(e);}
   load(date){day(date);if(this.memory.has(date))return this.memory.get(date);const file=path.join(this.directory,date+'.json');if(!fs.existsSync(file))return null;
     if(fs.statSync(file).size>8*1024*1024)throw new Error('The saved planner cache is too large.');
@@ -61,7 +65,7 @@ class DayPlans {
     this.busy=true;this.controller=new AbortController();const signal=externalSignal?AbortSignal.any([externalSignal,this.controller.signal]):this.controller.signal;
     try{
       let e=this.load(date);
-      if(!e){if(!['open','generate','replan'].includes(action))throw new Error('Open the day planner first.');const snapshot=await this.snapshot(date,signal);signal.throwIfAborted();e={schema:1,draft:draftFromSnapshot(snapshot),review:null,operation:null};this.persist(e);}
+      if(!e){if(!['open','generate','replan'].includes(action))throw new Error('Open the day planner first.');const snapshot=await this.snapshot(date,signal);signal.throwIfAborted();e={schema:1,draft:draftFromSnapshot(snapshot,{input:this.remembered()}),review:null,operation:null};this.persist(e);}
       if(action==='open')return this.public(e);
       if(action==='discard'){
         this.bound(e,args);if(e.operation&&!['complete','closed'].includes(e.operation.status))throw new Error('Resolve the unfinished apply operation before discarding.');
@@ -72,6 +76,7 @@ class DayPlans {
       if(action==='edit'){
         const patch=args.patch||{};
         e.draft=patch.preferences?.scope&&patch.preferences.scope!==e.draft.preferences.scope?draftFromSnapshot(e.draft.snapshot,{previous:e.draft,input:{...e.draft.preferences,...patch.preferences}}):editDraft(e.draft,patch);
+        if(patch.preferences)this.remember(e.draft.preferences);
         e.review=null;e.operation=null;e.notice='';return this.persist(e);
       }
       if(['refresh','generate','replan'].includes(action)){

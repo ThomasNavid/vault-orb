@@ -10,7 +10,7 @@ async function boot(userData){
   const handlers=new Map(),webContents=Object.assign(new EventEmitter(),{setWindowOpenHandler(){},send(){}});
   let ready,failWrite=false,vaultStarts=0;
   const app=Object.assign(new EventEmitter(),{getPath:()=>userData,requestSingleInstanceLock:()=>true,whenReady:()=>({then:fn=>{ready=Promise.resolve().then(fn);}})});
-  const electron={app,powerMonitor:new EventEmitter(),ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},
+  const electron={app,protocol:{registerSchemesAsPrivileged(){},handle(){}},powerMonitor:new EventEmitter(),ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},
     BrowserWindow:class extends EventEmitter{constructor(){super();this.webContents=webContents;}setVisibleOnAllWorkspaces(){}loadFile(){}},
     Tray:class extends EventEmitter{setToolTip(){}},nativeImage:{createFromPath:()=>({setTemplateImage(){}})},
     Menu:{buildFromTemplate:x=>x,setApplicationMenu(){}},globalShortcut:{register(){}},

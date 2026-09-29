@@ -20,3 +20,11 @@ const result = spawnSync('clang++', [
 ], {stdio: 'inherit'});
 if (result.error) throw result.error;
 if (result.status !== 0) process.exit(result.status || 1);
+
+const location = spawnSync('clang++', [
+  '-std=c++17', '-fobjc-arc', '-bundle', '-undefined', 'dynamic_lookup',
+  `-I${include}`, '-framework', 'Foundation', '-framework', 'CoreLocation',
+  path.join(root, 'native/location.mm'), '-o', path.join(root, 'native/orb-location.node')
+], {stdio: 'inherit'});
+if (location.error) throw location.error;
+if (location.status !== 0) process.exit(location.status || 1);

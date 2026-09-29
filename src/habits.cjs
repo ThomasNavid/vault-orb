@@ -45,21 +45,25 @@ function record(vault,date,habits) {
   const note=vault.read(path),parsed=parseNote(note.content);
   return {path,version:note.version,values:Object.fromEntries(habits.map(h=>[h.key,parsed.data[h.key]===true])),note,parsed};
 }
-function listHabits(vault,{date=null,year=null}={}) {
+function listHabits(vault,{date=null,year=null,end=null}={}) {
   const today=localDate();date=day(date||today);
   if(date>today)throw new Error('Future habit dates cannot be selected.');
   year=year??Number(date.slice(0,4));
   if(!Number.isInteger(year)||year<1900||year>Number(today.slice(0,4)))throw new Error('Choose a heatmap year between 1900 and the current year.');
-  const base={today,date,year,week_start:weekStart(today),habits:[],weeks:[],records:[],warnings:[],selected:null};
+  // The heatmap shows 13 Monday-aligned weeks ending with the week that contains `end`.
+  // A year without an explicit window shows that year's final weeks.
+  end=day(end||(String(year)===date.slice(0,4)?date:`${year}-12-31`));if(end>today)end=today;
+  const rangeStart=addDays(weekStart(end),-7*12),range={start:rangeStart,end:addDays(weekStart(end),6)};
+  const base={today,date,year,range,week_start:weekStart(today),habits:[],weeks:[],records:[],warnings:[],selected:null};
   if(!vault.habitFolder)return {...base,setup:'Habits are disabled. Set a Habit log folder in Settings.'};
   let config;
   try {config=definitions(vault);folder(vault);} catch(e) {return {...base,setup:e.message};}
   if(!config.habits.length)return {...base,...config,setup:"Choose your habits using 99. System/Habit Setup.md. No activity has been recorded."};
   const records=new Map(),warnings=[],badDates=new Set();
   const first=`${year}-01-01`,last=`${year}-12-31`,historyStart=addDays(base.week_start,-49),historyEnd=addDays(base.week_start,6);
-  // Read only the selected year, recent weeks, and selected record, never bodies of unrelated notes.
+  // Read only the selected year, heatmap window, recent weeks, and selected record, never bodies of unrelated notes.
   const needed=new Set([date]);
-  for(const [start,end]of [[first,last],[historyStart,historyEnd]])for(let d=start;d<=end&&d<=today;d=addDays(d,1))needed.add(d);
+  for(const [from,to]of [[first,last],[historyStart,historyEnd],[range.start,range.end]])for(let d=from;d<=to&&d<=today;d=addDays(d,1))needed.add(d);
   for(const d of needed)try {
     const r=record(vault,d,config.habits);
     if(r.version) {
@@ -72,7 +76,7 @@ function listHabits(vault,{date=null,year=null}={}) {
   const count=(start,end,key)=>[...records.values()].filter(r=>r.date>=start&&r.date<=end&&r.values[key]).length;
   const weeks=Array.from({length:8},(_,i)=>{const start=addDays(base.week_start,-7*i),end=addDays(start,6);return {start,end,current:i===0,counts:Object.fromEntries(config.habits.map(h=>[h.key,count(start,end,h.key)])),incomplete:[...badDates].some(d=>d>=start&&d<=end)};});
   const selected=badDates.has(date)?{path:`${vault.habitFolder}/${date}.md`,error:'This record could not be read. Fix it in Obsidian, then refresh.'}:records.get(date)||{date,path:`${vault.habitFolder}/${date}.md`,version:null,values:Object.fromEntries(config.habits.map(h=>[h.key,false]))};
-  return {...base,...config,habits:config.habits.map(h=>({...h,week_count:weeks[0].counts[h.key],year_count:count(first,last,h.key)})),selected,weeks,records:[...records.values()],warnings,bad_dates:[...badDates]};
+  return {...base,...config,habits:config.habits.map(h=>({...h,week_count:weeks[0].counts[h.key],year_count:count(first,last,h.key),range_count:count(range.start,range.end,h.key)})),selected,weeks,records:[...records.values()],warnings,bad_dates:[...badDates]};
 }
 function loadForWrite(vault,args) {
   const date=day(args.date);

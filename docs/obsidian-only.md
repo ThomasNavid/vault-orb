@@ -83,3 +83,7 @@ Keep a separate backup: sync alone is not versioned backup. An external assistan
 ## Recurring tasks without Orb
 
 Open `0. Home/Recurring Tasks.md` with desktop Obsidian and Dataview JavaScript enabled. Create and configure repeats, complete or skip occurrences, adjust dates, stop repeating, view history and undo entirely in Obsidian. The engine and history travel with the vault; Orb and internet access are not required. Mobile currently supports reading these records, not the editing controls. See [Recurring tasks](features/recurring-tasks.md) and the vault's `99. System/Recurring Tasks Setup.md` for existing-vault installation and custom task folders.
+
+## Places
+
+Open `6. Life Admin/Places.md` for the editable Places Base. Map the Places folder to `10. Place Template.md` in Templater, use Text properties for category/location/website and Number for latitude/longitude, and leave unknown coordinates blank. All, By category, and With coordinates work without Orb. Maps, address lookup, and nearby search are provided by Orb with an optional Geoapify connection; no Obsidian map plugin is installed.

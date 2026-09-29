@@ -34,6 +34,7 @@ async function closeChat(){
  await api.resize('compact').catch(()=>{});
  if(!stillMotion()){document.body.classList.add('orb-arriving');setTimeout(()=>document.body.classList.remove('orb-arriving'),900);}
  chat.moving=false;$('chat-button').focus();
+ if(focusSession?.status==='completed')showFocusCard(focusSession);
 }
 function resumeChat(id){if(chat.currentId!==id){chat.currentId=id;chat.current=null;}}
 function focusComposer(){setTimeout(()=>$('chat-input').focus(),40);}
@@ -99,18 +100,18 @@ function renderHeader(){
  updateComposer();
 }
 function renderThread(){
- renderHeader();
+ currentVisual=null;renderHeader();
  const thread=$('chat-thread'),c=chat.current;thread.replaceChildren();
  if(!c){thread.append(node('p','chat-loading','Opening chat…'));return;}
  const pending=chat.pending?.chatId===c.id;
  if(!c.messages.length&&!pending){thread.append(emptyState());return;}
  c.messages.forEach((m,i)=>{const view=messageView(m);view.style.setProperty('--i',String(Math.max(0,8-(c.messages.length-i))));thread.append(view);});
- if(pending)thread.append(chat.pending.el);
+ if(pending){thread.append(chat.pending.el);if(chat.pending.visual)currentVisual=chat.pending.visual;}
  scrollToEnd(false);
 }
 function scrollToEnd(smooth=true){const scroll=$('chat-scroll');requestAnimationFrame(()=>scroll.scrollTo({top:scroll.scrollHeight,behavior:smooth&&!stillMotion()?'smooth':'auto'}));}
 function emptyState(){
- const box=node('div','chat-empty');box.append(orbMark('chat-empty-orb'),node('h2',null,'What’s on your mind?'),node('p',null,'Orb can read and update your vault, tasks, goals, habits and calendar.'));
+ const box=node('div','chat-empty');box.append(orbMark('chat-empty-orb'),node('h2',null,'What’s on your mind?'),node('p',null,'Smith can read and update your vault, tasks, goals, habits and calendar.'));
  const list=node('div','chat-suggestions');
  prompts.forEach(([category,label,request,icon,tint],i)=>{const button=node('button','chat-suggestion');button.type='button';button.style.setProperty('--i',String(i));const copy=node('span');copy.append(node('strong',null,label),node('small',null,category));button.append(appIcon(icon,tint),copy);button.onclick=()=>sendChat(request);list.append(button);});
  box.append(list);return box;
@@ -156,9 +157,9 @@ function messageView(m){
  if(m.visual){const host=node('div','chat-visual');renderChatVisual(host,m.visual,true);view.append(host);}
  return view;
 }
-function renderChatVisual(host,v,saved=false){
- currentVisual=v;
- window.renderVisual(host,v,path=>api.openNote(path).catch(error),{saved,trading212:args=>api.trading212(args),settings:async()=>{await closeChat();await openSettings();},habits:args=>api.habits(args),setHabit:async args=>{await api.setHabit(args);const status=host.querySelector('.habit-status');if(status)status.textContent='Saved to your vault.';},openHabitRecord:async args=>{const result=await api.openHabitRecord(args);await api.openNote(result.path);},filterGoals:scope=>api.goals(scope).catch(error),request:text=>sendChat(text)});
+function renderChatVisual(host,v,saved=false,active=true){
+ if(active)currentVisual=v;
+ window.renderVisual(host,v,path=>api.openNote(path).catch(error),{...placesActions,saved,weather:args=>api.weather(args),trading212:args=>api.trading212(args),settings:async()=>{await closeChat();await openSettings();},habits:args=>api.habits(args),setHabit:async args=>{await api.setHabit(args);const status=host.querySelector('.habit-status');if(status)status.textContent='Saved to your vault.';},openHabitRecord:async args=>{const result=await api.openHabitRecord(args);await api.openNote(result.path);},filterGoals:scope=>api.goals(scope).catch(error),focus:args=>api.focus(args),request:text=>sendChat(text)});
 }
 // Visuals refreshed by a card's own controls (a goal filter, a habit tick) redraw the latest card in place.
 function chatVisual(v){
@@ -168,8 +169,8 @@ function chatVisual(v){
 }
 
 // Tool activity: a stack of little app icons that deal in as tools start, with a shimmering label while they run.
-const toolKinds={trading212:'chart',knowledge_sources:'knowledge',knowledge_context:'knowledge',knowledge_graph:'knowledge',update_knowledge:'write',connect_knowledge:'write',list_knowledge:'knowledge',create_knowledge:'write',query_calendar:'calendar',create_calendar_event:'calendar',list_tasks:'tasks',create_task:'tasks',update_task:'tasks',list_goals:'goals',create_goal:'goals',update_goal:'goals',review_goal:'goals',list_habits:'habits',set_habit:'habits',search_notes:'search',find_files:'search',read_note:'read',append_note:'write',read_spreadsheet:'sheet',show_visual:'chart',dismiss_visual:'chart',think_deeply:'think',undo_change:'undo'};
-const kindIcons={knowledge:['i-steps','teal'],tasks:['i-list','orange'],goals:['i-target','red'],habits:['i-flame','green'],search:['i-search','blue'],read:['i-doc','yellow'],write:['i-pencil','yellow'],sheet:['i-table','green'],chart:['i-chart','purple'],think:['i-sparkle','blue'],undo:['i-undo','gray']};
+const toolKinds={find_places:'places',list_places:'places',save_place:'write',trading212:'chart',knowledge_sources:'knowledge',knowledge_context:'knowledge',knowledge_graph:'knowledge',update_knowledge:'write',connect_knowledge:'write',list_knowledge:'knowledge',create_knowledge:'write',query_calendar:'calendar',create_calendar_event:'calendar',list_tasks:'tasks',create_task:'tasks',update_task:'tasks',list_goals:'goals',create_goal:'goals',update_goal:'goals',review_goal:'goals',list_habits:'habits',set_habit:'habits',search_notes:'search',find_files:'search',read_note:'read',append_note:'write',read_spreadsheet:'sheet',show_visual:'chart',dismiss_visual:'chart',think_deeply:'think',undo_change:'undo'};
+const kindIcons={places:['i-map','teal'],knowledge:['i-steps','teal'],tasks:['i-list','orange'],goals:['i-target','red'],habits:['i-flame','green'],search:['i-search','blue'],read:['i-doc','yellow'],write:['i-pencil','yellow'],sheet:['i-table','green'],chart:['i-chart','purple'],think:['i-sparkle','blue'],undo:['i-undo','gray']};
 function toolGlyph(step){
  const kind=toolKinds[step.name]||'think',glyph=node('span','glyph');glyph.dataset.kind=kind;glyph.setAttribute('aria-hidden','true');
  if(kind==='calendar'){
@@ -243,14 +244,14 @@ function chatActivity(data){
  }
  if(data.kind==='visual'){
   turn.visual=data.visual;
-  if(!data.visual){turn.host?.remove();turn.host=null;return;}
-  turn.host??=node('div','chat-visual');renderChatVisual(turn.host,data.visual);if(!turn.host.isConnected)turn.el.append(turn.host);if(viewing)scrollToEnd();
+  if(!data.visual){turn.host?.remove();turn.host=null;if(viewing)currentVisual=null;return;}
+  turn.host??=node('div','chat-visual');renderChatVisual(turn.host,data.visual,false,viewing);if(!turn.host.isConnected)turn.el.append(turn.host);if(viewing)scrollToEnd();
  }
  if(data.kind==='visual-error'&&viewing)chatToast(data.message);
 }
 async function sendChat(raw){
  const text=String(raw||'').trim(),c=chat.current;if(!text||!c)return;
- if(busy||chat.pending){chatToast(chat.pending?'Orb is still answering. Stop it or wait a moment.':'Orb is busy with another request.');return;}
+ if(busy||chat.pending){chatToast(chat.pending?'Smith is still answering. Stop it or wait a moment.':'Smith is busy with another request.');return;}
  if(!preview&&!settings?.chatReady){await closeChat();openSettings().catch(error);return;}
  closeMenu();$('chat-input').value='';autosize();
  const at=new Date().toISOString();c.messages.push({role:'user',text,at});c.updatedAt=at;
@@ -282,12 +283,12 @@ function stopChat(){if(!chat.pending)return;chat.pending.stopped=true;api.stop()
 function updateComposer(){
  const send=$('chat-send'),here=chat.pending&&chat.pending.chatId===chat.currentId,elsewhere=(chat.pending&&!here)||(busy&&!chat.pending);
  send.classList.toggle('stop',!!here);$('chat-send-icon').setAttribute('href',here?'#i-stop':'#i-arrow-up');
- const label=here?'Stop answering':elsewhere?'Orb is answering another request':'Send message';send.setAttribute('aria-label',label);send.title=here?'Stop':elsewhere?label:'Send · Return';
+ const label=here?'Stop answering':elsewhere?'Smith is answering another request':'Send message';send.setAttribute('aria-label',label);send.title=here?'Stop':elsewhere?label:'Send · Return';
  send.disabled=!here&&(elsewhere||!$('chat-input').value.trim());
 }
 function autosize(){const input=$('chat-input');input.style.height='auto';input.style.height=`${Math.min(input.scrollHeight,168)}px`;updateComposer();}
 
-// Composer menu: “/” for commands, “@” to point Orb at a tool, or the + button for both.
+// Composer menu: “/” for commands, “@” to point Smith at a tool, or the + button for both.
 const chatTools=[['Trading212','i-chart','teal','Read investments and activity'],['Calendar','i-calendar','red','Read or add events'],['Tasks','i-list','orange','Plan, add or update tasks'],['Goals','i-target','red','Review and move goals forward'],['Habits','i-flame','green','Log and check habits'],['Notes','i-doc','yellow','Search, read and add to notes'],['Sheets','i-table','green','Read spreadsheets and chart them']].map(([title,icon,tint,subtitle])=>({kind:'tool',title,icon,tint,subtitle,hint:'@'+title}));
 const chatCommands=[
  {name:'new',title:'New chat',icon:'i-compose',tint:'blue',subtitle:'Start fresh',run:()=>newChat()},
@@ -374,8 +375,8 @@ if(preview){
   stopRequested=false;const at=new Date().toISOString();
   if(!store.has(chatId))store.set(chatId,{id:chatId,title:chatTitle(text),createdAt:at,updatedAt:at,archived:false,messages:[]});
   const c=store.get(chatId);c.messages.push({id:crypto.randomUUID(),role:'user',text,at});
-  const trading=/trading\s?212/i.test(text);
-  const plan=trading?[['trading212','Reading Trading 212','Read Trading 212','Fictional preview']]:/schedul|call|book|set ?up|meeting/i.test(text)?[['query_calendar','Reading calendar','Read calendar',`${tomorrow} → ${tomorrow}`],['create_calendar_event','Adding Google event','Added Google event',`Call with Tom · ${tomorrow} 10:00`]]
+  const places=/\b(places|nearby|coffee|café|cafe|restaurant|park|maps?)\b/i.test(text),trading=/trading\s?212/i.test(text);
+  const plan=places?[['find_places','Finding nearby places','Found nearby places','Fictional preview']]:trading?[['trading212','Reading Trading 212','Read Trading 212','Fictional preview']]:/schedul|call|book|set ?up|meeting/i.test(text)?[['query_calendar','Reading calendar','Read calendar',`${tomorrow} → ${tomorrow}`],['create_calendar_event','Adding Google event','Added Google event',`Call with Tom · ${tomorrow} 10:00`]]
    :/calendar|schedule|week/i.test(text)?[['query_calendar','Reading calendar','Read calendar',''],['list_tasks','Reading tasks','Read tasks','']]
    :/goal/i.test(text)?[['list_goals','Reading goals','Read goals','']]:/habit/i.test(text)?[['list_habits','Reading habits','Read habits','']]
    :/note|find|search/i.test(text)?[['search_notes','Searching vault','Searched vault',text.split(/\s+/).slice(-2).join(' ')],['read_note','Reading note','Read note','']]
@@ -388,8 +389,8 @@ if(preview){
    routeActivity({kind:'tool-state',chatId,id,name,label:done,status:'done',detail,path});steps.push({id,name,label:done,status:'done',detail,path,ms:1300});
   }
   await pause(500);
-  const answer=trading?'This is a fictional Trading 212 portfolio preview. In the Mac app, this view uses your connected account.':plan[1]?.[0]==='create_calendar_event'?'Done — I’ve scheduled a 30-minute call with Tom for **tomorrow at 10:00 AM** on your Work calendar.':'This is an interface preview with fictional data. In the Mac app, Orb would answer from your vault here — with **steps above** showing each tool it used.';
-  const tradingVisual=trading?await api.trading212({view:/dividend/i.test(text)?'dividends':/deposit|interest|cash movement/i.test(text)?'cash':/pending|order/i.test(text)?'pending':'overview'}):null;
+  const answer=places?'Here are three fictional cafés to try the map and directions controls. Live results come from your connected places provider.':trading?'This is a fictional Trading 212 portfolio preview. In the Mac app, this view uses your connected account.':plan[1]?.[0]==='create_calendar_event'?'Done — I’ve scheduled a 30-minute call with Tom for **tomorrow at 10:00 AM** on your Work calendar.':'This is an interface preview with fictional data. In the Mac app, Smith would answer from your vault here — with **steps above** showing each tool it used.';
+  const tradingVisual=places?await api.places({action:'search',query:text}):trading?await api.trading212({view:/dividend/i.test(text)?'dividends':/deposit|interest|cash movement/i.test(text)?'cash':/pending|order/i.test(text)?'pending':'overview'}):null;
   if(tradingVisual)routeActivity({kind:'visual',chatId,visual:tradingVisual});
   const message={id:crypto.randomUUID(),role:'assistant',text:answer,steps,...(tradingVisual?{visual:tradingVisual}:{}),at:new Date().toISOString()};c.messages.push(message);c.updatedAt=message.at;
   return {text:answer,message,chat:chatSummary(c)};

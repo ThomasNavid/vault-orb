@@ -41,7 +41,7 @@ Today still means planned or due today. Earlier planned recurring tasks appear i
 
 Use the recurring controls rather than editing the plain Done checkbox. If a recurring note is externally marked `completed: true`, it stays visible as **Advance needed**. Choose its completion date and advance, or cancel the external completion. This can be done entirely in Obsidian. Reading/refreshing never advances a recurrence.
 
-## Examples to ask Orb
+## Examples to ask Smith
 
 - “Create a personal task called Put the bins out, planned for Monday 5 October 2026, repeating every Monday.”
 - “Make Replace the filter repeat three months after completion; first planned for 1 October 2026.”

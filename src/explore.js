@@ -4,8 +4,9 @@
   const calendars=settings.googleCalendars||[];
   const calendarReady=!!(calendars.length&&settings.fullCalendarServer&&settings.hasCalendarToken);
   return {
-   trading:{ready:preview||!!settings.trading212?.configured,label:preview?'Preview':settings.trading212?.configured?'Configured · '+(settings.trading212.environment==='demo'?'Demo':'Live'):'Not connected'},
-   calendar:{ready:calendarReady,label:calendarReady?'Configured':calendars.length||settings.hasCalendarToken?'Finish setup':'Not connected'}
+   trading:{ready:preview||!!settings.trading212?.configured,label:preview?'Preview':settings.trading212?.configured?'Connected':'Not connected'},
+   weather:{ready:!!settings.weather?.location,label:settings.weather?.location?settings.weather.location.name:'Set location'},
+   calendar:{ready:calendarReady,label:calendarReady?'Connected':calendars.length||settings.hasCalendarToken?'Finish setup':'Not connected'}
   };
  }
  function filterCommands(commands,query='',category='All'){

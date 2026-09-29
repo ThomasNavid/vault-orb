@@ -1,6 +1,6 @@
 # Finding and updating notes
 
-[Documentation](../README.md) · [Things to ask Orb](../things-to-ask.md) · [Planning](planning.md)
+[Documentation](../README.md) · [Things to ask Smith](../things-to-ask.md) · [Planning](planning.md)
 
 Find notes by title or content, ask questions grounded in their text, compare options, and append a decision or thought to an existing Markdown note.
 
@@ -54,6 +54,6 @@ Asking for a summary or recommendation does not automatically save it. Asking to
 
 **The answer omits part of a long note:** check whether the read was truncated. Split it into smaller notes or identify a more focused source.
 
-**An append failed:** verify the destination is an existing `.md` note and ask Orb to reread it if the version changed. Never treat a failed write as saved.
+**An append failed:** verify the destination is an existing `.md` note and ask Smith to reread it if the version changed. Never treat a failed write as saved.
 
 Implementation: [vault.cjs](../../src/vault.cjs), [agent.cjs](../../src/agent.cjs), and [Changes and undo](changes-and-undo.md).

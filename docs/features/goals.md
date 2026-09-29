@@ -1,6 +1,6 @@
 # Goals and weekly reviews
 
-[Documentation](../README.md) · [Things to ask Orb](../things-to-ask.md) · [Goal internals](../goals.md)
+[Documentation](../README.md) · [Things to ask Smith](../things-to-ask.md) · [Goal internals](../goals.md)
 
 Goals describe outcomes. Tasks describe actions that move them forward. Orb helps you define a finish line, keep a concrete next action, and record weekly check-ins in your existing Obsidian notes.
 
@@ -28,7 +28,7 @@ The starter has no goals. Before trying the illustrative Example portfolio goal 
 | “Pause Example portfolio goal.” | Sets Paused and clears Review. | Vault note |
 | “Mark Example portfolio goal achieved.” | Explicitly sets Achieved and clears Review. | Vault note |
 
-Choose dates that match your actual plans. An existing completed task cannot be assigned as a new next action. Orb should ask you to disambiguate task titles when needed.
+Choose dates that match your actual plans. An existing completed task cannot be assigned as a new next action. Smith should ask you to disambiguate task titles when needed.
 
 ## What happens
 
@@ -54,7 +54,7 @@ A review request authorizes saving its check-in once you have supplied progress,
 
 ## Habit evidence
 
-For goals supported by repeated actions, use [Habits](habits.md) to log days and inspect weekly totals. Ask Orb to read that history during a review. Recorded days are evidence, not automatic goal completion. The [This Week planning note](habits.md#goals-and-this-week) holds manually chosen weekly outcomes.
+For goals supported by repeated actions, use [Habits](habits.md) to log days and inspect weekly totals. Ask Smith to read that history during a review. Recorded days are evidence, not automatic goal completion. The [This Week planning note](habits.md#goals-and-this-week) holds manually chosen weekly outcomes.
 
 ## Limits and date behavior
 
@@ -70,7 +70,7 @@ For goals supported by repeated actions, use [Habits](habits.md) to log days and
 
 **No goals appear:** check the selected filter and [goal properties](../vault-format.md#goal-properties). The example begins in Someday. A missing folder shows setup guidance.
 
-**Next task not found or ambiguous:** give Orb the exact path to an unfinished task in one of the two configured folders. A rename in Obsidian may require repairing the link.
+**Next task not found or ambiguous:** give Smith the exact path to an unfinished task in one of the two configured folders. A rename in Obsidian may require repairing the link.
 
 **An external edit is not visible:** select a filter or ask again to reread the vault. Orb's own edits and undo refresh the panel automatically.
 

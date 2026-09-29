@@ -98,6 +98,8 @@ Hubs → Topics → Knowledge Library is your browsing structure. Portfolio is w
 
 ## Around the vault
 
+[[6. Life Admin/Places|Places]] — cafés, restaurants, parks and places to remember.
+
 [[6. Life Admin/Life Admin|Life Admin]] · [[README|Vault guide]] · [[99. System/Obsidian Setup|Use this vault in Obsidian]] · [[99. System/Assistant Guide|Working with assistants]]
 
 ## Recurring tasks

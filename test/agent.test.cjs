@@ -15,7 +15,7 @@ test('Realtime connection keeps the permanent API key in the backend and delegat
   let captured;
   const agent=new Agent({vault:{read:()=>({content:'Rules'})},getKey:()=> 'test-key',fetchImpl:async(url,options)=>{captured={url,options};return {ok:true,text:async()=> 'sdp-answer'};}});
   const answer=await agent.connect('v=0\r\n');assert.equal(answer,'sdp-answer');assert.match(captured.url,/realtime\/calls$/);
-  const session=JSON.parse(captured.options.body.get('session'));assert.equal(session.model,'gpt-realtime-2.1');assert.equal(session.audio.output.voice,'cedar');assert.deepEqual(session.tools.map(t=>t.name),['run_task']);
+  const session=JSON.parse(captured.options.body.get('session'));assert.equal(session.model,'gpt-realtime-2.1');assert.equal(session.audio.output.voice,'cedar');assert.deepEqual(session.tools.map(t=>t.name),['weather','run_task']);
 });
 test('cancellation prevents a model tool response from making further edits',async()=>{
   const controller=new AbortController();let wrote=false;
@@ -132,4 +132,46 @@ test('voice and deep instructions request sourced charts for comparable numeric 
   const vault={read:()=>({content:''})};
   assert.match(instructions(vault),/proactively call show_visual before the final answer/);
   assert.match(instructions(vault,{deep:true}),/at least two comparable values/);
+});
+for(const order of [['today','overdue'],['overdue','today']])test(`task queries ${order.join(' then ')} keep Today above separate past deadlines`,async()=>{
+ const date='2026-09-29',events=[],budget={remaining:12};let completed=false;
+ const agent=new Agent({vault:{tasks:({scope})=>({date,tasks:completed?[]:[{title:scope==='today'?'Today task':'Late task',path:`${scope}.md`,list:'life',planned:scope==='today'?date:null,due:scope==='overdue'?'2026-09-28':null}],warnings:[]}),updateTask:()=>{completed=true;return {path:'today.md',change_id:'done',action:'Task updated'};}},getKey:()=>'',onActivity:e=>events.push(e)});
+ for(const scope of order)await agent.execute('list_tasks',{scope,date,include_completed:false},{budget});
+ const view=events.filter(e=>e.kind==='visual').at(-1).visual;
+ assert.equal(view.title,'Today’s tasks');assert.deepEqual(view.taskSections.map(s=>s.title),['Today’s tasks','Past deadlines']);
+ assert.deepEqual(view.taskSections.map(s=>s.rowPaths),[['today.md'],['overdue.md']]);
+ assert.doesNotThrow(()=>JSON.stringify(view));
+ await agent.execute('update_task',{path:'today.md',completed:true},{budget});
+ assert.deepEqual(events.filter(e=>e.kind==='visual').at(-1).visual.taskSections.map(s=>s.rows),[[],[]]);
+ await agent.execute('list_tasks',{scope:'overdue',date,include_completed:false},{budget:{remaining:12}});
+ const next=events.filter(e=>e.kind==='visual').at(-1).visual;
+ assert.equal(next.title,'Past deadlines');assert.equal(next.taskSections,undefined);
+});
+
+test('weather is a direct voice tool that displays its card and returns compact, source-backed advice',async()=>{
+  const {tools,voiceTools}=require('../src/agent.cjs'),{validateArguments}=require('../src/providers.cjs'),{summarize,parseForecast}=require('../src/weather.cjs');
+  for(const list of [tools,voiceTools]){const schema=list.find(t=>t.name==='weather');assert.ok(schema);validateArguments(schema.parameters,{place:null,when:'now'});assert.throws(()=>validateArguments(schema.parameters,{place:null,when:'someday'}));}
+  const time=Array.from({length:48},(_,i)=>`2026-09-${29+Math.floor(i/24)}T${String(i%24).padStart(2,'0')}:00`),fill=v=>time.map(()=>v);
+  const forecast=parseForecast({timezone:'Europe/London',current:{time:'2026-09-29T08:10',temperature_2m:6,apparent_temperature:3,precipitation:0,weather_code:61,wind_speed_10m:10,wind_gusts_10m:15,is_day:1},
+    hourly:{time,temperature_2m:fill(6),apparent_temperature:fill(3),precipitation_probability:fill(70),precipitation:fill(.5),weather_code:fill(61),wind_gusts_10m:fill(15),is_day:fill(1)},
+    daily:{time:['2026-09-29','2026-09-30'],weather_code:[61,3],temperature_2m_max:[9,11],temperature_2m_min:[2,4],sunrise:[null,null],sunset:[null,null],uv_index_max:[1,1]}});
+  const activity=[],calls=[];
+  const agent=new Agent({vault:{read:()=>({content:''})},getKey:()=>'k',onActivity:x=>activity.push(x),getWeather:async(args)=>{calls.push(args);return summarize(forecast,{place:{name:'London',detail:'',saved:true},units:'metric',updatedAt:'2026-09-29T07:10:00.000Z'});}});
+  agent.taskView={scope:'today'};
+  const result=await agent.execute('weather',{place:null,when:'now'});
+  assert.deepEqual(calls,[{place:null,when:'now'}]);assert.equal(agent.taskView,null);
+  const shown=activity.find(a=>a.kind==='visual');assert.equal(shown.visual.kind,'weather');assert.equal(shown.visual.mood.tint,'cold');assert.equal(shown.visual.mood.wet,true);
+  assert.equal(result.advice.jacket,'warm');assert.equal(result.advice.umbrella,true);assert.equal(result.displayed,true);assert.equal(result.hours.length,12);assert.equal(result.id,undefined);
+  const done=activity.filter(a=>a.kind==='tool-state').at(-1);assert.equal(done.status,'done');assert.equal(done.label,'Read weather');assert.equal(done.detail,'London');
+  const failing=new Agent({vault:{read:()=>({content:''})},getKey:()=>'k',onActivity:x=>activity.push(x),getWeather:async()=>{throw new Error('The weather service could not be reached.');}});
+  await assert.rejects(failing.execute('weather',{place:'Lisbon',when:'tomorrow'}),/could not be reached/);
+  assert.equal(activity.filter(a=>a.kind==='tool-state').at(-1).status,'failed');
+  assert.match(instructions({read:()=>({content:''})}),/call weather before answering; never guess conditions/);
+});
+
+test('Places tools display service-owned pins and only save an explicitly selected result',async()=>{
+ const calls=[],events=[],visual={kind:'places',query:'quiet coffee shop',originLabel:'Chosen area',state:'ready',warnings:[],results:[{id:'result-1',name:'Example café',location:'Example street',walkingSeconds:300,evidence:'Quietness not verified'}]};
+ const agent=new Agent({vault:{},getKey:()=>'',getPlaces:async args=>{calls.push(args);return args.action==='save'?{path:'6. Life Admin/Places/Example café.md',duplicate:true}:visual;},onActivity:e=>events.push(e)});
+ const found=await agent.execute('find_places',{query:'quiet coffee shop',area:null,radius:1500});assert.equal(found.results[0].walkingSeconds,300);assert.equal(calls.length,1);assert.equal(calls[0].action,'search');assert.equal(events.find(e=>e.kind==='visual').visual,visual);
+ await agent.execute('save_place',{id:'result-1',name:null,notes:null});assert.equal(calls[1].action,'save');assert.equal(calls[1].id,'result-1');
 });

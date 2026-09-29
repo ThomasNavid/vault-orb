@@ -1,6 +1,6 @@
 # Calendar
 
-[Documentation](../README.md) · [Things to ask Orb](../things-to-ask.md) · [Tasks](tasks.md)
+[Documentation](../README.md) · [Things to ask Smith](../things-to-ask.md) · [Tasks](tasks.md)
 
 Ask about your calendar, inspect a month and day agenda, optionally include task dates, create and edit single Google Calendar events, and [book linked task blocks](task-scheduling.md) through Obsidian's Full Calendar Remastered plugin.
 
@@ -39,7 +39,7 @@ The event-creation examples write real events. Use them only with your intended 
 | “Add an all-day event called Studio closed on 20 November 2026.” | Creates a date-only event. | Google Calendar |
 | “Add an all-day event called Annual leave from 16 November through 20 November 2026.” | Creates an all-day event covering those dates inclusively. | Google Calendar |
 
-You can specify a connected calendar by its exact name instead of using the default. Ask Orb to report the destination. If a timed request lacks a start or end time, Orb needs the missing detail; it does not choose a duration for you.
+You can specify a connected calendar by its exact name instead of using the default. Ask Smith to report the destination. If a timed request lacks a start or end time, Smith needs the missing detail; it does not choose a duration for you.
 
 For free-slot searches, configure working hours in Orb Settings and matching Google iCal feeds as described in [Task scheduling](task-scheduling.md#setup).
 

@@ -15,6 +15,7 @@ Vault Orb reads a vault on your Mac and uses your selected providers for convers
 | Spreadsheet data | Inspected metadata and requested ranges are returned to the assistant; Excel formulas are not recalculated. |
 | Calendar events | Queried event details can be sent to the selected chat/reasoning providers. The calendar reader fetches configured feeds and/or the local plugin API. |
 | Today dashboard | Read directly by the app from configured task, goal, habit, and calendar sources. Merely opening Today does not send the assembled dashboard to an AI provider or write to the vault. Calendar sources are still contacted as described above. |
+| Weather | Forecasts come from Open-Meteo, which needs no account. Orb sends coordinates rounded to about 1 km, or the place name you asked about. Opening the card from Explore or Today makes no AI request. Weather questions send the forecast and advice to the selected AI providers. The home location is stored in local `settings.json`. |
 | Trading 212 account data | Dashboard browsing reads the API directly without an AI request. Investment questions send relevant retrieved financial data to the selected AI providers; typed answers and financial cards may be saved in local chat history. |
 | Trading 212 API key and secret | Encrypted with macOS-backed safeStorage and used by the main process for API authentication. Saved credentials are never returned to the renderer or included in model tool results. |
 | Provider API keys | Encrypted by Electron safeStorage, backed by macOS Keychain. Used by the main process, not returned to the renderer or model. |
@@ -40,6 +41,8 @@ Typed chats are saved as plain JSON in `chats/`, one file per chat, including me
 On the first launch after upgrading, Orb moves chats from the former `chats.json` file into `chats/` and removes the old file after migration succeeds. Existing Recent chats get at least 90 days from that upgrade before expiry. The former 300-chat cap no longer applies.
 
 Voice conversation transcripts, including messages typed while voice is connected, remain in memory for that session and are not saved to `chats/`. For a decision you need to keep, explicitly append it to a note or save a goal review.
+
+`focus.json` holds the current [focus session](features/focus-sessions.md): its title, linked task path, length and times. It exists only while a session is running or waiting to be closed. The timer makes no network requests. Logged progress goes into the task note, where Recent changes can undo it.
 
 `shortcut-status.json` contains shortcut status/diagnostics and modifier/gesture counts. The Control shortcut checks public modifier state every 8 milliseconds; it does not record typed text. It does not require Input Monitoring or Accessibility permission.
 
@@ -69,7 +72,7 @@ See [Contributing](../CONTRIBUTING.md) for useful, reproducible bug reports.
 
 The knowledge index, note previews, graph layout, and connection suggestions are calculated locally from tagged notes in the four knowledge folders. Opening these views makes no AI-provider call and does not download source URLs. UI capture and workbench edits use the same version checks and change journal as other note writes. A Portfolio draft with supporting sources creates multiple journal entries: the output plus one backlink per source.
 
-Asking a Topic question, starting a quiz/refresher, or choosing Draft with Orb starts an AI conversation. Relevant linked note content is sent to the selected AI provider through the existing assistant tools. These conversations follow the normal chat/transcript storage rules above. Graph contents are not uploaded merely by expanding the graph.
+Asking a Topic question, starting a quiz/refresher, or choosing Draft with Smith starts an AI conversation. Relevant linked note content is sent to the selected AI provider through the existing assistant tools. These conversations follow the normal chat/transcript storage rules above. Graph contents are not uploaded merely by expanding the graph.
 
 Dismissed connection suggestions are stored in a vault-scoped `knowledge-<hash>.json` file alongside change history in the app's `changes` directory. It contains suggestion hashes derived from note paths and versions, not a copy of the source content. This is a local preference, outside vault-note undo. Graph layout and filters are held in memory for the current session.
 
@@ -97,4 +100,12 @@ Clipping browsing, filters, and full-content search run locally. The vault-scope
 
 Opening and manually editing a daily draft runs locally; fetching configured calendars follows the existing calendar rules. Requesting AI planning sends up to 60 candidate task records, relevant excerpts from up to 20 task notes (1,200 characters each), active goal context, planning preferences, and busy intervals to the selected reasoning or chat provider. Event descriptions and private feed URLs are not needed in that request. Suggestions and estimates remain distinct from user-recorded facts.
 
-Drafts, reviewed operations, and per-action recovery outcomes are stored under `changes/day-plans-<vault-hash>/` in Orb’s local application support directory. These files contain task metadata and planning text, not provider credentials. Ordinary caches expire after 30 days without a write; unfinished operations remain available for recovery. Discard removes only the local draft. Explicitly saved Markdown plans stay in the vault. Removing a cache or undoing a note edit does not remove calendar events; use the existing linked-block controls.
+Drafts, reviewed operations, and per-action recovery outcomes are stored under `changes/day-plans-<vault-hash>/` in Orb’s local application support directory. These files contain task metadata and planning text, not provider credentials. The same folder keeps `preferences.json` with your last start and finish times, free-time percentage, task list and breaks, so the next day starts from them. Ordinary caches expire after 30 days without a write; unfinished operations remain available for recovery. Discard removes only the local draft. Explicitly saved Markdown plans stay in the vault. Removing a cache or undoing a note edit does not remove calendar events; use the existing linked-block controls.
+
+## Places and location
+
+The optional Geoapify key is encrypted in local settings. Nearby search sends a requested category and starting coordinates to Geoapify; address lookup sends the supplied area or selected place name/address. Walking routes send origin and destination coordinates. Map tiles reveal the viewed area to Geoapify. Private note bodies are not sent to Geoapify. Asking Smith about places shares the bounded result summary and relevant note quotations with your selected AI provider.
+
+Use current location requests a single macOS Core Location fix only after a click. Device coordinates stay in ephemeral service/UI state; they are excluded from persisted map visuals and are never written to place notes. There is no background location tracking. A default starting area is stored only through Places settings. Five-minute provider caches stay in memory and are cleared on vault/provider changes. Directions opens Apple Maps or Google Maps with destination coordinates/address and, for a live search, the selected origin.
+
+Saved place notes contain destination facts and attribution, not route history. Typed chat snapshots may include destinations, note paths, quotations, and historical walking durations; they omit device origins and temporary result IDs. Ordinary typed text still follows normal chat retention. Browser-only UI previews request real tiles from OpenStreetMap for fictional examples; production uses Geoapify.

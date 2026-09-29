@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://api.openai.com; object-src 'none'; base-uri 'none'"><title>Vault Orb</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="knowledge.css"><link rel="stylesheet" href="markdown.css"><link rel="stylesheet" href="clippings.css"><link rel="stylesheet" href="trading212.css"><link rel="stylesheet" href="recurring.css"><link rel="stylesheet" href="day-planner.css"></head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://tile.openstreetmap.org orbplaces:; media-src 'self' blob:; connect-src 'self' https://api.openai.com https://tile.openstreetmap.org orbplaces:; worker-src 'self'; object-src 'none'; base-uri 'none'"><title>Vault Orb</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="knowledge.css"><link rel="stylesheet" href="markdown.css"><link rel="stylesheet" href="clippings.css"><link rel="stylesheet" href="trading212.css"><link rel="stylesheet" href="recurring.css"><link rel="stylesheet" href="day-planner.css"><link rel="stylesheet" href="weather.css"><link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css"><link rel="stylesheet" href="places.css"></head>
 <body>
 <svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
   <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
@@ -11,11 +11,23 @@
   <symbol id="i-back" viewBox="0 0 24 24"><path d="m14.5 6.5-5.5 5.5 5.5 5.5"/></symbol>
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9.5 6.5 5.5 5.5-5.5 5.5"/></symbol>
   <symbol id="i-external" viewBox="0 0 24 24"><path d="M8 16 16 8M9.5 8H16v6.5"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="7.5" y="6.5" width="3" height="11" rx="1.2" fill="currentColor" stroke="none"/><rect x="13.5" y="6.5" width="3" height="11" rx="1.2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8.5 6.8v10.4a.8.8 0 0 0 1.2.7l8.3-5.2a.8.8 0 0 0 0-1.4L9.7 6.1a.8.8 0 0 0-1.2.7Z" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m6 12.5 4 4 8-9"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.8v4.9M12 16.2h.01"/></symbol>
   <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5.5M11 6.5 5.5 12l5.5 5.5"/></symbol>
   <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3.5c.6 4.3 2.9 6.9 7.5 8.5-4.6 1.6-6.9 4.2-7.5 8.5-.6-4.3-2.9-6.9-7.5-8.5 4.6-1.6 6.9-4.2 7.5-8.5Z"/></symbol>
-  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.8"/><path d="M12 3v1.8M12 19.2V21M3 12h1.8M19.2 12H21M5.6 5.6l1.3 1.3M17.1 17.1l1.3 1.3M5.6 18.4l1.3-1.3M17.1 6.9l1.3-1.3"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.2 14.6A7.6 7.6 0 0 1 9.4 4.8a7.6 7.6 0 1 0 9.8 9.8Z"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7.5 18.5h9.2a3.8 3.8 0 0 0 .6-7.55A5.5 5.5 0 0 0 6.8 11.1a3.7 3.7 0 0 0 .7 7.4Z"/></symbol>
+  <symbol id="i-cloud-sun" viewBox="0 0 24 24"><path d="M8.2 7.6a3.4 3.4 0 0 1 6.3-1.2M11.3 2.8v1.1M4.9 5.2l.8.8M3.3 10h1.1"/><path d="M8.5 20h8.2a3.4 3.4 0 0 0 .5-6.75A4.9 4.9 0 0 0 7.9 13.4a3.3 3.3 0 0 0 .6 6.6Z"/></symbol>
+  <symbol id="i-cloud-moon" viewBox="0 0 24 24"><path d="M11.8 6.4A4.4 4.4 0 0 1 6 2.8a4.4 4.4 0 0 0-1.9 7.3"/><path d="M8.5 20h8.2a3.4 3.4 0 0 0 .5-6.75A4.9 4.9 0 0 0 7.9 13.4a3.3 3.3 0 0 0 .6 6.6Z"/></symbol>
+  <symbol id="i-rain" viewBox="0 0 24 24"><path d="M7.5 15h9.2a3.6 3.6 0 0 0 .6-7.15A5.3 5.3 0 0 0 6.9 8a3.5 3.5 0 0 0 .6 7Z"/><path d="m9 17.5-.9 2.2M13 17.5l-.9 2.2M17 17.5l-.9 2.2"/></symbol>
+  <symbol id="i-snow" viewBox="0 0 24 24"><path d="M7.5 15h9.2a3.6 3.6 0 0 0 .6-7.15A5.3 5.3 0 0 0 6.9 8a3.5 3.5 0 0 0 .6 7Z"/><path d="M8.5 18.5h.01M12 20h.01M15.5 18.5h.01" stroke-width="2.4"/></symbol>
+  <symbol id="i-storm" viewBox="0 0 24 24"><path d="M7.5 15h9.2a3.6 3.6 0 0 0 .6-7.15A5.3 5.3 0 0 0 6.9 8a3.5 3.5 0 0 0 .6 7Z"/><path d="m12.8 15.5-2 3.2h2.6l-1.6 2.8"/></symbol>
+  <symbol id="i-fog" viewBox="0 0 24 24"><path d="M7.5 13h9.2a3.4 3.4 0 0 0 .6-6.75A5 5 0 0 0 6.9 6.4a3.3 3.3 0 0 0 .6 6.6Z"/><path d="M5 16.5h14M7 19.5h10"/></symbol>
+  <symbol id="i-umbrella" viewBox="0 0 24 24"><path d="M3.8 12a8.2 8.2 0 0 1 16.4 0Z"/><path d="M12 12v6.3a1.7 1.7 0 0 1-3.4 0M12 3.8V3"/></symbol>
+  <symbol id="i-jacket" viewBox="0 0 24 24"><path d="M9 4.5 12 7l3-2.5 4.2 2.1 1.3 7.4-2.5.6V20H6v-5.4l-2.5-.6 1.3-7.4Z"/><path d="M12 7v13"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z"/><path d="M9 3v15M15 6v15"/></symbol><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.8"/><path d="M12 3v1.8M12 19.2V21M3 12h1.8M19.2 12H21M5.6 5.6l1.3 1.3M17.1 17.1l1.3 1.3M5.6 18.4l1.3-1.3M17.1 6.9l1.3-1.3"/></symbol>
   <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.2"/></symbol>
   <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 21c3.6 0 6-2.4 6-5.8 0-3.7-3-5.6-3.8-9.7-2.3 1.5-3.4 3.6-3.2 6.2-1.3-.6-2-1.8-2.1-3.3C7.3 10 6 12.4 6 15.2 6 18.6 8.4 21 12 21Z"/></symbol>
   <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="3"/><path d="M4 10h16M8.5 3.5v3.5M15.5 3.5v3.5"/></symbol>
@@ -38,113 +50,159 @@
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3L19.5 9"/><path d="M19.5 4.5V9H15"/></symbol>
   <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15"/></symbol>
+  <symbol id="i-logo-gcal" viewBox="-2 -2 28 28"><path fill="currentColor" stroke="none" d="M18.316 5.684H24v12.632h-5.684V5.684zM5.684 24h12.632v-5.684H5.684V24zM18.316 5.684V0H1.895A1.894 1.894 0 0 0 0 1.895v16.421h5.684V5.684h12.632zm-7.207 6.25v-.065c.272-.144.5-.349.687-.617s.279-.595.279-.982c0-.379-.099-.72-.3-1.025a2.05 2.05 0 0 0-.832-.714 2.703 2.703 0 0 0-1.197-.257c-.6 0-1.094.156-1.481.467-.386.311-.65.671-.793 1.078l1.085.452c.086-.249.224-.461.413-.633.189-.172.445-.257.767-.257.33 0 .602.088.816.264a.86.86 0 0 1 .322.703c0 .33-.12.589-.36.778-.24.19-.535.284-.886.284h-.567v1.085h.633c.407 0 .748.109 1.02.327.272.218.407.499.407.843 0 .336-.129.614-.387.832s-.565.327-.924.327c-.351 0-.651-.103-.897-.311-.248-.208-.422-.502-.521-.881l-1.096.452c.178.616.505 1.082.977 1.401.472.319.984.478 1.538.477a2.84 2.84 0 0 0 1.293-.291c.382-.193.684-.458.902-.794.218-.336.327-.72.327-1.149 0-.429-.115-.797-.344-1.105a2.067 2.067 0 0 0-.881-.689zm2.093-1.931l.602.913L15 10.045v5.744h1.187V8.446h-.827l-2.158 1.557zM22.105 0h-3.289v5.184H24V1.895A1.894 1.894 0 0 0 22.105 0zm-3.289 23.5l4.684-4.684h-4.684V23.5zM0 22.105C0 23.152.848 24 1.895 24h3.289v-5.184H0v3.289z"/></symbol>
+  <symbol id="i-logo-t212" viewBox="30.4 -2.3 16.4 16.4"><path fill="currentColor" stroke="none" d="m38.268 4.852 2.689 5.975c.138.414.413.553.758.553h2.552c.552 0 .758-.345.552-.828L40.474.896c-.138-.413-.414-.551-.759-.551H36.82c-.345 0-.62.138-.759.551l-4.345 9.656c-.206.483 0 .828.552.828h2.551c.346 0 .621-.139.76-.553z"/></symbol>
   <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M15.5 5.5a2.1 2.1 0 0 1 3 3L8.5 18.5 4.5 19.5l1-4Z"/></symbol>
 </svg>
 <main class="shell">
-<section class="orb-home" aria-label="Orb assistant">
+<section class="orb-home" aria-label="Smith assistant">
   <div class="drag-handle" title="Drag Orb"><i></i><i></i><i></i></div>
   <div class="orb-stage"><button id="orb-button" aria-label="Start voice conversation"></button><div id="tool-orbit" class="tool-orbit" role="status" aria-live="polite" aria-label="Tool activity"></div></div>
-  <div id="status-wrap" class="status-wrap" data-state="idle"><span id="connection-dot" class="dot"></span><span id="status" role="status" aria-live="polite">Here when you need me.</span><button id="steps-chip" class="steps-chip" hidden><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span></span></button></div>
+  <div id="status-wrap" class="status-wrap" data-state="idle"><span id="connection-dot" class="dot"></span><span id="status" role="status" aria-live="polite">Here when you need me.</span><span id="focus-controls" class="focus-controls" hidden><button id="focus-toggle" type="button" aria-label="Pause focus" title="Pause focus"><svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg></button><button id="focus-stop" type="button" aria-label="End focus session" title="End focus session"><svg class="icon" aria-hidden="true"><use href="#i-stop"/></svg></button></span><button id="steps-chip" class="steps-chip" hidden><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span></span></button></div>
   <div id="moon-tip" class="moon-tip" hidden></div>
   <div id="dock" class="dock">
     <div id="controls" class="controls">
-      <button id="voice-button" class="round voice" aria-label="Start voice conversation" title="Talk to Orb"><svg class="icon"><use id="voice-icon" href="#i-mic"/></svg></button>
+      <button id="voice-button" class="round voice" aria-label="Start voice conversation" title="Talk to Smith"><svg class="icon"><use id="voice-icon" href="#i-mic"/></svg></button>
       <button id="mute-button" class="round" aria-label="Mute microphone" title="Mute microphone" hidden><svg class="icon"><use id="mute-icon" href="#i-mic"/></svg></button>
       <span class="divider" aria-hidden="true"></span>
-      <button id="chat-button" class="round" aria-label="Open chats" title="Chat with Orb" aria-keyshortcuts="Meta+J"><svg class="icon"><use href="#i-chat"/></svg></button>
+      <button id="chat-button" class="round" aria-label="Open chats" title="Chat with Smith" aria-keyshortcuts="Meta+J"><svg class="icon"><use href="#i-chat"/></svg></button>
       <button id="settings-button" class="round" aria-label="Settings" title="Settings"><svg class="icon"><use href="#i-sliders"/></svg></button>
       <button id="hide-button" class="round" aria-label="Hide Orb" title="Hide Orb · Escape"><svg class="icon"><use href="#i-close"/></svg></button>
     </div>
   </div>
-  <nav class="orb-nav" aria-label="Orb views"><button id="home-button" class="orb-nav-button" type="button" aria-label="Open Today dashboard" aria-pressed="false">Today</button><button id="discover-button" class="orb-nav-button" type="button" aria-label="Explore what Orb can do" aria-keyshortcuts="Meta+K" aria-pressed="false">Explore <kbd aria-hidden="true">⌘K</kbd></button></nav>
-  <button id="shortcut-hint" class="shortcut-hint"><kbd>⌃</kbd><kbd>⌃</kbd><span>summon Orb</span></button>
+  <nav class="orb-nav" aria-label="Orb views"><button id="home-button" class="orb-nav-button" type="button" aria-label="Open Today dashboard" aria-pressed="false">Today</button><button id="discover-button" class="orb-nav-button" type="button" aria-label="Explore what Smith can do" aria-keyshortcuts="Meta+K" aria-pressed="false">Explore <kbd aria-hidden="true">⌘K</kbd></button></nav>
+  <button id="shortcut-hint" class="shortcut-hint"><kbd>⌃</kbd><kbd>⌃</kbd><span>summon Smith</span></button>
   <div id="error" role="alert" hidden><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><span id="error-text"></span><button id="dismiss-error" aria-label="Dismiss error"><svg class="icon"><use href="#i-close"/></svg></button></div>
 </section>
 <aside id="companion" class="companion" hidden aria-label="Orb panel">
   <header class="card-header">
     <button id="close-card" class="key-button" type="button" aria-label="Close panel" title="Close panel"><svg class="icon" aria-hidden="true"><use href="#i-arrow-left"/></svg></button>
-    <form id="ask-form" class="ask-form"><label class="sr-only" for="ask-input">Ask Orb</label><input id="ask-input" placeholder="Ask Orb anything…" maxlength="12000" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="command-list"></form>
+    <form id="ask-form" class="ask-form"><label class="sr-only" for="ask-input">Ask Smith</label><input id="ask-input" placeholder="Ask Smith anything…" maxlength="12000" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="command-list"></form>
     <span id="card-eyebrow" class="panel-title" hidden></span>
   </header>
   <div id="visual-view" class="card-body" hidden></div>
   <div id="home-view" class="card-body" hidden><div class="home-heading"><div><h1>Today</h1><p id="home-date" class="subtitle"></p></div><button id="refresh-home" class="secondary" type="button">Refresh</button></div><div id="home-content" aria-live="polite"></div></div>
-  <div id="welcome-view" class="card-body command-body" hidden><h1 class="sr-only">Explore Orb</h1><div class="command-toolbar"><nav id="command-categories" class="command-categories" aria-label="Explore categories"><button type="button" data-category="All" aria-pressed="true">All</button><button type="button" data-category="Planning" aria-pressed="false">Planning</button><button type="button" data-category="Knowledge" aria-pressed="false">Knowledge</button><button type="button" data-category="Connectors" aria-pressed="false">Connectors</button><button type="button" data-category="Try asking" aria-pressed="false">Try asking</button></nav><p id="command-context" class="command-context" role="status"></p></div><ul id="command-list" class="command-list" role="listbox" aria-label="Views and starting requests"></ul></div>
+  <div id="welcome-view" class="card-body command-body" hidden><h1 class="sr-only">Explore Smith</h1><div class="command-toolbar"><nav id="command-categories" class="command-categories" aria-label="Explore categories"><button type="button" data-category="All" aria-pressed="true">All</button><button type="button" data-category="Planning" aria-pressed="false">Planning</button><button type="button" data-category="Knowledge" aria-pressed="false">Knowledge</button><button type="button" data-category="Connectors" aria-pressed="false">Connectors</button><button type="button" data-category="Try asking" aria-pressed="false">Try asking</button></nav><p id="command-context" class="command-context" role="status"></p></div><ul id="command-list" class="command-list" role="listbox" aria-label="Views and starting requests"></ul></div>
   <div id="transcript-view" class="card-body" hidden><h1>Conversation</h1><div id="transcript" role="log" aria-label="Conversation"></div></div>
-  <div id="steps-view" class="card-body" hidden><h1>Steps</h1><p class="subtitle">What Orb did for your last request.</p><ol id="steps-list" class="steps-list"></ol></div>
-  <div id="history-view" class="card-body" hidden><h1>Recent changes</h1><p class="subtitle">Edits made by Orb, with undo.</p><div id="activity-list"></div></div>
-  <div id="settings-view" class="card-body" hidden>
-    <h1>A little more yours.</h1><p class="subtitle">Your vault, integrations, and preferences.</p>
+  <div id="steps-view" class="card-body" hidden><h1>Steps</h1><p class="subtitle">What Smith did for your last request.</p><ol id="steps-list" class="steps-list"></ol></div>
+  <div id="history-view" class="card-body" hidden><h1>Recent changes</h1><p class="subtitle">Edits made by Smith, with undo.</p><div id="activity-list"></div></div>
+  <div id="settings-view" class="card-body settings-body" hidden>
+    <header class="settings-hero"><h1>A little more yours.</h1><p class="subtitle">Your vault, connectors, and preferences.</p></header>
+    <nav class="settings-nav" aria-label="Settings sections"><button type="button" data-section="settings-appearance">Appearance</button><button type="button" data-section="settings-vault">Vault</button><button type="button" data-section="settings-connectors">Connectors</button><button type="button" data-section="settings-models">Models</button><button type="button" data-section="settings-behaviour">Behaviour</button></nav>
     <form id="settings-form">
-      <h2 class="group-title">Appearance</h2>
-      <div class="group appearance-settings">
-        <div class="field"><span class="colour-label" id="orb-colour-label">Orb colour</span><div id="orb-colour-presets" class="colour-presets" role="group" aria-labelledby="orb-colour-label"></div></div>
-        <div class="field"><label for="orb-colour-picker">Custom colour</label><div class="field-row colour-custom"><input id="orb-colour-picker" type="color" value="#1f86ff" aria-label="Custom orb colour"><label class="sr-only" for="orb-colour-hex">Hex colour</label><input id="orb-colour-hex" value="#1f86ff" maxlength="7" autocomplete="off" spellcheck="false" aria-describedby="orb-colour-error" placeholder="#RRGGBB"></div><p id="orb-colour-error" class="help colour-error" role="alert" hidden></p></div>
-        <div class="row colour-actions"><button type="button" id="orb-colour-reset" class="secondary">Reset to blue</button><button type="button" id="orb-colour-apply" class="secondary">Apply colour</button></div>
-      </div>
-      <p id="appearance-status" class="help" role="status" aria-live="polite">Your colour is saved on this Mac.</p>
-
-      <h2 class="group-title">Your knowledge and planning system</h2>
-      <p class="section-intro">One complete system, stored in Markdown files you own. Choose where it lives; Orb sets up the structure.</p>
-      <div class="group">
-        <div class="field"><label for="vault-path">Vault location</label><div class="field-row"><input id="vault-path" required readonly placeholder="Create your vault to get started"><button type="button" id="create-vault" class="secondary">Create new…</button></div></div>
-        <div class="row"><span>Already have an Orb vault?</span><button type="button" id="choose-vault" class="secondary">Connect existing…</button></div>
-      </div>
-      <p id="vault-setup-status" class="help" role="status">New vaults include Life and Business tasks, goals, habits, Portfolio, Hubs, Topics, and Knowledge Library. No personal records or example commitments.</p>
-      <details class="group vault-structure"><summary>Included structure</summary>
-        <p class="help">Hubs → Topics → Knowledge Library connects what you learn. Portfolio holds your own thinking and outputs. Home brings together tasks, goals, habits, and weekly planning.</p>
-        <div class="field"><label for="life-folder">Life tasks</label><input id="life-folder" readonly></div>
-        <div class="field"><label for="business-folder">Business tasks</label><input id="business-folder" readonly></div>
-        <div class="field"><label for="goals-folder">Goals</label><input id="goals-folder" readonly></div>
-        <div class="field"><label for="habit-folder">Habit records</label><input id="habit-folder" readonly></div>
-        <div class="field"><label for="habit-script">Habit definitions</label><input id="habit-script" readonly></div>
-        <div class="field"><label for="rules-path">Task conventions</label><input id="rules-path" readonly></div>
-        <p class="help">1. Portfolio · 2. Hubs · 3. Topics · 4. Knowledge Library · 5. Archives · 99. System</p>
-      </details>
-      <p class="help">Keep this structure for Orb's features. You can also open the same folder in Obsidian; the vault includes a complete setup guide. Connecting an existing vault never moves or rewrites its notes.</p>
-
-      <h2 class="group-title">Integrations</h2>
-      <p class="section-intro">Connect the services Orb can read from and act on. Each integration keeps its own settings together.</p>
-      <div class="integration-list">
-        <details id="trading212-integration" class="integration-card">
-          <summary><span class="integration-icon t212-icon" aria-hidden="true">212</span><span class="integration-copy"><strong>Trading 212</strong><small>Investments, dividends and activity · read-only</small></span><span id="t212-status" class="integration-status">Set up</span><svg class="icon integration-chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
-          <div class="integration-details">
-            <div class="field"><label for="t212-environment">Account environment</label><select id="t212-environment"><option value="live">Live · real account</option><option value="demo">Demo · practice account</option></select></div>
-            <div class="field"><label for="t212-key">API key</label><input id="t212-key" type="password" autocomplete="off" spellcheck="false" maxlength="2000" placeholder="API key"></div>
-            <div class="field"><label for="t212-secret">API secret</label><input id="t212-secret" type="password" autocomplete="off" spellcheck="false" maxlength="2000" placeholder="API secret"></div>
-            <p class="integration-help">In Trading 212, open Settings → API (Beta) and enable Accounts data, History dividends, History orders, History transactions, Orders read and Portfolio. Leave Orders execute and Pies write off. Invest and Stocks ISA accounts are supported. Orb cannot place trades. Keys are encrypted on this Mac.</p>
-            <div class="t212-actions"><button id="t212-test" class="secondary" type="button">Test connection</button><button id="t212-save" class="secondary" type="button">Connect &amp; save</button><button id="t212-disconnect" class="secondary" type="button" hidden>Disconnect</button></div>
-            <p id="t212-message" class="integration-help" role="status"></p>
-            <div id="t212-capabilities" aria-label="Trading 212 capability checks"></div>
-            <section class="t212-tracking">
-              <h3>Track performance on this Mac</h3>
-              <p class="integration-help">Opt in to encrypted local valuations and transaction history. Orb collects while it runs and this Mac is awake, including when its window is hidden. Sleep and closed-app gaps cannot be backfilled. No additional service or write permissions are needed.</p>
-              <div class="field"><label for="t212-timezone">Reporting timezone</label><input id="t212-timezone" value="Europe/London" placeholder="Europe/London" maxlength="100"></div>
-              <div class="t212-actions"><button id="t212-track-enable" class="secondary" type="button">Enable / resume tracking</button><button id="t212-track-pause" class="secondary" type="button">Pause</button><button id="t212-track-rescan" class="secondary" type="button">Rescan all history</button><button id="t212-track-status" class="secondary" type="button">Check sync status</button></div>
-              <p id="t212-tracking-message" class="integration-help" role="status"></p>
-              <div id="t212-history-status"></div>
-              <p class="integration-help">Export writes an unencrypted JSON file that you choose. Delete removes local investment history; saved chats and vault notes have separate retention. Disconnect keeps history and stops tracking.</p>
-            </section>
-            <p class="integration-help">Connect &amp; save stores this connection separately from the other Settings. Open Explore → Connectors → Trading 212 to view it. Browsing makes no AI requests; asking Orb shares relevant account data with your selected AI provider.</p>
+      <section id="settings-appearance" class="settings-section" aria-labelledby="settings-appearance-title">
+        <h2 id="settings-appearance-title" class="group-title">Appearance</h2>
+        <div class="group appearance-settings">
+          <div class="colour-head"><span id="orb-colour-chip" class="colour-chip" aria-hidden="true"></span><div><span class="colour-label" id="orb-colour-label">Orb colour</span><p class="colour-caption">Changes preview live on your orb.</p></div></div>
+          <div id="orb-colour-presets" class="colour-presets" role="group" aria-labelledby="orb-colour-label"></div>
+          <div class="colour-picker">
+            <div id="orb-colour-area" class="colour-area" role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100"><span class="colour-thumb" aria-hidden="true"></span></div>
+            <input id="orb-colour-hue" class="colour-hue" type="range" min="0" max="359" step="1" value="214" aria-label="Hue">
+            <div class="colour-hex-row"><label class="sr-only" for="orb-colour-hex">Hex colour</label><input id="orb-colour-hex" value="#1f86ff" maxlength="7" autocomplete="off" spellcheck="false" aria-describedby="orb-colour-error" placeholder="#RRGGBB"><button type="button" id="orb-colour-reset" class="secondary">Reset</button><button type="button" id="orb-colour-apply" class="primary">Apply colour</button></div>
+            <p id="orb-colour-error" class="help colour-error" role="alert" hidden></p>
           </div>
-        </details>
-        <details id="google-calendar-integration" class="integration-card">
-          <summary>
-            <span class="integration-icon google-calendar-icon" aria-hidden="true"><span>31</span></span>
-            <span class="integration-copy"><strong>Google Calendar</strong><small>Events and availability</small></span>
-            <span id="calendar-status" class="integration-status">Set up</span>
-            <svg class="icon integration-chevron" aria-hidden="true"><use href="#i-chevron"/></svg>
-          </summary>
-          <div class="integration-details">
-            <div class="field"><label for="calendar-id">Calendar for new events</label><select id="calendar-id"><option value="">Choose a Google calendar</option></select></div>
-            <div class="field"><label for="calendar-token">Full Calendar access token</label><input id="calendar-token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste token from Obsidian"></div>
-            <div class="field"><label for="work-start">Working hours (calendar timezone)</label><div class="working-hours"><input id="work-start" type="time" value="09:00" aria-label="Work starts"><span>to</span><input id="work-end" type="time" value="17:00" aria-label="Work ends"></div></div>
-            <fieldset class="working-days"><legend>Days to suggest task blocks</legend><label><input type="checkbox" name="work-day" value="1" checked>Mon</label><label><input type="checkbox" name="work-day" value="2" checked>Tue</label><label><input type="checkbox" name="work-day" value="3" checked>Wed</label><label><input type="checkbox" name="work-day" value="4" checked>Thu</label><label><input type="checkbox" name="work-day" value="5" checked>Fri</label><label><input type="checkbox" name="work-day" value="6">Sat</label><label><input type="checkbox" name="work-day" value="0">Sun</label></fieldset>
-            <p id="calendar-setup" class="integration-help">In Obsidian Full Calendar, connect a Google calendar and enable Local REST Server. Generate a token with Read events, Write events and Read providers, then paste it here. Keep Obsidian open for calendar writes.</p>
-          </div>
-        </details>
-      </div>
+        </div>
+        <p id="appearance-status" class="help" role="status" aria-live="polite">Your colour is saved on this Mac.</p>
+      </section>
 
-      <h2 class="group-title">Models & voice</h2>
+      <section id="settings-vault" class="settings-section" aria-labelledby="settings-vault-title">
+        <h2 id="settings-vault-title" class="group-title">Your knowledge and planning system</h2>
+        <p class="section-intro">One complete system, stored in Markdown files you own. Choose where it lives; Orb sets up the structure.</p>
+        <div class="group">
+          <div class="field"><label for="vault-path">Vault location</label><div class="field-row"><input id="vault-path" required readonly placeholder="Create your vault to get started"><button type="button" id="create-vault" class="secondary">Create new…</button></div></div>
+          <div class="row"><span>Already have an Orb vault?</span><button type="button" id="choose-vault" class="secondary">Connect existing…</button></div>
+          <details class="vault-structure"><summary>Included structure<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p class="help">Hubs → Topics → Knowledge Library connects what you learn. Portfolio holds your own thinking and outputs. Home brings together tasks, goals, habits, and weekly planning.</p>
+            <div class="structure-grid">
+              <div class="field"><label for="life-folder">Life tasks</label><input id="life-folder" readonly></div>
+              <div class="field"><label for="business-folder">Business tasks</label><input id="business-folder" readonly></div>
+              <div class="field"><label for="goals-folder">Goals</label><input id="goals-folder" readonly></div>
+              <div class="field"><label for="habit-folder">Habit records</label><input id="habit-folder" readonly></div>
+              <div class="field"><label for="habit-script">Habit definitions</label><input id="habit-script" readonly></div>
+              <div class="field"><label for="rules-path">Task conventions</label><input id="rules-path" readonly></div>
+            </div>
+            <p class="help">1. Portfolio · 2. Hubs · 3. Topics · 4. Knowledge Library · 5. Archives · 99. System</p>
+          </details>
+        </div>
+        <p id="vault-setup-status" class="help" role="status">New vaults include Life and Business tasks, goals, habits, Portfolio, Hubs, Topics, and Knowledge Library. No personal records or example commitments.</p>
+        <p class="help">Keep this structure for Orb's features. You can also open the same folder in Obsidian; the vault includes a complete setup guide. Connecting an existing vault never moves or rewrites its notes.</p>
+      </section>
+
+      <section id="settings-connectors" class="settings-section" aria-labelledby="settings-connectors-title">
+        <h2 id="settings-connectors-title" class="group-title">Connectors</h2>
+        <p class="section-intro">Services Orb can read from and act on. Each keeps its own settings together.</p>
+        <div class="integration-list">
+          <details id="trading212-integration" class="integration-card">
+            <summary><span class="integration-icon t212-icon" aria-hidden="true">212</span><span class="integration-copy"><strong>Trading 212</strong><small>Investments, dividends and activity · read-only</small></span><span id="t212-status" class="integration-status">Set up</span><svg class="icon integration-chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <div class="integration-details">
+              <div class="connector-fields">
+                <div class="field"><label for="t212-environment">Account environment</label><select id="t212-environment"><option value="live">Live · real account</option><option value="demo">Demo · practice account</option></select></div>
+                <div class="field-pair">
+                  <div class="field"><label for="t212-key">API key</label><input id="t212-key" type="password" autocomplete="off" spellcheck="false" maxlength="2000" placeholder="API key"></div>
+                  <div class="field"><label for="t212-secret">API secret</label><input id="t212-secret" type="password" autocomplete="off" spellcheck="false" maxlength="2000" placeholder="API secret"></div>
+                </div>
+              </div>
+              <p class="integration-help">In Trading 212, open Settings → API (Beta) and enable Accounts data, History dividends, History orders, History transactions, Orders read and Portfolio. Leave Orders execute and Pies write off. Invest and Stocks ISA accounts are supported. Orb cannot place trades. Keys are encrypted on this Mac.</p>
+              <div class="t212-actions connector-actions"><button id="t212-save" class="primary" type="button">Connect &amp; save</button><button id="t212-test" class="secondary" type="button">Test connection</button><button id="t212-disconnect" class="secondary danger" type="button" hidden>Disconnect</button></div>
+              <p id="t212-message" class="connector-message" role="status"></p>
+              <div id="t212-capabilities" aria-label="Trading 212 capability checks"></div>
+              <section class="t212-tracking connector-subsection">
+                <h3>Track performance on this Mac</h3>
+                <p class="connector-note">Opt in to encrypted local valuations and transaction history. Orb collects while it runs and this Mac is awake, including when its window is hidden. Sleep and closed-app gaps cannot be backfilled. No additional service or write permissions are needed.</p>
+                <div class="field"><label for="t212-timezone">Reporting timezone</label><input id="t212-timezone" value="Europe/London" placeholder="Europe/London" maxlength="100"></div>
+                <div class="t212-actions connector-actions"><button id="t212-track-enable" class="secondary" type="button">Enable / resume tracking</button><button id="t212-track-pause" class="secondary" type="button">Pause</button><button id="t212-track-rescan" class="secondary" type="button">Rescan all history</button><button id="t212-track-status" class="secondary" type="button">Check sync status</button></div>
+                <p id="t212-tracking-message" class="connector-message" role="status"></p>
+                <div id="t212-history-status"></div>
+                <p class="connector-note">Export writes an unencrypted JSON file that you choose. Delete removes local investment history; saved chats and vault notes have separate retention. Disconnect keeps history and stops tracking.</p>
+              </section>
+              <p class="integration-help">Connect &amp; save stores this connection separately from the other Settings. Open Explore → Connectors → Trading 212 to view it. Browsing makes no AI requests; asking Smith shares relevant account data with your selected AI provider.</p>
+            </div>
+          </details>
+          <details id="places-integration" class="integration-card">
+            <summary><span class="integration-icon" aria-hidden="true"><svg class="icon"><use href="#i-map"/></svg></span><span class="integration-copy"><strong>Places</strong><small>Nearby discoveries, walking times and saved places</small></span><span id="places-status" class="integration-status">Optional</span><svg class="icon integration-chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <div class="integration-body">
+              <div class="field"><label for="places-key">Geoapify API key</label><input id="places-key" type="password" autocomplete="off" maxlength="200" placeholder="Geoapify API key"></div>
+              <div class="field"><label for="places-default-area">Remember a starting area (optional)</label><input id="places-default-area" type="text" maxlength="200" placeholder="Address, neighbourhood or city"></div>
+              <div class="field"><label for="places-app">Directions app</label><select id="places-app"><option value="apple">Apple Maps</option><option value="google">Google Maps</option></select></div>
+              <div class="row"><button id="places-connect" type="button" class="secondary">Save Places settings</button><button id="places-disconnect" type="button" class="secondary">Disconnect</button></div>
+              <p id="places-message" class="connector-message" role="status" aria-live="polite"></p>
+              <p class="integration-help">Saved places work without a key. A Geoapify account enables maps, nearby search, address lookup and walking times. Your key is encrypted on this Mac. Search areas, requested categories and routing coordinates go to Geoapify; note bodies do not. Device location is used only when you choose it.</p>
+            </div>
+          </details>
+          <details id="weather-integration" class="integration-card">
+            <summary><span class="integration-icon weather-icon" aria-hidden="true"><svg class="icon"><use href="#i-cloud-sun"/></svg></span><span class="integration-copy"><strong>Weather</strong><small>Live forecast and orb reactions · no account needed</small></span><span id="weather-status" class="integration-status">Set up</span><svg class="icon integration-chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <div class="integration-details">
+              <div class="connector-fields">
+                <div class="field weather-search"><label for="weather-place">Home location</label><input id="weather-place" type="search" autocomplete="off" spellcheck="false" maxlength="100" placeholder="Search for a town or city" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="weather-results"><ul id="weather-results" class="weather-results" role="listbox" aria-label="Matching places" hidden></ul></div>
+                <div class="field"><label for="weather-units">Temperature</label><select id="weather-units"><option value="metric">Celsius (°C)</option><option value="imperial">Fahrenheit (°F)</option></select></div>
+                <label class="row"><input type="checkbox" id="weather-reactions" checked> Orb reacts to the weather</label>
+              </div>
+              <p id="weather-message" class="connector-message" role="status" aria-live="polite"></p>
+              <p class="integration-help">Choosing a place saves it straight away. Forecasts come from Open-Meteo, which needs no account. Orb sends only rounded coordinates (about 1 km), or the place name you ask about. Asking Smith about the weather shares the forecast with your selected AI provider.</p>
+            </div>
+          </details>
+          <details id="google-calendar-integration" class="integration-card">
+            <summary>
+              <span class="integration-icon google-calendar-icon" aria-hidden="true"><span>31</span></span>
+              <span class="integration-copy"><strong>Google Calendar</strong><small>Events and availability</small></span>
+              <span id="calendar-status" class="integration-status">Set up</span>
+              <svg class="icon integration-chevron" aria-hidden="true"><use href="#i-chevron"/></svg>
+            </summary>
+            <div class="integration-details">
+              <div class="connector-fields">
+                <div class="field"><label for="calendar-id">Calendar for new events</label><select id="calendar-id"><option value="">Choose a Google calendar</option></select></div>
+                <div class="field"><label for="calendar-token">Full Calendar access token</label><input id="calendar-token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste token from Obsidian"></div>
+                <div class="field"><label for="work-start">Working hours (calendar timezone)</label><div class="working-hours"><input id="work-start" type="time" value="09:00" aria-label="Work starts"><span>to</span><input id="work-end" type="time" value="17:00" aria-label="Work ends"></div></div>
+                <fieldset class="working-days"><legend>Days to suggest task blocks</legend><label><input type="checkbox" name="work-day" value="1" checked>Mon</label><label><input type="checkbox" name="work-day" value="2" checked>Tue</label><label><input type="checkbox" name="work-day" value="3" checked>Wed</label><label><input type="checkbox" name="work-day" value="4" checked>Thu</label><label><input type="checkbox" name="work-day" value="5" checked>Fri</label><label><input type="checkbox" name="work-day" value="6">Sat</label><label><input type="checkbox" name="work-day" value="0">Sun</label></fieldset>
+              </div>
+              <p id="calendar-setup" class="integration-help">In Obsidian Full Calendar, connect a Google calendar and enable Local REST Server. Generate a token with Read events, Write events and Read providers, then paste it here. Keep Obsidian open for calendar writes.</p>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section id="settings-models" class="settings-section" aria-labelledby="settings-models-title">
+        <h2 id="settings-models-title" class="group-title">Models &amp; voice</h2>
       <div class="group provider-settings">
         <div class="field"><label for="chat-provider">Chat & tools provider</label><select id="chat-provider"><option value="openai">OpenAI</option><option value="openrouter">OpenRouter</option></select></div>
         <div class="field"><label for="chat-model">Chat & tools model</label><input id="chat-model" list="chat-models" placeholder="Search models or enter a model ID" autocomplete="off"><datalist id="chat-models"></datalist></div>
@@ -175,7 +233,7 @@
         </details>
         <p id="provider-status" class="help" role="status" aria-live="polite"></p>
       </div>
-      <h2 class="group-title">Provider keys</h2>
+      <h3 class="group-subtitle">Provider keys</h3>
       <div class="group provider-settings">
         <div class="field"><label for="api-key">OpenAI</label><input id="api-key" type="password" autocomplete="off" spellcheck="false"><label class="key-remove"><input id="remove-openai" type="checkbox"> Remove saved key</label></div>
         <div class="field"><label for="openrouter-key">OpenRouter</label><input id="openrouter-key" type="password" autocomplete="off" spellcheck="false"><label class="key-remove"><input id="remove-openrouter" type="checkbox"> Remove saved key</label></div>
@@ -183,11 +241,13 @@
         <div class="field"><label for="elevenlabs-key">ElevenLabs · independent voice output</label><input id="elevenlabs-key" type="password" autocomplete="off" spellcheck="false"><label class="key-remove"><input id="remove-elevenlabs" type="checkbox"> Remove saved key</label></div>
       </div>
       <p class="help">Encrypted on this Mac. Leave blank to keep a saved key. Only your chosen providers need keys. Model tests send a short test prompt, without vault data.</p>
+      </section>
 
-      <h2 class="group-title">Behaviour</h2>
+      <section id="settings-behaviour" class="settings-section" aria-labelledby="settings-behaviour-title">
+      <h2 id="settings-behaviour-title" class="group-title">Behaviour</h2>
       <div class="group">
         <div class="row shortcut-setting"><div><strong>Double-tap Control</strong><p id="shortcut-status">Double-tap Control from any app. No keyboard permission needed.</p></div><button id="enable-shortcut" type="button" class="secondary">Enable</button></div>
-        <label class="row switch-row" for="auto-start"><span>Start listening when I summon Orb</span><input type="checkbox" id="auto-start" class="switch" checked></label>
+        <label class="row switch-row" for="auto-start"><span>Start listening when I summon Smith</span><input type="checkbox" id="auto-start" class="switch" checked></label>
       </div>
       <p class="help">Audio goes to the selected voice providers. Requests and relevant retrieved notes go to the selected chat and reasoning providers; OpenRouter routes them to a model host. Spoken answers go to the speech provider. Closing Orb stops the microphone. The Control shortcut checks modifier state only; typed text is never recorded.</p>
 
@@ -195,6 +255,7 @@
         <button type="button" id="history-button" class="row link-row"><span>Recent changes</span><svg class="icon"><use href="#i-chevron"/></svg></button>
         <button type="button" id="transcript-button" class="row link-row"><span>Conversation</span><svg class="icon"><use href="#i-chevron"/></svg></button>
       </div>
+      </section>
 
       <button type="submit" class="sr-only" tabindex="-1">Save settings</button>
     </form>
@@ -203,7 +264,7 @@
     <div class="action-context"><span id="footer-icon" class="app-icon" aria-hidden="true"><svg class="icon"><use href="#i-sparkle"/></svg></span><span id="footer-title">Explore</span></div>
     <p id="settings-error" role="alert" hidden></p>
     <div class="action-buttons">
-      <button type="button" id="footer-primary" class="action-button"><span>Ask Orb</span><kbd aria-hidden="true">↵</kbd></button>
+      <button type="button" id="footer-primary" class="action-button"><span>Ask Smith</span><kbd aria-hidden="true">↵</kbd></button>
       <span class="action-divider" aria-hidden="true"></span>
       <button type="button" id="footer-secondary" class="action-button" aria-keyshortcuts="Meta+K"><span>Explore</span><kbd aria-hidden="true">⌘</kbd><kbd aria-hidden="true">K</kbd></button>
     </div>
@@ -229,9 +290,9 @@
     <form id="chat-composer" class="chat-composer">
       <div id="chat-menu" class="chat-menu" role="listbox" aria-label="Tools and commands" hidden></div>
       <button type="button" id="chat-plus" class="composer-round" aria-label="Tools and commands" aria-haspopup="listbox" aria-expanded="false" title="Tools and commands"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button>
-      <div class="composer-field"><label class="sr-only" for="chat-input">Message Orb</label><textarea id="chat-input" rows="1" maxlength="12000" placeholder="Ask anything, @ tools, or / for commands…" autocomplete="off" aria-controls="chat-menu"></textarea></div>
+      <div class="composer-field"><label class="sr-only" for="chat-input">Message Smith</label><textarea id="chat-input" rows="1" maxlength="12000" placeholder="Ask anything, @ tools, or / for commands…" autocomplete="off" aria-controls="chat-menu"></textarea></div>
       <button type="submit" id="chat-send" class="composer-round send" aria-label="Send message" title="Send · Return"><svg class="icon" aria-hidden="true"><use id="chat-send-icon" href="#i-arrow-up"/></svg></button>
     </form>
   </div>
 </section>
-</main><script src="appearance.js"></script><script src="orb.js"></script><script src="recurring-bundle.js"></script><script src="visual-renderer.js"></script><script src="provider-settings.js"></script><script src="speech-client.js"></script><script src="trading212-ui.js"></script><script src="appearance-settings.js"></script><script src="day-planner-ui.js"></script><script src="explore.js"></script><script src="renderer.js"></script><script src="chat.js"></script><script src="knowledge-graph.js"></script><script src="markdown-view.js"></script><script src="knowledge-ui.js"></script><script src="clippings-ui.js"></script></body></html>
+</main><script src="appearance.js"></script><script src="settings-layout.js"></script><script src="orb.js"></script><script src="recurring-bundle.js"></script><script src="visual-renderer.js"></script><script src="provider-settings.js"></script><script src="speech-client.js"></script><script src="trading212-ui.js"></script><script src="weather-ui.js"></script><script src="places-ui.js"></script><script src="places-preview.js"></script><script src="appearance-settings.js"></script><script src="day-planner-ui.js"></script><script src="explore.js"></script><script src="renderer.js"></script><script src="chat.js"></script><script src="knowledge-graph.js"></script><script src="markdown-view.js"></script><script src="knowledge-ui.js"></script><script src="clippings-ui.js"></script></body></html>
