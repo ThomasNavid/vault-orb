@@ -1,5 +1,7 @@
 # Things to ask Smith
 
+After connecting **Settings → Connectors → Apple Reminders**, ordinary task requests also sync to your chosen Life/Business lists: “Add a personal task called Example errand”, “Set Example errand's deadline to 20 November 2026”, and “Mark Example errand complete.” These write the vault and, on the next sync, Apple Reminders. Manage category sections manually in Reminders; see [setup and limits](features/apple-reminders.md).
+
 [Documentation](README.md) · [Getting started](getting-started.md)
 
 Smith (Agent Smith) is the assistant in Vault Orb. Use **Ask Smith** or **Talk to Smith** to make a request.
@@ -60,19 +62,19 @@ Click **Today** beneath the orb for a read-only overview of today's tasks, past 
 
 [Weather guide](features/weather.md)
 
-## Focus on a task
+## Run a focus timer
 
+> Give me 25 minutes.
+>
+> Focus for 45 minutes.
+>
 > Give me 25 minutes on Example project task.
->
-> Focus on this for 45 minutes.
->
-> 20 minutes on email.
 >
 > How long is left? Pause my focus session. Add 10 minutes. Stop the timer.
 >
 > Log that I drafted the intro.
 
-**Requires:** an unfinished task note for task-linked sessions. A title works for anything else. **Result:** a progress ring around the orb and minutes left in the menu bar. When time is up, a card offers Log progress, Mark done, +5 min and Done. **Writes:** only logging (a line under `## Focus log` in the task note) and Mark done change the vault.
+**Requires:** nothing but a length. Naming an unfinished task links the session to it, and that's optional. **Result:** a progress ring around the orb and minutes left in the menu bar. When time is up, a card offers +5 min and Done, plus Log progress and Mark done for a linked task. **Writes:** only logging (a line under `## Focus log` in the task note) and Mark done change the vault.
 
 [Focus sessions guide](features/focus-sessions.md)
 

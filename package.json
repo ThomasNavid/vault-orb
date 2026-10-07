@@ -10,7 +10,7 @@
     "start": "electron .",
     "test": "node scripts/build-recurring.cjs --check && node --test test/*.test.cjs",
     "prepackage": "npm run build:recurring && npm run build:native && npm run build:maps",
-    "package": "electron-packager . 'Vault Orb' --platform=darwin --arch=arm64 --out=dist --overwrite --icon=assets/icon.icns --app-bundle-id=app.vaultorb.desktop --extend-info=assets/Info.plist --ignore='^/(dist|test|screenshots|scripts|vault-example|.claude|agent.cjs|package-lock.json)' --extra-resource=native/orb-shortcut.node --extra-resource=native/orb-location.node",
+    "package": "electron-packager . 'Vault Orb' --platform=darwin --arch=arm64 --out=dist --overwrite --icon=assets/icon.icns --app-bundle-id=app.vaultorb.desktop --extend-info=assets/Info.plist --ignore='^/(dist|test|screenshots|scripts|vault-example|.claude|agent.cjs|package-lock.json)' --extra-resource=native/orb-shortcut.node --extra-resource=native/orb-location.node --extra-resource=native/orb-reminders.node",
     "build:recurring": "node scripts/build-recurring.cjs",
     "check:recurring": "node scripts/build-recurring.cjs --check",
     "build:maps": "node scripts/build-maps.cjs"

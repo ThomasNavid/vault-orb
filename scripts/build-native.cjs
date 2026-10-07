@@ -28,3 +28,11 @@ const location = spawnSync('clang++', [
 ], {stdio: 'inherit'});
 if (location.error) throw location.error;
 if (location.status !== 0) process.exit(location.status || 1);
+
+const reminders = spawnSync('clang++', [
+  '-std=c++17', '-fobjc-arc', '-bundle', '-undefined', 'dynamic_lookup',
+  `-I${include}`, '-framework', 'Foundation', '-framework', 'EventKit',
+  path.join(root, 'native/reminders.mm'), '-o', path.join(root, 'native/orb-reminders.node')
+], {stdio: 'inherit'});
+if (reminders.error) throw reminders.error;
+if (reminders.status !== 0) process.exit(reminders.status || 1);

@@ -29,7 +29,7 @@ By default, summoning Smith starts listening when a key is saved. Turn off **Sta
 | Discover requests | Click **Explore** or press ⌘K for a searchable list of views and starting prompts covering planning, goals, habits, calendar, knowledge, Trading 212 investments, notes, and spreadsheet data. See [Today and Explore](today-and-explore.md). |
 | View investments | Open **Explore → Trading 212**, or choose `/trading212` in chat. This directly opens the read-only dashboard; `@Trading212` points a conversational request at the connector. See [Trading 212](trading212.md). |
 | Go back in the panel | Click the arrow at the top left of the panel. It returns to the view you came from, or closes the panel. |
-| Focus on something | Press the clock beside a task, open **Explore → Focus session**, or ask “Give me 25 minutes on …”. A ring around the orb shows progress; pause and end buttons sit beside the status line. See [Focus sessions](focus-sessions.md). |
+| Focus on something | Press the clock beside a task, open **Explore → Focus session**, or ask “Give me 25 minutes.” A ring around the orb shows progress; pause and end buttons sit beside the status line. See [Focus sessions](focus-sessions.md). |
 | Move the window | Drag the small dots above the orb. |
 | Change orb colour | Settings → Appearance: choose a preset or custom colour, then **Apply colour**. |
 | Open Settings | Click the sliders icon, use the menu-bar right-click menu, or ⌘,. |

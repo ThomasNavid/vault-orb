@@ -192,13 +192,13 @@ class Vault {
     }
     return entries;
   }
-  publicHistory() {return this.history().slice(-30).reverse().map(({id,path,action,at,status,calendar})=>({id,path,action,at,status,undoable:!calendar}));}
+  publicHistory() {return this.history().slice(-30).reverse().map(({id,path,action,at,status,calendar,reminders})=>({id,path,action,at,status,undoable:!calendar&&!reminders}));}
   commit(relative,before,after,action,options={}) {return this.withTaskLock(()=>this._commit(relative,before,after,action,options));}
-  _commit(relative,before,after,action,{calendar=false}={}) {
+  _commit(relative,before,after,action,{calendar=false,reminders=false}={}) {
     const file=this.resolve(relative,{missing:before===null});
     if(before!==null && fs.readFileSync(file,'utf8')!==before) throw new Error('Note changed since it was read. Read it again before editing.');
     const entries=this.history();
-    const entry={id:crypto.randomUUID(),path:relative,action,at:new Date().toISOString(),before,afterHash:hash(after),calendar,status:'pending'};
+    const entry={id:crypto.randomUUID(),path:relative,action,at:new Date().toISOString(),before,afterHash:hash(after),calendar,reminders,status:'pending'};
     entries.push(entry); atomicWrite(this.journalFile,JSON.stringify(entries,null,2));
     try {
       if(before===null) fs.writeFileSync(file,after,{flag:'wx',mode:0o600});
@@ -298,6 +298,7 @@ class Vault {
     if(!entry || entry.status!=='applied') throw new Error('No change available to undo.');
     const file=this.resolve(entry.path), current=this.read(entry.path);
     if(entry.calendar)throw new Error('This change is linked to a calendar write. Move the block back, remove it, or repair its link instead of note undo.');
+    if(entry.reminders)throw new Error('This change establishes a Reminders link. Pause sync and manage the linked copies explicitly instead of note undo.');
     const nowData=parseNote(current.content).data,oldData=entry.before?parseNote(entry.before).data:{};
     if((nowData.calendar_block||oldData.calendar_block)&&(JSON.stringify(nowData.calendar_block)!==JSON.stringify(oldData.calendar_block)||nowData.planned!==oldData.planned))throw new Error('Undo would disconnect the calendar block. Repair the link first.');
     if(current.version!==entry.afterHash) throw new Error('This note has changed since that action. Undo newer edits first, or review it in Obsidian.');

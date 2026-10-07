@@ -199,13 +199,13 @@
   const run=async(buttons,args,done)=>{buttons.forEach(b=>b.disabled=true);status.textContent='';try{await actions.focus(args);if(done)status.textContent=done;else buttons.forEach(b=>b.disabled=false);}catch(e){status.textContent=cleanError(e);buttons.forEach(b=>b.disabled=false);}};
   const button=(cls,text)=>{const b=el('button',cls,text);b.type='button';return b;};
   if(v.mode==='setup'){
-   const form=el('form','focus-form'),label=el('label','focus-label','What are you working on?'),title=el('input');
-   title.id='focus-title';label.htmlFor=title.id;title.maxLength=180;title.placeholder='Email, reading, a draft…';title.autocomplete='off';
+   const form=el('form','focus-form'),label=el('label','focus-label','What are you working on? (optional)'),title=el('input');
+   title.id='focus-title';label.htmlFor=title.id;title.maxLength=180;title.placeholder='Leave blank for a plain timer';title.autocomplete='off';
    const lengths=el('div','focus-lengths');lengths.setAttribute('role','radiogroup');lengths.setAttribute('aria-label','Length');let minutes=25;
    for(const n of [15,25,45,60]){const chip=button('focus-length',`${n} min`);chip.setAttribute('role','radio');chip.setAttribute('aria-checked',String(n===minutes));chip.onclick=()=>{minutes=n;for(const c of lengths.children)c.setAttribute('aria-checked',String(c===chip));};lengths.append(chip);}
    const start=el('button','primary','Start focus');start.type='submit';
-   form.onsubmit=e=>{e.preventDefault();if(!title.value.trim()){status.textContent='Add a short title first.';title.focus();return;}run([start],{action:'start',title:title.value.trim(),minutes});};
-   form.append(label,title,lengths,start);wrap.append(form,status,el('p','help','To log progress on a task, press the clock beside it in any task list, or ask Smith for time on it.'));
+   form.onsubmit=e=>{e.preventDefault();run([start],{action:'start',title:title.value.trim()||null,minutes});};
+   form.append(label,title,lengths,start);wrap.append(form,status,el('p','help','To log progress on a task afterwards, press the clock beside it in any task list instead.'));
    setTimeout(()=>title.focus(),60);
    return wrap;
   }
@@ -219,7 +219,7 @@
    done.onclick=()=>run([done],{action:'done'},'Marked done.');
    const row=el('div','focus-actions');row.append(log,done);form.append(label,note,row);wrap.append(form);
    setTimeout(()=>note.focus(),60);
-  }else wrap.append(el('p','help','This session was not linked to a task, so there is nothing to log.'));
+  }else if(s.title)wrap.append(el('p','focus-task',s.title));
   const more=button('secondary','+5 min'),finish=button('secondary','Done'),row=el('div','focus-actions');
   more.onclick=()=>run([more,finish],{action:'extend',minutes:5});finish.onclick=()=>run([more,finish],{action:'dismiss'});
   row.append(more,finish);wrap.append(row,status);

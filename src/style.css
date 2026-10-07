@@ -190,6 +190,9 @@ td:first-child{color:var(--text-1)}
 .task{display:flex;align-items:center;gap:11px;padding:9px 10px;margin:0 -10px;border-radius:8px;animation:fade-rise .4s var(--ease-out) both;animation-delay:calc(var(--i,0)*35ms);transition:background .15s}
 .task:hover{background:var(--surface-2)}
 .task-ring{width:15px;height:15px;flex:none;border-radius:50%;border:1.5px solid var(--text-3)}
+button.task-ring{position:relative;padding:0;background:transparent}
+button.task-ring::before{content:'';position:absolute;inset:-6px;border-radius:50%}
+button.task-ring:hover:not(:disabled){border-color:var(--live);background:var(--surface-hover)}
 .task.is-completed{opacity:.6}
 .task.is-completed .task-ring{display:grid;place-items:center;border-color:var(--live);background:var(--live);color:#fff}
 .task.is-completed .task-ring::after{content:'✓';font-size:9px;font-weight:700;line-height:1}
@@ -810,3 +813,5 @@ input[readonly]{color:var(--text-2)}
 .focus-form .primary{align-self:flex-start}
 .focus-status{min-height:18px;margin:0;color:var(--text-2);font-size:12px;overflow-wrap:anywhere}
 .focus-card button:disabled,.focus-card input:disabled{opacity:.55;cursor:default}
+
+.reminders-icon{color:#2563eb;background:#fff}

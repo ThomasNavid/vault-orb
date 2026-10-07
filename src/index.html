@@ -181,6 +181,27 @@
               <p class="integration-help">Choosing a place saves it straight away. Forecasts come from Open-Meteo, which needs no account. Orb sends only rounded coordinates (about 1 km), or the place name you ask about. Asking Smith about the weather shares the forecast with your selected AI provider.</p>
             </div>
           </details>
+          <details id="reminders-integration" class="integration-card">
+            <summary>
+              <span class="integration-icon reminders-icon" aria-hidden="true"><svg class="icon"><use href="#i-list"/></svg></span>
+              <span class="integration-copy"><strong>Apple Reminders</strong><small>Life and Business tasks</small></span>
+              <span id="reminders-status" class="integration-status">Set up</span>
+              <svg class="icon integration-chevron" aria-hidden="true"><use href="#i-chevron"/></svg>
+            </summary>
+            <div class="integration-details">
+              <p class="integration-help">Sync new tasks, deadlines and completion both ways in two chosen lists. Categories appear in reminder notes. Apple does not let Orb manage section dividers; you can arrange reminders under your sections yourself. Repeating tasks are excluded.</p>
+              <button type="button" class="secondary" id="reminders-connect">Connect / choose lists</button>
+              <div id="reminders-lists" class="connector-fields" hidden>
+                <div class="field"><label for="reminders-life">Life tasks</label><select id="reminders-life"></select></div>
+                <div class="field"><label for="reminders-business">Business tasks</label><select id="reminders-business"></select></div>
+                <button type="button" class="secondary" id="reminders-enable" disabled>Enable two-way sync</button>
+              </div>
+              <div class="provider-actions"><button type="button" class="secondary" id="reminders-sync" disabled>Sync now</button><button type="button" class="secondary" id="reminders-pause" disabled>Pause sync</button></div>
+              <p id="reminders-message" class="connector-message" role="status" aria-live="polite">Connect, then choose the existing Life and Business lists.</p>
+              <ul id="reminders-issues" class="integration-help" hidden></ul>
+              <p class="integration-help">Enabling sync imports unfinished reminders and exports unfinished vault tasks immediately, then checks every 30 seconds while Orb runs. Choose iCloud lists to see tasks on your phone. Planned stays in Orb. Missing copies and conflicting edits are reported here. Rename linked tasks in Obsidian; title edits in Reminders need review. Pause stops syncing and keeps both copies.</p>
+            </div>
+          </details>
           <details id="google-calendar-integration" class="integration-card">
             <summary>
               <span class="integration-icon google-calendar-icon" aria-hidden="true"><span>31</span></span>
@@ -295,4 +316,4 @@
     </form>
   </div>
 </section>
-</main><script src="appearance.js"></script><script src="settings-layout.js"></script><script src="orb.js"></script><script src="recurring-bundle.js"></script><script src="visual-renderer.js"></script><script src="provider-settings.js"></script><script src="speech-client.js"></script><script src="trading212-ui.js"></script><script src="weather-ui.js"></script><script src="places-ui.js"></script><script src="places-preview.js"></script><script src="appearance-settings.js"></script><script src="day-planner-ui.js"></script><script src="explore.js"></script><script src="renderer.js"></script><script src="chat.js"></script><script src="knowledge-graph.js"></script><script src="markdown-view.js"></script><script src="knowledge-ui.js"></script><script src="clippings-ui.js"></script></body></html>
+</main><script src="appearance.js"></script><script src="settings-layout.js"></script><script src="orb.js"></script><script src="recurring-bundle.js"></script><script src="visual-renderer.js"></script><script src="provider-settings.js"></script><script src="speech-client.js"></script><script src="trading212-ui.js"></script><script src="weather-ui.js"></script><script src="places-ui.js"></script><script src="places-preview.js"></script><script src="appearance-settings.js"></script><script src="day-planner-ui.js"></script><script src="explore.js"></script><script src="reminders-ui.js"></script><script src="renderer.js"></script><script src="chat.js"></script><script src="knowledge-graph.js"></script><script src="markdown-view.js"></script><script src="knowledge-ui.js"></script><script src="clippings-ui.js"></script></body></html>

@@ -20,9 +20,10 @@ Every guide covers purpose, setup, things to ask, expected results, a walkthroug
 | --- | --- |
 | [Today and Explore](features/today-and-explore.md) | Open a daily overview, refresh linked task times, or choose a starting request. |
 | [Tasks](features/tasks.md) | Read, create, plan, categorize, complete, and reopen task notes. |
+| [Apple Reminders](features/apple-reminders.md) | Sync Life and Business tasks, deadlines and completion with two Reminders lists. |
 | [Goals and weekly reviews](features/goals.md) | Define outcomes, link next actions, review progress, and change status. |
 | [Habits and heatmaps](features/habits.md) | Log repeated actions, inspect annual history, and review weekly totals. |
-| [Focus sessions](features/focus-sessions.md) | Time focused work with a progress ring around the orb, then log progress to the task. |
+| [Focus sessions](features/focus-sessions.md) | Start a timer with just a length; a ring around the orb shows progress. Optionally link a task and log progress to it. |
 | [Task scheduling](features/task-scheduling.md) | Find free time, book linked blocks, move them, and reflect task completion. |
 | [Calendar](features/calendar.md) | Read calendars, include task dates, and create/edit single Google Calendar events. |
 | [Web Clippings](features/web-clippings.md) | Search saved articles, videos and posts; filter, preview and ask questions about captured content. |

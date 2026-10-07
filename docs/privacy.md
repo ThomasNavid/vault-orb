@@ -14,6 +14,7 @@ Vault Orb reads a vault on your Mac and uses your selected providers for convers
 | Habit records | Conversational tools return definition labels/targets, daily boolean completions and paths, versions, and weekly totals for the selected year and recent weeks. Record bodies are not included. Direct Habits controls are local and do not make an assistant request. |
 | Spreadsheet data | Inspected metadata and requested ranges are returned to the assistant; Excel formulas are not recalculated. |
 | Calendar events | Queried event details can be sent to the selected chat/reasoning providers. The calendar reader fetches configured feeds and/or the local plugin API. |
+| Apple Reminders | Optional native EventKit access reads/writes only the two lists selected for sync (list discovery shows writable list/account names). macOS grants full Reminders permission, but the sync service limits operations to those lists. Task titles, deadlines, completion, category and venture are sent to Reminders and may sync through its account, such as iCloud. Sync itself makes no AI request. Imported reminder text becomes ordinary vault content and can later be retrieved by Smith. |
 | Today dashboard | Read directly by the app from configured task, goal, habit, and calendar sources. Merely opening Today does not send the assembled dashboard to an AI provider or write to the vault. Calendar sources are still contacted as described above. |
 | Weather | Forecasts come from Open-Meteo, which needs no account. Orb sends coordinates rounded to about 1 km, or the place name you asked about. Opening the card from Explore or Today makes no AI request. Weather questions send the forecast and advice to the selected AI providers. The home location is stored in local `settings.json`. |
 | Trading 212 account data | Dashboard browsing reads the API directly without an AI request. Investment questions send relevant retrieved financial data to the selected AI providers; typed answers and financial cards may be saved in local chat history. |
@@ -42,11 +43,13 @@ On the first launch after upgrading, Orb moves chats from the former `chats.json
 
 Voice conversation transcripts, including messages typed while voice is connected, remain in memory for that session and are not saved to `chats/`. For a decision you need to keep, explicitly append it to a note or save a goal review.
 
-`focus.json` holds the current [focus session](features/focus-sessions.md): its title, linked task path, length and times. It exists only while a session is running or waiting to be closed. The timer makes no network requests. Logged progress goes into the task note, where Recent changes can undo it.
+`focus.json` holds the current [focus session](features/focus-sessions.md): its length and times, plus a title and linked task path if you gave them. It exists only while a session is running or waiting to be closed. The timer makes no network requests. Logged progress goes into the task note, where Recent changes can undo it.
 
 `shortcut-status.json` contains shortcut status/diagnostics and modifier/gesture counts. The Control shortcut checks public modifier state every 8 milliseconds; it does not record typed text. It does not require Input Monitoring or Accessibility permission.
 
 ## Vault access and edits
+
+Apple Reminders connector settings store the selected list IDs and vault path. Its `reminders/` directory stores per-vault identities, task paths, previous synced titles/dates/completion, and recovery state as unencrypted JSON. Task notes keep `reminders_key`; reminder notes keep a labelled identity/category block. Pause the connector to stop background sync; hiding Orb only stops voice, not Reminders sync. See [Apple Reminders](features/apple-reminders.md) for conflict handling, exclusions and undo limits.
 
 General note/file tools restrict access to visible supported files inside the selected vault and reject symbolic links and traversal paths. Calendar integration separately reads its known Full Calendar Remastered settings file under `.obsidian` to discover sources and server configuration. Hidden plugin files are not exposed through general note search.
 

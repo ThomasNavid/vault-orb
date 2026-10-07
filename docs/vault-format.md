@@ -172,6 +172,10 @@ Library notes can also have `source` (http/https URL), `reason`, and `revisit`. 
 
 Creating a Portfolio note with supporting Library paths writes outgoing citations and appends a `Supports: [[1. Portfolio/Title]]` backlink to each source. These are separate undoable writes. This maintains the template's incoming-link Dataview list. Linking a Library source to an existing Portfolio note can also populate that list.
 
+## Apple Reminders task fields
+
+Apple Reminders sync adds an independent `reminders_key` UUID to linked task notes. Preserve it when renaming the original note; remove it from copies intended to become distinct tasks. The full mapping, previous synced values and recovery state live in the local app's `reminders/` directory. The connector leaves `planned`, body text and unrelated YAML intact when syncing completion/deadline changes. See [Apple Reminders](features/apple-reminders.md).
+
 ## Calendar-linked task fields
 
 [Task scheduling](features/task-scheduling.md) adds optional `task_id` (UUID) and `calendar_block` YAML to a non-recurring task. Unlinked notes need no migration. Preserve these fields when renaming a task; do not duplicate the UUID when copying one.

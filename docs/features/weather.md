@@ -2,7 +2,7 @@
 
 [Documentation](../README.md) · [Privacy](../privacy.md) · [Today and Explore](today-and-explore.md)
 
-Ask Smith about the weather and a forecast card opens beside the orb. It shows the temperature, the feels-like temperature and the next 24 hours, with advice about jackets and umbrellas. The orb reacts briefly too: it turns icy blue when it's cold and amber or red when it's hot, and a fine shimmer of rain runs through it when it's wet. After about five seconds it settles back to your own colour.
+Ask Smith about the weather and a forecast card opens beside the orb. It shows the temperature, the feels-like temperature and the next 12 hours, with advice about jackets and umbrellas. The orb reacts briefly too: it turns icy blue when it's cold and amber or red when it's hot, and a fine shimmer of rain runs through it when it's wet. After about five seconds it settles back to your own colour.
 
 Forecasts come from [Open-Meteo](https://open-meteo.com/), which needs no account or API key. Weather is read-only and never writes to your vault.
 
@@ -33,11 +33,11 @@ You can also open **Explore → Connectors → Weather**, or click the weather c
 
 ## What the card shows
 
-- The place, with its region and country. A place you named, rather than your saved one, is labelled **Not your saved place**.
-- The current temperature and conditions, feels-like, and today's high and low.
-- Advice chips: **Warm coat**, **Light jacket** or **No jacket needed**, **Umbrella** or **No umbrella needed**, and **Sun protection** when UV is high. A line underneath explains why, for example “feels like 6° at 18:00 · 60% chance of rain around 16:00”.
-- A scrollable strip for the next 24 hours: time, icon, temperature and rain chance, with a temperature curve behind it. Click the strip and use the arrow keys to scroll it.
-- Tomorrow's conditions and high/low, the update time, and **Refresh** and **Location** buttons.
+- The place name. Hover it to see its region and country, and whether it's your saved place.
+- The current temperature and conditions, with today's high and low. Feels-like appears only when it differs by 2° or more.
+- One line of advice, for example **Light jacket and umbrella · rain likely around 16:00**, or **No jacket or umbrella needed**. Hover it to see the full reasoning, such as “feels like 6° at 18:00 · 60% chance of rain around 16:00”.
+- The next 12 hours: time, icon and temperature, with the rain chance shown only when it's 20% or higher.
+- Tomorrow's conditions and high/low, the update time, and small **Refresh** and **Location** buttons.
 
 ## How advice is decided
 

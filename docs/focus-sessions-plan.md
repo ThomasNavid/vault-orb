@@ -1,6 +1,6 @@
 # Focus sessions — proposed implementation plan
 
-Status: implemented. See the [user guide](features/focus-sessions.md) for the delivered scope. Decisions taken: progress is logged in the task note, the orb reappears without taking focus and a notification is posted, and there is no `focus_minutes` frontmatter total.
+Status: implemented. See the [user guide](features/focus-sessions.md) for the delivered scope. Decisions taken: a session needs only a length, and a task or title is optional. Progress is logged in the task note, the orb reappears without taking focus and a notification is posted, and there is no `focus_minutes` frontmatter total.
 
 ## Intended experience
 
@@ -11,7 +11,7 @@ When time is up, the orb comes back into view without taking focus, jumps, and t
 ## Version-one scope
 
 - One session at a time, from 1 to 180 minutes. The default is 25 when no length is given.
-- A session is linked to an existing task note, or has a free-text title only (“20 minutes on email”). Only task-linked sessions can log progress. Title-only sessions end with Done or +5 min.
+- A session needs only a length (“give me 25 minutes”). Linking an existing task note or adding a free-text label is optional. Only task-linked sessions can log progress. Other sessions end with Done or +5 min.
 - Start from voice, chat, a **Focus** button on each unfinished task row in task tables, or a **Focus session** entry in the command palette. The palette entry asks for a title and length.
 - Controls: pause, resume, extend, and stop. Available from the status line under the orb and through Smith.
 - No breaks, Pomodoro cycles, statistics dashboards, calendar blocking, sounds, or Do Not Disturb integration in this version.

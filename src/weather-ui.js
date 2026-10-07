@@ -19,65 +19,51 @@
  function hero(v){
   const box=make('section','weather-hero'),place=make('div','weather-place');
   place.append(make('h1',null,v.place?.name||'Weather'));
-  const detail=[v.place?.detail,v.place?.saved?null:'Not your saved place'].filter(Boolean).join(' · ');if(detail)place.append(make('p','weather-place-detail',detail));
-  const now=make('div','weather-now'),temp=make('div','weather-temp');
-  temp.append(icon(v.now.icon,'icon weather-now-icon'),make('strong',null,`${v.now.temp}°`));
-  const facts=make('div','weather-facts');
-  facts.append(make('span','weather-condition',v.now.condition),make('span',null,`Feels like ${v.now.feelsLike}°`),make('span','weather-range',`H ${v.today.high}° · L ${v.today.low}°`));
-  now.append(temp,facts);box.append(place,now);return box;
+  const feels=Math.abs(v.now.feelsLike-v.now.temp)>=2?`Feels ${v.now.feelsLike}°`:null;
+  place.append(make('p','weather-summary',[v.now.condition,feels,`H ${v.today.high}° L ${v.today.low}°`].filter(Boolean).join(' · ')));
+  const detail=[v.place?.detail,v.place?.saved?null:'Not your saved place'].filter(Boolean).join(' · ');if(detail)place.title=detail;
+  const temp=make('div','weather-temp');temp.append(icon(v.now.icon,'icon weather-now-icon'),make('strong',null,`${v.now.temp}°`));
+  box.append(place,temp);return box;
  }
 
+ // One quiet line of advice, e.g. "Light jacket and umbrella · rain likely around 10:00". Full reasons on hover.
  function advice(v){
-  const box=make('section','weather-advice'),chips=make('div','weather-chips');
-  chips.setAttribute('aria-label',`Advice for ${v.window||'the next few hours'}`);
-  const chip=(name,text,on)=>{const c=make('span','weather-chip'+(on?' is-on':''));c.append(icon(name),document.createTextNode(text));chips.append(c);};
-  chip('jacket',jacketText[v.advice.jacket]||jacketText.none,v.advice.jacket!=='none');
-  chip('umbrella',v.advice.umbrella?'Umbrella':'No umbrella needed',v.advice.umbrella);
-  if(v.advice.sun)chip('sun','Sun protection',true);
-  box.append(chips);
-  if(v.advice.reasons?.length)box.append(make('p','weather-reasons',`${v.window?v.window[0].toUpperCase()+v.window.slice(1)+': ':''}${v.advice.reasons.join(' · ')}`));
-  return box;
+  const a=v.advice,items=[];
+  if(a.jacket!=='none')items.push(jacketText[a.jacket]);
+  if(a.umbrella)items.push(items.length?'umbrella':'Umbrella');
+  if(a.sun)items.push(items.length?'sun protection':'Sun protection');
+  const text=items.length?items.length>1?items.slice(0,-1).join(', ')+' and '+items.at(-1):items[0]:'No jacket or umbrella needed';
+  const rain=(a.reasons||[]).find(r=>/rain/.test(r)),rainNote=rain&&rain.match(/around (\d\d:\d\d)/);
+  const line=make('p','weather-advice');line.append(icon(a.umbrella?'umbrella':a.jacket!=='none'?'jacket':a.sun?'sun':'check'),make('span',null,text));
+  if(rainNote)line.append(make('span','weather-advice-note',`rain likely around ${rainNote[1]}`));
+  if(a.reasons?.length)line.title=`${v.window?v.window[0].toUpperCase()+v.window.slice(1)+': ':''}${a.reasons.join(' · ')}`;
+  return line;
  }
 
- // Hourly strip: fixed-width columns with a soft temperature curve drawn behind the row.
+ // Next 12 hours: time, icon, temperature, and rain chance only when it matters.
  function hours(v){
-  const COL=54,BAND=38,section=make('section','weather-hourly'),list=v.hours||[];
-  section.append(make('h2',null,'Next 24 hours'));
-  const scroller=make('div','weather-hours');scroller.tabIndex=0;scroller.setAttribute('role','list');scroller.setAttribute('aria-label','Hourly forecast. Use arrow keys to scroll.');
-  const track=make('div','weather-track');track.style.setProperty('--cols',String(list.length));track.style.setProperty('--col',COL+'px');
-  const temps=list.map(h=>h.temp),min=Math.min(...temps),max=Math.max(...temps),y=t=>6+(1-(t-min)/((max-min)||1))*(BAND-12);
-  const curve=svg('svg',{class:'weather-curve',width:list.length*COL,height:BAND,viewBox:`0 0 ${list.length*COL} ${BAND}`,'aria-hidden':'true'});
-  const points=list.map((h,i)=>[i*COL+COL/2,y(h.temp)]);
-  if(points.length>1){
-   let d=`M${points[0][0]},${points[0][1]}`;
-   for(let i=1;i<points.length;i++){const [x0,y0]=points[i-1],[x1,y1]=points[i],mx=(x0+x1)/2;d+=` C${mx},${y0} ${mx},${y1} ${x1},${y1}`;}
-   curve.append(svg('path',{d:d+` L${points.at(-1)[0]},${BAND} L${points[0][0]},${BAND} Z`,class:'weather-curve-fill'}),svg('path',{d,class:'weather-curve-line'}));
-  }
-  for(const [x,cy] of points)curve.append(svg('circle',{cx:x,cy,r:2.4,class:'weather-curve-dot'}));
-  track.append(curve);
+  const list=(v.hours||[]).slice(0,12),row=make('div','weather-hours');
+  row.setAttribute('role','list');row.setAttribute('aria-label','Hourly forecast');
   list.forEach((h,i)=>{
-   const col=make('div','weather-hour');col.setAttribute('role','listitem');
-   const time=i===0?'Now':clock(h.time);
-   col.setAttribute('aria-label',`${time}, ${h.condition}, ${h.temp} degrees, feels like ${h.feelsLike}, ${h.precipChance}% chance of rain`);
-   const rain=make('div','weather-rain'),bar=make('i');bar.style.setProperty('--p',String(h.precipChance/100));rain.append(bar,make('span',null,h.precipChance?`${h.precipChance}%`:''));
-   col.append(make('span','weather-hour-time',time),icon(h.icon),make('span','weather-band'),make('strong',null,`${h.temp}°`),rain);
-   if(clock(h.time)==='00:00'&&i)col.classList.add('is-midnight');
-   track.append(col);
+   const col=make('div','weather-hour'),time=i===0?'Now':clock(h.time);col.setAttribute('role','listitem');
+   col.setAttribute('aria-label',`${time}, ${h.condition}, ${h.temp} degrees, ${h.precipChance}% chance of rain`);
+   col.append(make('span','weather-hour-time',time),icon(h.icon),make('strong',null,`${h.temp}°`),make('span','weather-hour-rain',h.precipChance>=20?`${h.precipChance}%`:''));
+   row.append(col);
   });
-  scroller.append(track);section.append(scroller);return section;
+  return row;
  }
 
  function render(host,v,actions={}){
   host.replaceChildren();
   const card=make('article','weather-card');card.dataset.mood=moodOf(v);
   card.append(hero(v),advice(v),hours(v));
-  const tomorrow=make('p','weather-tomorrow');tomorrow.append(icon(v.tomorrow.icon),document.createTextNode(`Tomorrow · ${v.tomorrow.condition} · ${v.tomorrow.high}° / ${v.tomorrow.low}°`));card.append(tomorrow);
-  const foot=make('footer','weather-footer');
-  foot.append(make('span',null,`${v.source||'Open-Meteo'} · Updated ${updated(v.updatedAt)}${v.stale?' · offline, showing the last forecast':''}${v.units==='imperial'?' · °F':' · °C'}`));
-  const buttons=make('div','weather-footer-actions');
-  if(actions.weather&&!actions.saved){const refresh=make('button','secondary','Refresh');refresh.type='button';refresh.onclick=async()=>{refresh.disabled=true;try{render(host,await actions.weather({place:v.place?.saved?null:v.place?.name||null,when:v.when||'now'}),actions);}catch(e){refresh.disabled=false;foot.querySelector('span').textContent=clean(e);}};buttons.append(refresh);}
-  if(actions.weatherSettings){const settings=make('button','secondary','Location');settings.type='button';settings.onclick=()=>actions.weatherSettings();buttons.append(settings);}
-  foot.append(buttons);card.append(foot);host.append(card);
+  const foot=make('footer','weather-footer'),tomorrow=make('span','weather-tomorrow');
+  tomorrow.append(icon(v.tomorrow.icon),document.createTextNode(`Tomorrow · ${v.tomorrow.condition} · ${v.tomorrow.high}° / ${v.tomorrow.low}°`));
+  const meta=make('span','weather-meta',v.stale?'Offline · last forecast':`Updated ${updated(v.updatedAt)}`);meta.title=`${v.source||'Open-Meteo'} · ${v.units==='imperial'?'°F':'°C'}`;
+  const buttons=make('div','weather-footer-actions');buttons.append(meta);
+  if(actions.weather&&!actions.saved){const refresh=make('button','weather-icon-button');refresh.type='button';refresh.title='Refresh';refresh.setAttribute('aria-label','Refresh weather');refresh.append(icon('refresh'));refresh.onclick=async()=>{refresh.disabled=true;try{render(host,await actions.weather({place:v.place?.saved?null:v.place?.name||null,when:v.when||'now'}),actions);}catch(e){refresh.disabled=false;meta.textContent=clean(e);}};buttons.append(refresh);}
+  if(actions.weatherSettings){const settings=make('button','weather-icon-button');settings.type='button';settings.title='Location';settings.setAttribute('aria-label','Weather location');settings.append(icon('map'));settings.onclick=()=>actions.weatherSettings();buttons.append(settings);}
+  foot.append(tomorrow,buttons);card.append(foot);host.append(card);
  }
 
  function unavailable(host,message,{retry,settings}={}){

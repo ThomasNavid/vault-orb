@@ -16,6 +16,7 @@ const {createTradingService}=require('./trading212-service.cjs');
 const {createWeatherService,readWeather,withWeather}=require('./weather.cjs');
 const {createPlacesProvider,tileURL}=require('./places-provider.cjs');
 const {createPlacesService,readPlacesSettings,withPlacesSettings,placesKey}=require('./places-service.cjs');
+const {RemindersSync,nativeAdapter}=require('./reminders.cjs');
 protocol.registerSchemesAsPrivileged([{scheme:'orbplaces',privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:true}}]);
 const placesRequests=new Map();
 const tradingClients=new Map();
@@ -36,6 +37,10 @@ const {createWorkspace,validateWorkspace,DEFAULTS}=require('./workspace.cjs');
 let speechSession,win,tray,shortcut,shortcutActive=false,rendererReady=false,pendingActivation=false,config={},vault,agent,planner,controller=new AbortController(),chats,activeChat=null,layout='compact',chatSize={width:920,height:620},calls=new Map(),generation=0,chatBusy=false,quitting=false,focusTimer,focusNotice;
 const userData=app.getPath('userData');
 const configFile=path.join(userData,'settings.json');
+const remindersSync=new RemindersSync({directory:path.join(userData,'reminders'),getVault:()=>vault,getConfig:()=>config,
+  saveConfig:next=>{atomicWrite(configFile,JSON.stringify(next,null,2));config=next;},adapter:nativeAdapter({packaged:app.isPackaged}),
+  isBusy:()=>chatBusy||calls.size>0||!!speechSession?.turn||!!planner?.busy,
+  onChange:change=>recordActivity({kind:'change',...change})});
 const tradingService=createTradingService({directory:path.join(userData,'trading212'),safeStorage,getConfig:()=>config,saveConfig:next=>{atomicWrite(configFile,JSON.stringify(next,null,2));config=next;},getClient:tradingClient,clearClients:clearTradingClients,exportFile:async data=>{
   const result=await dialog.showSaveDialog(win,{title:'Export unencrypted investment history',defaultPath:'trading212-history.json',filters:[{name:'JSON',extensions:['json']}]});if(result.canceled)return false;
   atomicWrite(result.filePath,JSON.stringify(data,null,2));return true;
@@ -49,7 +54,7 @@ const trusted=event=>event.sender===win?.webContents && event.senderFrame?.url==
 function handle(name,fn) {ipcMain.handle(name,async(event,...args)=>{if(!trusted(event))throw new Error('Untrusted window.');return fn(...args);});}
 function getKey(provider='openai') {return keyFor(config,provider,safeStorage);}
 function getCalendarToken() {if(!config.encryptedCalendarToken)return '';if(!safeStorage.isEncryptionAvailable())throw new Error('macOS key encryption is unavailable.');return safeStorage.decryptString(Buffer.from(config.encryptedCalendarToken,'base64'));}
-function publicSettings() {let calendar={calendars:[],enabled:false};try {if(vault)calendar=pluginSettings(vault);}catch{}return {appearance:readAppearance(config),vaultPath:config.vaultPath||'',taskFolders:{...FOLDERS,...config.taskFolders},rulesPath:config.rulesPath??RULES_PATH,goalsFolder:vault?.goalsFolder??config.goalsFolder??GOALS_FOLDER,habitFolder:vault?.habitFolder??config.habitFolder??HABIT_FOLDER,habitScript:config.habitScript??HABIT_SCRIPT,...publicAI(config),trading212:publicTrading(config),weather:readWeather(config,locale()),places:readPlacesSettings(config),hasCalendarToken:!!config.encryptedCalendarToken,googleCalendars:calendar.calendars.map(({id,name})=>({id,name})),fullCalendarServer:calendar.enabled,calendarId:config.calendarId||'',workingHours:workingHours(config.workingHours),autoStart:config.autoStart!==false,shortcutActive};}
+function publicSettings() {let calendar={calendars:[],enabled:false};try {if(vault)calendar=pluginSettings(vault);}catch{}return {reminders:remindersSync.settings(),appearance:readAppearance(config),vaultPath:config.vaultPath||'',taskFolders:{...FOLDERS,...config.taskFolders},rulesPath:config.rulesPath??RULES_PATH,goalsFolder:vault?.goalsFolder??config.goalsFolder??GOALS_FOLDER,habitFolder:vault?.habitFolder??config.habitFolder??HABIT_FOLDER,habitScript:config.habitScript??HABIT_SCRIPT,...publicAI(config),trading212:publicTrading(config),weather:readWeather(config,locale()),places:readPlacesSettings(config),hasCalendarToken:!!config.encryptedCalendarToken,googleCalendars:calendar.calendars.map(({id,name})=>({id,name})),fullCalendarServer:calendar.enabled,calendarId:config.calendarId||'',workingHours:workingHours(config.workingHours),autoStart:config.autoStart!==false,shortcutActive};}
 function dayPlanner(){if(!vault)throw new Error('Choose a valid vault in Settings.');if(!planner)planner=new DayPlans(vault,{getKey,getAI:()=>normalizeAI(config.ai),aiReady:()=>publicAI(config).chatReady,getCalendarAccess:()=>({token:getCalendarToken(),calendarId:config.calendarId||'',workingHours:workingHours(config.workingHours)}),onChange:change=>recordActivity({kind:'change',...change})});return planner;}
 function setupVault() {placesService.clear();invalidateClippings(vault);if(!config.vaultPath) return;vault=new Vault(config.vaultPath,path.join(userData,'changes'),{folders:config.taskFolders||FOLDERS,rulesPath:config.rulesPath??RULES_PATH,goalsFolder:config.goalsFolder,habitFolder:config.habitFolder,habitScript:config.habitScript});planner=null;agent=new Agent({vault,getKey,getDayPlan:(args,options)=>dayPlanner().command(args,options?.signal),getTrading212:(args,options)=>tradingService.view(args,options),getWeather:(args,options)=>weatherService.forecast(args,options),getPlaces:(args,options)=>placesService.command(args,{...options,notify:false}),getAI:()=>normalizeAI(config.ai),getCalendarAccess:()=>({token:getCalendarToken(),calendarId:config.calendarId||'',workingHours:workingHours(config.workingHours)}),getFocus:()=>focusTimer,onActivity:recordActivity});}
 // While a typed chat is answering, its tool steps and visuals are kept with the reply so the chat can be reopened later.
@@ -99,7 +104,7 @@ function focusChanged(session,event){
   win?.webContents.send('focus',{session,event});
   if(event!=='complete'||!win)return;
   if(!win.isVisible())show({voice:false,activate:false});
-  if(!win.isFocused()&&Notification.isSupported()){focusNotice=new Notification({title:'Focus session complete',body:`${session.minutes} min on ${session.title}`});focusNotice.on('click',()=>show({voice:false}));focusNotice.show();}
+  if(!win.isFocused()&&Notification.isSupported()){focusNotice=new Notification({title:'Focus session complete',body:`${session.minutes} min${session.title?' on '+session.title:' of focus'}`});focusNotice.on('click',()=>show({voice:false}));focusNotice.show();}
 }
 function hide(){stop();win.webContents.send('hide-voice');win.hide();}
 function toggle(){win.isVisible()&&win.isFocused()?hide():show();}
@@ -122,7 +127,9 @@ else {
     focusTimer=new FocusTimer({file:path.join(userData,'focus.json'),onChange:focusChanged});focusTimer.restore();
     try {setupVault();}catch{}
     tradingService.start();
-    powerMonitor.on('resume',()=>{tradingService.resume();focusTimer.rearm();updateFocusTray();});
+    remindersSync.sync();
+    const remindersTimer=setInterval(()=>{if(!quitting)remindersSync.sync();},30000);remindersTimer.unref();
+    powerMonitor.on('resume',()=>{remindersSync.sync();tradingService.resume();focusTimer.rearm();updateFocusTray();});
     try {chats=new ChatStore(path.join(userData,'chats.json'));}catch(e){dialog.showErrorBox('Chats could not be read',e.message);chats=new ChatStore(path.join(userData,'chats-recovered.json'));}
     win=new BrowserWindow({width:312,height:350,title:'Vault Orb',frame:false,transparent:true,backgroundColor:'#00000000',hasShadow:false,type:'panel',alwaysOnTop:true,resizable:false,fullscreenable:false,show:false,webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true}});
     win.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});
@@ -153,6 +160,15 @@ else {
     handle('hide',()=>{hide();return true;});
     handle('enable-shortcut',async()=>{if(!shortcut)throw new Error('The native shortcut module is unavailable.');return startShortcut();});
     handle('settings',()=>publicSettings());
+    handle('reminders',async input=>{
+      switch(input?.action){
+        case 'status':return remindersSync.settings();
+        case 'connect':return {lists:await remindersSync.connect(),settings:remindersSync.settings()};
+        case 'configure':return remindersSync.configure(input);
+        case 'sync':return remindersSync.sync();
+        default:throw new Error('Unknown Reminders action.');
+      }
+    });
     handle('save-appearance',input=>{
       if(!input)throw new Error('Choose an orb colour.');
       const next=withAppearance(config,input);
@@ -173,6 +189,7 @@ else {
       return result.canceled?null:createWorkspace(result.filePath);
     });
     handle('save-settings',({vaultPath,taskFolders,rulesPath,goalsFolder,habitFolder,habitScript,key,ai,providerKeys,calendarToken,calendarId,workingHours:hours,autoStart,appearance})=>{
+      if(remindersSync.running)throw new Error('Wait for Reminders sync to finish before changing vault settings.');
       if(planner?.busy)throw new Error('Wait for the planner to finish before changing vault settings.');
       const sameVault=!!config.vaultPath&&fs.realpathSync(vaultPath)===config.vaultPath;
       // Preserve existing installations; all newly connected vaults use the standard system.
@@ -232,6 +249,12 @@ else {
     handle('knowledge-dismiss',args=>{if(!vault)throw new Error('Choose a valid vault in Settings.');return dismissSuggestion(vault,args);});
     handle('recurring-install',()=>{if(!vault)throw new Error('Choose a valid vault in Settings.');return require('./recurring-install.cjs').installRecurring(vault);});
     handle('recurring',()=>{if(!vault)throw new Error('Choose a valid vault in Settings.');return vault.tasks({include_completed:true});});
+    handle('complete-task',({path,version})=>{
+      if(!vault)throw new Error('Choose a valid vault in Settings.');
+      if(chatBusy||calls.size||speechSession?.turn||planner?.busy)throw new Error('Wait for Smith to finish before completing a task.');
+      const result=vault.updateTask({path,version,completed:true});
+      recordActivity({kind:'change',...result});return result;
+    });
     handle('recurring-write',async args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Smith to finish before editing a task.');const result=vault.recurringTask(args);if(result.change_id)recordActivity({kind:'change',...result});return result;});
     handle('recurring-create',async args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Smith to finish before editing a task.');const result=vault.createTask(args);recordActivity({kind:'change',...result});return result;});
     handle('habits',args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');return agent.showHabits(args);});

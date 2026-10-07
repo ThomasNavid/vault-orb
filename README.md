@@ -42,7 +42,7 @@ These are natural-language examples, not fixed commands. Smith uses current vaul
 | Tasks | “Show today's tasks.” | [Tasks](docs/features/tasks.md) |
 | Goals | “Let's review my goals.” | [Goals and weekly reviews](docs/features/goals.md) |
 | Habits | “Show my habits.” | [Habits and heatmaps](docs/features/habits.md) |
-| Focus sessions | “Give me 25 minutes on Draft proposal.” | [Focus sessions](docs/features/focus-sessions.md) |
+| Focus sessions | “Give me 25 minutes.” | [Focus sessions](docs/features/focus-sessions.md) |
 | Task scheduling | “Find me 45 minutes this week for Draft proposal.” | [Linked task blocks](docs/features/task-scheduling.md) |
 | Calendar | “What's on my calendar next week?” | [Calendar](docs/features/calendar.md) |
 | Knowledge and graph | Open **Explore → Knowledge**, or “Show my knowledge graph.” | [Knowledge system](docs/features/knowledge.md) |

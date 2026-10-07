@@ -50,12 +50,14 @@ test('focus sessions survive restarts and finish while the app is closed',t=>{
   fs.writeFileSync(file,'{broken');assert.equal(timer(c,file).restore(),null);
 });
 
-test('focus targets must be unfinished tasks or a short title',t=>{
+test('a plain timer needs only a length; a task or title is optional',t=>{
   const {vault}=fixture(t);
   const task=vault.createTask({title:'Draft proposal',list:'business'});
   assert.deepEqual(focusTarget(vault,{path:task.path}),{path:task.path,title:'Draft proposal'});
   assert.deepEqual(focusTarget(vault,{title:'  Email  '}),{path:null,title:'Email'});
-  assert.throws(()=>focusTarget(vault,{title:''}),/Name the task/);
+  assert.deepEqual(focusTarget(vault,{}),{path:null,title:null});
+  assert.deepEqual(focusTarget(vault,{path:null,title:'  '}),{path:null,title:null});
+  assert.throws(()=>focusTarget(vault,{title:'two\nlines'}),/single-line/);
   assert.throws(()=>focusTarget(vault,{path:'Notes/Other.md'}),/task folder/);
   assert.throws(()=>focusTarget(vault,{path:'0. Home/Life Tasks/Missing.md'}),/not found/);
   vault.updateTask({path:task.path,version:task.version,completed:true});
@@ -103,5 +105,13 @@ test('agent focus tools start, control and log sessions',async t=>{
   focus.dismiss();
   await assert.rejects(agent.execute('log_focus',{path:task.path,version:logged.version,minutes:null,note:null}),/how many minutes/);
   assert.deepEqual(await agent.execute('focus',{action:'status',minutes:null}),{running:false});
+  // "Give me 25 minutes" on its own: no task, no title.
+  const plain=await agent.execute('start_focus',{path:null,title:null,minutes:25,replace:false});
+  assert.equal(plain.title,null);assert.equal(plain.path,null);
+  await assert.rejects(agent.execute('start_focus',{path:null,title:null,minutes:10,replace:false}),/already running, 25 min left/);
+  c.advance(25*60000);assert.equal(focus.status().status,'completed');
+  await assert.rejects(agent.execute('log_focus',{path:task.path,version:vault.read(task.path).version,minutes:null,note:null}),/how many minutes/);
+  const restored=timer(c,path.join(root,'focus.json'));assert.equal(restored.restore().title,null);
+  focus.dismiss();
   await assert.rejects(new Agent({vault,getKey:()=>''}).execute('start_focus',{path:null,title:'Email',minutes:5,replace:false}),/Mac app/);
 });

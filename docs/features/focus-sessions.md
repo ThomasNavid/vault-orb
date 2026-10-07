@@ -2,7 +2,7 @@
 
 [Documentation](../README.md) · [Things to ask Smith](../things-to-ask.md) · [Vault format](../vault-format.md#focus-log)
 
-A focus session times a stretch of work. Say **“Give me 25 minutes on Draft proposal.”** A thin progress ring appears around the orb and fills clockwise from 12 o'clock. When the time is up, the orb jumps, the ring bursts into a few sparks, and a small card offers to log what you got done.
+A focus session is a timer. Say **“Give me 25 minutes”** and it starts: there's no task or title to choose. A thin progress ring appears around the orb and fills clockwise from 12 o'clock. When the time is up, the orb jumps and the ring bursts into a few sparks. If you linked the session to a task, a small card also offers to log what you got done.
 
 ## Setup
 
@@ -10,9 +10,10 @@ No setup is needed. The timer runs in the Mac app itself, so it keeps going whil
 
 ## Start a session
 
-- **Ask Smith:** “Give me 25 minutes on this task.” “This task” means the task in view or the one you just discussed. If more than one task could be meant, Smith asks which one.
-- **From a task list:** hover over an unfinished task and press the clock beside its title. This starts 25 minutes on that task.
-- **From Explore:** choose **Focus session**, type what you're working on, pick 15, 25, 45 or 60 minutes, and press **Start focus**. These sessions have a title only and are not linked to a task.
+- **Ask Smith for a length:** “Give me 25 minutes.” The timer starts straight away, and Smith doesn't ask what it's for.
+- **Link a task (optional):** “25 minutes on Draft proposal”, or “on this task” while a task is in view. The session is linked to that task, so you can log progress when it ends. If Smith can't tell which task you mean, it starts a plain timer instead of asking.
+- **From a task list:** hover over an unfinished task and press the clock beside its title. This starts 25 minutes linked to that task.
+- **From Explore:** choose **Focus session**, pick 15, 25, 45 or 60 minutes, and press **Start focus**. The “What are you working on?” label is optional.
 
 Sessions can run from 1 to 180 minutes, and 25 is the default. Only one session runs at a time. Smith refuses to start another unless you ask to replace the current one.
 
@@ -32,7 +33,7 @@ Sessions can run from 1 to 180 minutes, and 25 is the default. Only one session 
   - **Mark done** completes the task, the same way as completing it anywhere else. A recurring task moves on to its next occurrence.
   - **+5 min** starts the session again for five more minutes.
   - **Done** closes the card.
-- Title-only sessions offer only **+5 min** and **Done**.
+- Sessions not linked to a task offer only **+5 min** and **Done**.
 - If a session ends while the chat window is open, a short notice appears there. The card opens when you close chat.
 - If a session ends while Vault Orb is quit, the card appears the next time the app starts.
 
@@ -42,9 +43,10 @@ Finishing a session never marks the task done by itself.
 
 | Request | Result |
 | --- | --- |
-| “Give me 25 minutes on Draft proposal.” | Finds the exact task and starts a 25-minute session linked to it. |
-| “Focus on this for 45 minutes.” | Uses the task in view or just discussed, and asks if that is unclear. |
-| “20 minutes on email.” | Starts a title-only session. |
+| “Give me 25 minutes.” | Starts a plain 25-minute timer. |
+| “Focus for 45 minutes.” | Starts a plain 45-minute timer. |
+| “20 minutes on email.” | Starts a timer labelled “email”, not linked to a task. |
+| “Give me 25 minutes on Draft proposal.” | Finds the exact task and links the session to it, so you can log progress afterwards. |
 | “How long is left?” | Reports the remaining time. |
 | “Pause my focus session.” / “Resume.” | Pauses or resumes the session. |
 | “Add 10 minutes.” | Extends the running session. |
@@ -73,12 +75,12 @@ Voice requests reach these tools through Smith's usual `run_task` delegation.
 - Only one session at a time. There are no breaks, Pomodoro cycles, statistics, sounds or Do Not Disturb integration.
 - Focus sessions do not add calendar events. Use [task scheduling](task-scheduling.md) to book time.
 - Ending a session early with the stop button does not log anything. You can still ask Smith to log minutes for a task.
-- Logging needs a task note in one of the task folders. Title-only sessions are not recorded in the vault.
+- Logging needs a task note in one of the task folders. Plain timers and labelled sessions are not recorded in the vault.
 - Session state is stored only on this Mac, in `focus.json` in the app's data folder.
 
 ## Troubleshooting
 
-- **The ring did not appear.** Check the status line for an error. The task may already be completed, or it may not be in a task folder.
+- **The ring did not appear.** Check the status line for an error. If you linked a task, it may already be completed, or it may not be in a task folder.
 - **“A focus session is already running.”** End the current session with the stop button or ask Smith to replace it.
 - **Log progress failed.** The task note may have been moved or deleted. Its name and location are read again when you log.
 - **No notification appeared.** Allow notifications for Vault Orb in macOS System Settings → Notifications.

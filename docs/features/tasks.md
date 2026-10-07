@@ -54,20 +54,24 @@ After creating the two practice tasks above:
 
 An edit is authorized by your request; you do not need to confirm the same unambiguous edit again. If Smith asks which note you mean, give its path.
 
+## Apple Reminders
+
+For non-recurring tasks, [Apple Reminders](apple-reminders.md) can sync new tasks, deadlines and completion with two chosen lists. Categories appear in reminder notes; section dividers are managed manually in Reminders.
+
 ## Recurring tasks
 
 Use **Today → Manage recurring tasks**, or the vault’s **Recurring Tasks** dashboard in desktop Obsidian. Both interfaces support fixed schedules, intervals after completion, skip, history and portable undo. Completing a recurring task logs its occurrence and advances the same note; the next occurrence stays open. See [Recurring tasks](recurring-tasks.md) for setup, examples and date rules.
 
 ## Focus on a task
 
-Hover over an unfinished task in any task list and press the clock beside its title to start a 25-minute focus session, or ask Smith for time on it. When the session ends you can log progress under the task's `## Focus log` heading or mark it done. See [Focus sessions](focus-sessions.md).
+Focus timers don't need a task, but you can link one: hover over an unfinished task in any task list and press the clock beside its title to start 25 minutes on it, or ask Smith for time on it. When the session ends you can log progress under the task's `## Focus log` heading or mark it done. See [Focus sessions](focus-sessions.md).
 
 ## Limits
 
 - Exactly two task lists and the documented field names are supported. Checkbox tasks and arbitrary Bases definitions are not imported.
 - Existing tasks can change dates, completion, category, and venture. There is no dedicated task rename, move-between-lists, or delete tool. Do those in Obsidian.
 - Creation can include body details; subsequent free text can be appended using the note tool. There is no arbitrary task-body rewrite tool.
-- Setting Planned/Deadline alone does not create an event. [Linked scheduling](task-scheduling.md) explicitly books task work, keeps Planned aligned, and shows completion beside the block. Background reminders are not provided.
+- Setting Planned/Deadline alone does not create an event. [Linked scheduling](task-scheduling.md) explicitly books task work, keeps Planned aligned, and shows completion beside the block. [Apple Reminders](apple-reminders.md) can supply phone reminders when connected.
 - Orb can reopen a task, but it must not infer completion just because you discussed or worked on it.
 - Creating the same title twice creates separate filenames with a numeric suffix; be explicit when referring to a previous task.
 

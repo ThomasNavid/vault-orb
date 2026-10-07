@@ -30,7 +30,7 @@ The native build script resolves Node headers beside the installed Node binary a
 | [vault.cjs](../src/vault.cjs) | File boundary checks, note search/reads, task records, versioned writes, journal, and undo. |
 | [goals.cjs](../src/goals.cjs) | Goal records, link resolution, managed narrative sections, and review writes. |
 | [habits.cjs](../src/habits.cjs) | Validated Dataview habit definitions, date-based activity, weekly totals, and versioned logging. |
-| [focus.cjs](../src/focus.cjs) | Focus session timer: one session with absolute start and end times, pause/extend, and `focus.json` persistence and restore. Also validates what a session is linked to. |
+| [focus.cjs](../src/focus.cjs) | Focus session timer: one session with absolute start and end times, pause/extend, and `focus.json` persistence and restore. Also validates the optional task link or title. |
 | [today.cjs](../src/today.cjs) | Daily aggregation with linked-block reconciliation before task reads with isolated section failures. |
 | [calendar.cjs](../src/calendar.cjs) | iCal sources/cache/recurrence, task dates, source warnings, and calendar query results. |
 | [google-calendar.cjs](../src/google-calendar.cjs) | Full Calendar local API, connected Google calendars, event lookup, validation, creation, editing, and linked-block removal. |
@@ -45,6 +45,7 @@ The native build script resolves Node headers beside the installed Node binary a
 | [orb.js](../src/orb.js) | Jelly Orb: layered SVG, spring motion, pointer attraction, and per-state looks behind `window.orbVisual.setState/setLevel`. `react({colour,wet,snow})` plays the roughly five-second weather tint and rain or snow shimmer without changing the saved colour. |
 | [index.html](../src/index.html), [style.css](../src/style.css) | Interface structure and styling. |
 | [native/shortcut.cc](../native/shortcut.cc) | Native Control gesture listener. |
+| [reminders.cjs](../src/reminders.cjs), [reminders-ui.js](../src/reminders-ui.js), [native/reminders.mm](../native/reminders.mm) | Per-vault three-way Reminders sync, connector setup and native EventKit bridge. Sections are not exposed by Apple's API. |
 
 Main/renderer isolation, restricted navigation, and the local preload bridge keep filesystem and permanent credential access in the main process. Native goal/task/calendar panels are created directly from tool results. General visuals accept validated data, not executable HTML or scripts.
 
@@ -66,7 +67,7 @@ The assistant is **Smith (Agent Smith)**, a playful nod to *The Matrix*. The sha
 | `query_calendar`, `create_calendar_event` | [Calendar](features/calendar.md): reads, single-event edits, and [linked scheduling](features/task-scheduling.md). |
 | `search_notes`, `find_files`, `read_note`, `append_note` | [Notes](features/notes.md): keyword retrieval and append-only general note writes. |
 | `read_spreadsheet`, `show_visual`, `dismiss_visual` | [Spreadsheets and visuals](features/spreadsheets-and-visuals.md): bounded data and source-backed presentation. |
-| `start_focus`, `focus`, `log_focus` | [Focus sessions](features/focus-sessions.md): one timer in the main process. Logging only happens on request, and a finished session never completes the task. |
+| `start_focus`, `focus`, `log_focus` | [Focus sessions](features/focus-sessions.md): one timer in the main process. A length alone starts a plain timer. A task link is optional and needed only for logging. Logging only happens on request, and a finished session never completes the task. |
 | `undo_change` | [Changes and undo](features/changes-and-undo.md): version-checked note restoration. |
 | `run_task`, `think_deeply` | [Planning](features/planning.md): Realtime delegates to chat/tools; chat can delegate to an optional reasoning model. |
 
@@ -111,6 +112,8 @@ The expanded app is normally 870 × 560, reduced to fit smaller screens. Check o
 For live validation, use Electron and a disposable copy of the sample vault. Test reading, one task change, goal creation/review, and undo. Only test a real calendar write against a calendar you intend to change; remove the event through its calendar app. Record which steps were live and which were mocked.
 
 ## Build and install
+
+The native build also compiles `orb-reminders.node` against EventKit and Foundation. The packaged app includes `NSRemindersFullAccessUsageDescription`; connection requires macOS 14+. Running in an Electron development host without that usage description reports an error instead of invoking the permission API. Native store calls run on the main queue and check reminder versions before writes. Offline tests inject a mock adapter; native compilation and packaging do not validate live iCloud propagation. See the [Reminders guide](features/apple-reminders.md) for a disposable-list check.
 
 Build a local app:
 

@@ -5,7 +5,7 @@ function wholeMinutes(value,name='Minutes',max=MAX_MINUTES){
   if(!Number.isSafeInteger(value)||value<1||value>max)throw new Error(`${name} must be a whole number from 1 to ${max}.`);
   return value;
 }
-// A session names an exact unfinished task note, or has a free-text title only.
+// A plain timer needs nothing but a length. A title or an exact unfinished task note is optional.
 function focusTarget(vault,{path:relative=null,title=null}={}){
   if(relative){
     if(!vault)throw new Error('Choose a valid vault in Settings.');
@@ -15,7 +15,8 @@ function focusTarget(vault,{path:relative=null,title=null}={}){
     if(task.completed)throw new Error('That task is already completed.');
     return {path:relative,title:task.title};
   }
-  if(typeof title!=='string'||!title.trim()||title.length>180||/[\r\n]/.test(title))throw new Error('Name the task or give the session a short single-line title.');
+  if(title===null||title===undefined||(typeof title==='string'&&!title.trim()))return {path:null,title:null};
+  if(typeof title!=='string'||title.length>180||/[\r\n]/.test(title))throw new Error('Give the session a short single-line title, or leave it blank.');
   return {path:null,title:title.trim()};
 }
 // One focus session at a time. Times are absolute, so sleep and restarts do not drift.
@@ -26,7 +27,7 @@ class FocusTimer {
   restore(){
     let saved=null;
     try {saved=JSON.parse(fs.readFileSync(this.file,'utf8'));}catch(e){if(e.code!=='ENOENT')saved=null;}
-    const valid=saved&&typeof saved.id==='string'&&typeof saved.title==='string'&&['running','paused','completed'].includes(saved.status)&&Number.isSafeInteger(saved.minutes)&&Number.isFinite(saved.endsAt);
+    const valid=saved&&typeof saved.id==='string'&&(saved.title===null||typeof saved.title==='string')&&['running','paused','completed'].includes(saved.status)&&Number.isSafeInteger(saved.minutes)&&Number.isFinite(saved.endsAt);
     this.session=valid?saved:null;
     // A session that ran out while the app was closed completes quietly; the card shows on launch.
     if(this.session?.status==='running'&&this.session.endsAt<=this.now())Object.assign(this.session,{status:'completed',completedAt:this.session.endsAt});
@@ -39,10 +40,10 @@ class FocusTimer {
     return {...s,durationMs:s.minutes*60000,remainingMs:remaining};
   }
   active(){return this.session&&this.session.status!=='completed'?this.session:null;}
-  start({path:relative=null,title,minutes=DEFAULT_MINUTES,replace=false}){
+  start({path:relative=null,title=null,minutes=DEFAULT_MINUTES,replace=false}){
     wholeMinutes(minutes);
     const current=this.active();
-    if(current&&!replace)throw new Error(`A focus session is already running: ${current.title}, ${Math.ceil(this.status().remainingMs/60000)} min left. Stop it first or replace it.`);
+    if(current&&!replace)throw new Error(`A focus session is already running${current.title?`: ${current.title}`:''}, ${Math.ceil(this.status().remainingMs/60000)} min left. Stop it first or replace it.`);
     const now=this.now();
     this.session={id:crypto.randomUUID(),title,path:relative,minutes,startedAt:now,endsAt:now+minutes*60000,pausedAt:null,status:'running',completedAt:null};
     return this.changed('start');
