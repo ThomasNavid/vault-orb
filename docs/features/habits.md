@@ -15,7 +15,7 @@ Habits are actions you repeat and record. Orb shares daily Markdown records with
 
 ## Setup
 
-New vaults include the tracker but start with **no habit definitions or recorded completions**. Follow `99. System/Habit Setup.md` in your vault to add your chosen definitions. Existing installations keep their current habits.
+New vaults include the tracker but start with **no habit definitions or recorded completions**. Use **Add habit** in the habits panel, or ask Smith to add a habit with a weekly target. `99. System/Habit Setup.md` also explains manual setup. Existing installations keep their current habits.
 
 The standard paths, shown in Settings, are:
 
@@ -28,6 +28,7 @@ Missing files show setup guidance without affecting other features. Orb does not
 
 Open **Today** beneath the orb and click **Open habits**, or say **“Show my habits.”** The Today route and logging controls work locally without an assistant request. Conversations need the usual API setup.
 
+- **Add habit** asks for a name and days per week (1–7). Creation adds a definition, refreshes the panel, and records no completions. It works without an API key, including when the tracker is empty. Duplicate names are rejected.
 - Pick today or a past date. Check a habit to record completion; uncheck to remove it.
 - Select a heatmap square to view that day's checkboxes. Selecting alone never logs activity.
 - Use **Today** to return to today and **Refresh** to reread external changes.
@@ -43,6 +44,8 @@ Each habit uses its configured color. A colored square means recorded, an empty 
 
 | Request | Result |
 | --- | --- |
+| “Add running three days a week.” | Creates Running and refreshes the panel, without recording activity. |
+| “Add a habit for reading.” | Asks how many days per week before creating it. |
 | “Show my habits.” | Reads records and opens the native heatmaps and progress cards. |
 | “Record pull-ups for today.” | Writes today's completion, then refreshes the panel. |
 | “I studied Mandarin yesterday. Log it.” | Writes one completion for yesterday. |
@@ -75,9 +78,9 @@ Habit history supplies evidence for goal reviews. You still decide what progress
 
 Records use `YYYY-MM-DD.md` filenames in the configured log folder. Only the YAML boolean `true` counts. False or a missing property means **not recorded**, without distinguishing an explicit skip. Each habit counts once per date. Today's local calendar date is refreshed on every read; click Refresh after leaving the panel open overnight.
 
-Viewing, date selection, and year navigation write nothing. Checkbox edits preserve other properties, comments, and body text. Orb journals edits and checks both record and definition versions before writing. If another app changes the record or definitions, refresh before retrying. Undo refuses to overwrite later external edits. Obsidian's own writes do not enter Orb's journal.
+Viewing, date selection, and year navigation write nothing. Checkbox edits preserve other properties, comments, and body text. Orb journals edits and checks both record and definition versions before logging. Creation checks the entire dashboard script version and preserves existing definitions, comments, and surrounding JavaScript. It chooses a stable property key, cadence label, and colour. Keys already present in historical daily records are not reused; an unreadable record must be repaired before creation can check for collisions. If another app changes the record or definitions, refresh before retrying. Undo refuses to overwrite later external edits. Obsidian's own writes do not enter Orb's journal.
 
-Names and weekly targets come from the script, with 0–12 habits (zero means none chosen yet) and targets from 1–7 days. Orb has no habit-definition editor, reminders, repetitions, duration tracking, streak scoring, automatic scheduling, or background file watcher. Keep property keys stable; renaming a key does not migrate old activity. Changing a target changes comparisons for older weeks too. See the [definition contract](../vault-format.md#habit-definitions).
+Names and weekly targets come from the script, with 0–12 habits (zero means none chosen yet) and targets from 1–7 days. Orb supports adding habits through chat and the panel, with undo through Recent changes or “Undo your last edit.” Editing or removing definitions still requires the dashboard script. Orb has no habit reminders, repetitions, duration tracking, streak scoring, automatic scheduling, or background file watcher. Keep property keys stable; renaming a key does not migrate old activity. Changing a target changes comparisons for older weeks too. See the [definition contract](../vault-format.md#habit-definitions).
 
 ## Troubleshooting
 
@@ -86,6 +89,8 @@ Names and weekly targets come from the script, with 0–12 habits (zero means no
 **Unexpected totals:** inspect the selected year, current-week dates, filename, and boolean types. Warnings explain invalid values or unreadable notes. Future records are ignored.
 
 **Changes from Obsidian are missing:** use Refresh in Orb; reopen the Dataview note to refresh its cached display after an Orb edit.
+
+**Custom dashboards:** new definitions are shared with Obsidian. The starter dashboard generates controls and table headings from them. Older custom scripts with hard-coded headings or record templates may need a separate manual update; adding a habit preserves that code. Reopen the Obsidian dashboard to refresh it.
 
 **Save conflict:** refresh and review the external change before retrying. No stale checkbox edit should overwrite it.
 

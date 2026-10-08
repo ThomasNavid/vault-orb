@@ -69,28 +69,46 @@ function recordActivity(data){
 }
 const savedSteps=steps=>steps.map(({started,...step})=>({...step,status:step.status==='running'?'failed':step.status}));
 function stop() {for(const pending of placesRequests.values())pending.abort();placesRequests.clear();speechSession?.interrupt();speechSession=null;controller.abort();controller=new AbortController();calls.clear();generation++;}
+const orbView=()=>readAppearance(config).view;
+let barActive=false;
+// The bar hangs from the top of the screen: it keeps its own width and grows downwards when a panel opens.
+const barLayout=mode=>orbView()==='bar'&&!['chat','reader'].includes(mode);
 function layoutSize(mode,work){
   if(mode==='chat')return {width:Math.min(Math.max(chatSize.width,640),work.width-24),height:Math.min(Math.max(chatSize.height,420),work.height-32)};
   // Reading a knowledge note gets a document-sized window.
   if(mode==='reader')return {width:Math.min(1100,work.width-24),height:Math.min(820,work.height-32)};
-  const expanded=mode!=='compact';return {width:Math.min(expanded?870:312,work.width-24),height:Math.min(expanded?560:350,work.height-32)};
+  const expanded=mode!=='compact';
+  // The extra height below the bar is where its shadow falls; the window itself is transparent.
+  if(barLayout(mode))return {width:Math.min(680,work.width-24),height:Math.min(expanded?620:86,work.height-24)};
+  return {width:Math.min(expanded?870:312,work.width-24),height:Math.min(expanded?560:350,work.height-32)};
 }
-function resize(mode='compact'){
+function resize(mode='compact',{snap=false}={}){
   const previous=win.getBounds(),work=screen.getDisplayMatching(previous).workArea;
   if(layout==='chat')chatSize={width:previous.width,height:previous.height};
   // Chat grows out of the orb and shrinks back into it, so both share a centre.
-  const centred=['chat','reader'].includes(mode)||['chat','reader'].includes(layout);layout=mode;
+  const centred=snap||['chat','reader'].includes(mode)||['chat','reader'].includes(layout);
+  const wasBar=barActive&&!snap;layout=mode;barActive=barLayout(mode);
   const {width,height}=layoutSize(mode,work);
   win.setResizable(mode==='chat');win.setMinimumSize(mode==='chat'?640:0,mode==='chat'?420:0);
-  const x=Math.max(work.x+12,Math.min(centred?Math.round(previous.x+(previous.width-width)/2):previous.x,work.x+work.width-width-12));
-  const y=Math.max(work.y+16,Math.min(Math.round(previous.y+(previous.height-height)/2),work.y+work.height-height-16));
+  if(barActive){
+    // A bar that has been dragged keeps its place and grows downwards; otherwise it settles under the top edge.
+    const x=wasBar?previous.x:Math.round(work.x+(work.width-width)/2),y=wasBar?previous.y:work.y+10;
+    win.setBounds({x:Math.max(work.x+12,Math.min(x,work.x+work.width-width-12)),y:Math.max(work.y+8,Math.min(y,work.y+work.height-height-12)),width,height},false);
+    return;
+  }
+  // Leaving the bar behind, the orb returns to where a fresh summon would put it.
+  const fromX=snap?Math.round(work.x+work.width/2-width/2):centred?Math.round(previous.x+(previous.width-width)/2):previous.x;
+  const fromY=snap?Math.round(work.y+work.height*.43-height/2):Math.round(previous.y+(previous.height-height)/2);
+  const x=Math.max(work.x+12,Math.min(fromX,work.x+work.width-width-12));
+  const y=Math.max(work.y+16,Math.min(fromY,work.y+work.height-height-16));
   win.setBounds({x,y,width,height},false);
 }
 function show({voice=true,settings=false,activate=true}={}) {
   if(!win.isVisible()){
     const work=screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
     const {width,height}=layoutSize(layout,work);
-    win.setBounds({x:Math.round(work.x+work.width/2-width/2),y:Math.round(work.y+work.height*(layout==='chat'?.5:.43)-height/2),width,height});
+    const y=barLayout(layout)?work.y+10:Math.round(work.y+work.height*(layout==='chat'?.5:.43)-height/2);
+    win.setBounds({x:Math.round(work.x+work.width/2-width/2),y,width,height});
   }
   // A finished focus session brings the orb back without taking the keyboard.
   if(activate){win.show();win.focus();}else win.showInactive();
@@ -171,8 +189,10 @@ else {
     });
     handle('save-appearance',input=>{
       if(!input)throw new Error('Choose an orb colour.');
-      const next=withAppearance(config,input);
+      const before=orbView(),next=withAppearance(config,input);
       atomicWrite(configFile,JSON.stringify(next,null,2));config=next;
+      // Switching between the orb and the bar reshapes the window straight away.
+      if(orbView()!==before&&win?.isVisible?.())resize(layout,{snap:true});
       return {appearance:readAppearance(config)};
     });
     handle('provider-catalog',async({provider,key}={})=>{
@@ -258,6 +278,7 @@ else {
     handle('recurring-write',async args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Smith to finish before editing a task.');const result=vault.recurringTask(args);if(result.change_id)recordActivity({kind:'change',...result});return result;});
     handle('recurring-create',async args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Smith to finish before editing a task.');const result=vault.createTask(args);recordActivity({kind:'change',...result});return result;});
     handle('habits',args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');return agent.showHabits(args);});
+    handle('create-habit',args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn||planner?.busy)throw new Error('Wait for Smith to finish before adding a habit.');return agent.execute('create_habit',args);});
     handle('set-habit',args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Smith to finish before logging a habit.');return agent.execute('set_habit',args);});
     handle('open-habit-record',async args=>{if(!agent)throw new Error('Choose a valid vault in Settings.');if(chatBusy||calls.size||speechSession?.turn)throw new Error('Wait for Smith to finish before opening a record.');return agent.openHabitRecord(args);});
     handle('goals',scope=>{if(!agent)throw new Error('Choose a valid vault in Settings.');return agent.showGoals({scope,date:null});});

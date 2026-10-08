@@ -18,6 +18,18 @@ test('appearance updates preserve credentials and unrelated settings; omitted in
   assert.throws(()=>A.withAppearance(config,{orbColour:'invalid'}));
 });
 
+test('layout choice defaults to the classic orb, rejects unknown views, and is kept when only a colour is saved',()=>{
+  for(const config of [undefined,{},null,{appearance:null},{appearance:{view:'sidebar'}},{appearance:{view:7}}])assert.equal(A.readAppearance(config).view,A.DEFAULT_VIEW);
+  assert.equal(A.readAppearance({appearance:{view:'bar'}}).view,'bar');
+  for(const value of ['Bar','classic ','dock',undefined,null,{},0])assert.throws(()=>A.validateView(value),/classic orb or the top bar/);
+  const config={vaultPath:'/fictional/vault',appearance:{orbColour:'#ec4899',view:'bar'}};
+  // Applying a colour must never move Smith back to the middle of the screen.
+  assert.deepEqual(A.withAppearance(config,{orbColour:'#8B5CF6'}).appearance,{orbColour:'#8b5cf6',view:'bar'});
+  assert.deepEqual(A.withAppearance(config,{orbColour:'#ec4899',view:'classic'}).appearance,{orbColour:'#ec4899',view:'classic'});
+  assert.equal(config.appearance.view,'bar');
+  assert.throws(()=>A.withAppearance(config,{orbColour:'#ec4899',view:'floating'}),/classic orb or the top bar/);
+});
+
 test('default preserves the four original palettes and decorative colours exactly',()=>{
   const p=A.palette(A.DEFAULT_COLOUR),hex=v=>'#'+v.map(n=>n.toString(16).padStart(2,'0')).join('');
   assert.deepEqual(Object.values(p.states).map(state=>Object.values(state).map(hex)),[

@@ -66,6 +66,7 @@
       <button id="mute-button" class="round" aria-label="Mute microphone" title="Mute microphone" hidden><svg class="icon"><use id="mute-icon" href="#i-mic"/></svg></button>
       <span class="divider" aria-hidden="true"></span>
       <button id="chat-button" class="round" aria-label="Open chats" title="Chat with Smith" aria-keyshortcuts="Meta+J"><svg class="icon"><use href="#i-chat"/></svg></button>
+      <button id="bar-explore" class="round bar-only" type="button" aria-label="Explore what Smith can do" title="Explore · ⌘K" aria-keyshortcuts="Meta+K"><svg class="icon"><use href="#i-sparkle"/></svg></button>
       <button id="settings-button" class="round" aria-label="Settings" title="Settings"><svg class="icon"><use href="#i-sliders"/></svg></button>
       <button id="hide-button" class="round" aria-label="Hide Orb" title="Hide Orb · Escape"><svg class="icon"><use href="#i-close"/></svg></button>
     </div>
@@ -101,6 +102,11 @@
             <div class="colour-hex-row"><label class="sr-only" for="orb-colour-hex">Hex colour</label><input id="orb-colour-hex" value="#1f86ff" maxlength="7" autocomplete="off" spellcheck="false" aria-describedby="orb-colour-error" placeholder="#RRGGBB"><button type="button" id="orb-colour-reset" class="secondary">Reset</button><button type="button" id="orb-colour-apply" class="primary">Apply colour</button></div>
             <p id="orb-colour-error" class="help colour-error" role="alert" hidden></p>
           </div>
+        </div>
+        <div class="group view-settings">
+          <div class="colour-head"><div><span class="colour-label" id="orb-view-label">Layout</span><p class="colour-caption">Where Smith lives on screen.</p></div></div>
+          <div id="orb-view-choices" class="view-choices" role="radiogroup" aria-labelledby="orb-view-label"></div>
+          <p id="orb-view-status" class="help" role="status" aria-live="polite"></p>
         </div>
         <p id="appearance-status" class="help" role="status" aria-live="polite">Your colour is saved on this Mac.</p>
       </section>

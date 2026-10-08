@@ -54,7 +54,61 @@ if(preview){
   return focusEmit(action);
  };
 }
-const appearanceEditor=window.orbAppearanceSettings.bind({api,visual,isPreview:preview,onCommit:appearance=>{if(settings)settings.appearance=appearance;}});
+const appearanceEditor=window.orbAppearanceSettings.bind({api,visual,isPreview:preview,onCommit:appearance=>{if(settings)settings.appearance=appearance;applyView(appearance.view);}});
+// Classic orb, or a bar across the top of the screen with the palette below it.
+let orbView=window.orbAppearance.DEFAULT_VIEW,viewSaving=false;
+const barView=()=>orbView==='bar';
+function applyView(view){
+ if(view&&view!==orbView)orbView=view;
+ document.body.classList.toggle('view-bar',barView());
+ if(settings?.appearance)settings.appearance={...settings.appearance,view:orbView};
+ placeAskForm();if(!barView())setTyping(false);
+ $('status-wrap').title=barView()?'Click to type instead · ⌘K':'';
+ paintStatus();
+}
+// One ask field, in the bar when the bar is the window's header and in the panel header otherwise.
+function placeAskForm(){
+ const form=$('ask-form'),home=document.querySelector('.orb-home'),header=document.querySelector('.card-header');
+ if(barView()){if(form.parentElement!==home)home.insertBefore(form,$('dock'));}
+ else if(form.parentElement!==header)header.insertBefore(form,$('card-eyebrow'));
+}
+// The bar's middle slot carries either what is being said or what is being typed, never both.
+let barTyping=false;
+function setTyping(on){
+ if(!barView()||chatOpen)on=false;
+ if(on===barTyping)return;
+ barTyping=on;document.body.classList.toggle('bar-typing',on);
+ if(!on){$('ask-input').value='';if(cardMode==='welcome')renderCommands();paintStatus();}
+}
+function startTyping(seed=''){
+ if(!barView()||chatOpen)return;
+ setTyping(true);
+ if(!cardMode)openWelcome();
+ const input=$('ask-input');input.focus();
+ if(seed){input.value=seed;input.dispatchEvent(new Event('input'));}
+}
+function renderViewChoices(){
+ const box=$('orb-view-choices');box.replaceChildren();
+ for(const [id,label,caption] of window.orbAppearance.views){
+  const choice=node('button','view-choice');choice.type='button';choice.setAttribute('role','radio');choice.setAttribute('aria-checked',String(id===orbView));choice.disabled=viewSaving;
+  const art=node('span','view-art');art.dataset.view=id;art.setAttribute('aria-hidden','true');
+  if(id==='bar')art.append(node('span','dot-sample'));
+  choice.append(art,node('span','view-choice-label',label),node('span','view-choice-caption',caption));
+  choice.onclick=()=>chooseView(id);box.append(choice);
+ }
+}
+async function chooseView(view){
+ if(viewSaving||view===orbView)return;
+ const previous=orbView;viewSaving=true;applyView(view);renderViewChoices();$('orb-view-status').textContent='Saving layout…';
+ try{
+  const result=await api.saveAppearance({orbColour:appearanceEditor.state().saved,view});
+  applyView(result.appearance.view);
+  $('orb-view-status').textContent=preview?'Preview only. The layout lasts until this page reloads.':barView()?'The bar sits at the top of your screen.':'The orb floats wherever you leave it.';
+ }catch(e){
+  applyView(previous);
+  $('orb-view-status').textContent=(e?.message||String(e)).replace(/^Error invoking remote method '[^']+': Error: /,'');
+ }finally{viewSaving=false;renderViewChoices();}
+}
 window.placesPreview?.attach(api,preview);
 const placesSettings=window.placesUI.bindSettings({api,onChange:places=>{if(settings)settings.places=places;}});
 const placesActions={places:args=>api.places(args),placesSettings:()=>openConnectorSettings('places-integration').catch(error),locate:()=>api.placesLocation(),openLink:url=>api.openLink(url)};
@@ -75,12 +129,15 @@ function showPanel(mode,{back=false}={}){
  const opening=mode&&!cardMode;cardMode=mode;$('companion').hidden=!mode;
  for(const name of ['visual','home','welcome','transcript','settings','history','steps'])$(name+'-view').hidden=name!==mode;
  $('home-button').setAttribute('aria-pressed',String(mode==='home'));$('discover-button').setAttribute('aria-pressed',String(mode==='welcome'));
- const titled=['settings','history'].includes(mode);$('ask-form').hidden=titled;$('card-eyebrow').hidden=!titled;$('card-eyebrow').textContent=panelInfo[mode]?.[2]||'';
+ // With the field up in the bar, the panel header names only the views that carry no heading of their own.
+ const titled=['settings','history'].includes(mode),named=titled||(barView()&&mode==='welcome');
+ $('ask-form').hidden=!barView()&&titled;$('card-eyebrow').hidden=!named;$('card-eyebrow').textContent=named&&panelInfo[mode]?.[2]||'';
  $('ask-input').placeholder=mode==='welcome'?'Search tools, connectors, or ask Smith…':'Ask Smith anything…';$('ask-input').setAttribute('aria-expanded',String(mode==='welcome'));
  const backLabel=panelTrail.length?`Back to ${panelInfo[panelTrail.at(-1)]?.[2]||'previous view'}`:'Close panel';$('close-card').setAttribute('aria-label',backLabel);$('close-card').title=backLabel;
  if(mode!=='settings')$('settings-error').hidden=true;
  if(mode==='welcome')renderCommands();else $('ask-input').removeAttribute('aria-activedescendant');
  updateFooter();
+ if(barTyping&&!['welcome','transcript'].includes(mode))setTyping(false);
  if(opening&&mode==='welcome')setTimeout(()=>$('ask-input').focus(),60);
  if(!chatOpen)api.resize(['home','welcome'].includes(mode)?'visual':mode||'compact').catch(()=>{});
 }
@@ -96,7 +153,28 @@ function updateFooter(){
  $('footer-secondary').firstChild.textContent=cardMode!=='welcome'?'Explore':panelTrail.length?'Back':'Close';
 }
 function error(e){const message=(e?.message||String(e)).replace(/^Error invoking remote method '[^']+': Error: /,'');$('error-text').textContent=message;$('error').hidden=false;addMessage('tool',message);if(chatOpen)chatToast(message);else if(!cardMode)showPanel('transcript');}
-function setStatus(state,text,detail=''){visual.setState(state);$('status-wrap').dataset.state=state;const node=$('status');node.dataset.idle=String(state==='idle'&&text===IDLE);const line=node.dataset.idle==='true'&&focusLine();if(line)[text,detail]=line;const key=text+'\n'+detail;if((node.dataset.key??node.textContent)===key)return;node.dataset.key=key;node.textContent=text;if(detail){const d=document.createElement('span');d.className='status-detail';d.textContent=detail;node.append(' · ',d);}node.classList.remove('swap');void node.offsetWidth;node.classList.add('swap');}
+// The status line and the live caption share one slot: in the bar, spoken words take it while they are arriving.
+let statusLine={state:'idle',text:IDLE,detail:''},caption=null,partial='';
+function setStatus(state,text,detail=''){statusLine={state,text,detail};if(state!=='speaking')caption=null;paintStatus();}
+function setCaption(role,text){
+ const value=(text||'').replace(/\s+/g,' ').trim(),next=value?{role,text:value}:null;
+ if(next?.text===caption?.text&&next?.role===caption?.role)return;
+ caption=next;paintStatus();
+}
+function paintStatus(){
+ const node=$('status'),wrap=$('status-wrap'),live=barView()&&caption;
+ visual.setState(statusLine.state);wrap.dataset.state=statusLine.state;wrap.dataset.caption=live?caption.role:'';
+ let {text,detail}=statusLine;
+ node.dataset.idle=String(!live&&statusLine.state==='idle'&&text===IDLE);
+ const line=node.dataset.idle==='true'&&focusLine();if(line)[text,detail]=line;
+ if(live){text=caption.text;detail='';}
+ const key=(live?caption.role+'·':'')+text+'\n'+detail;
+ if((node.dataset.key??node.textContent)===key)return;
+ node.dataset.key=key;node.textContent=text;
+ if(detail){const d=document.createElement('span');d.className='status-detail';d.textContent=detail;node.append(' · ',d);}
+ // A caption grows word by word, so it is not re-animated on every delta.
+ node.classList.remove('swap');if(!live){void node.offsetWidth;node.classList.add('swap');}
+}
 const stepName=path=>path?path.split('/').pop().replace(/\.md$/i,''):'';
 function clearToolActivity(){steps.clear();$('tool-orbit').replaceChildren();$('tool-orbit').classList.remove('active');$('moon-tip').hidden=true;updateStepsChip();if(cardMode==='steps')renderSteps();}
 // Each tool call is a small moon orbiting the orb; the status line carries its words.
@@ -145,6 +223,7 @@ function renderSteps(){
  });
 }
 function addMessage(role,text,id=crypto.randomUUID()){
+ if((connected||connecting)&&['user','assistant'].includes(role))setCaption(role,text);
  let item=transcriptItems.get(id);
  if(!item){item=document.createElement('div');item.className=`message ${role}`;const label=document.createElement('span');label.className='message-label';label.textContent={user:'You',assistant:'Smith',deep:'Deeper thinking',tool:'In your vault'}[role]||'Smith';const content=document.createElement('span');item.append(label,content);$('transcript').append(item);transcriptItems.set(id,item);}
  item.lastChild.textContent=text;$('transcript-view').scrollTop=$('transcript-view').scrollHeight;return item;
@@ -178,7 +257,7 @@ function focusAction(args){return api.focus(args);}
 $('focus-toggle').onclick=()=>focusAction({action:focusSession?.status==='paused'?'resume':'pause'}).catch(error);
 $('focus-stop').onclick=()=>focusAction({action:'stop'}).catch(error);
 setInterval(refreshFocusStatus,15000);
-function displayVisual(v){if(chatOpen){chatVisual(v);return;}currentVisual=v;if(!v){if(cardMode==='visual')panelBack();return;}window.renderVisual($('visual-view'),v,path=>api.openNote(path).catch(error),{...placesActions,weather:args=>api.weather(args),weatherSettings:()=>openConnectorSettings('weather-integration').catch(error),trading212:args=>api.trading212(args),settings:()=>openSettings(),habits:args=>api.habits(args),setHabit:async args=>{await api.setHabit(args);const status=$('visual-view').querySelector('.habit-status');if(status)status.textContent='Saved to your vault.';},openHabitRecord:async args=>{const result=await api.openHabitRecord(args);await api.openNote(result.path);},filterGoals:scope=>api.goals(scope).catch(error),focus:focusAction,request:text=>submit(text).catch(error)});showPanel('visual');}
+function displayVisual(v){if(chatOpen){chatVisual(v);return;}currentVisual=v;if(!v){if(cardMode==='visual')panelBack();return;}window.renderVisual($('visual-view'),v,path=>api.openNote(path).catch(error),{...placesActions,weather:args=>api.weather(args),weatherSettings:()=>openConnectorSettings('weather-integration').catch(error),trading212:args=>api.trading212(args),settings:()=>openSettings(),habits:args=>api.habits(args),createHabit:args=>api.createHabit(args),setHabit:async args=>{await api.setHabit(args);const status=$('visual-view').querySelector('.habit-status');if(status)status.textContent='Saved to your vault.';},openHabitRecord:async args=>{const result=await api.openHabitRecord(args);await api.openNote(result.path);},filterGoals:scope=>api.goals(scope).catch(error),focus:focusAction,request:text=>submit(text).catch(error)});showPanel('visual');}
 const node=(tag,cls,text)=>{const element=document.createElement(tag);if(cls)element.className=cls;if(text!==undefined)element.textContent=String(text);return element;};
 const dateText=value=>{if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return '';const date=new Date(value+'T12:00:00Z');return Number.isNaN(date.getTime())?'':date.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'});};
 const entries=value=>Array.isArray(value)?value:Array.isArray(value?.tasks)?value.tasks:[];
@@ -317,7 +396,7 @@ function selectCommand(i,scroll=true){
  updateFooter();
 }
 function runCommand(i=commandIndex){const command=commandItems[i];if(!command)return;if(command.accessory!=='Ask')$('ask-input').value='';Promise.resolve().then(()=>command.run()).catch(error);}
-function openWelcome(){commandCategory='All';commandIndex=0;$('ask-input').value='';showPanel('welcome');$('ask-input').focus();try{localStorage.setItem('orb-welcome-seen','1');}catch{};}
+function openWelcome(){commandCategory='All';commandIndex=0;$('ask-input').value='';if(barView())setTyping(true);showPanel('welcome');$('ask-input').focus();try{localStorage.setItem('orb-welcome-seen','1');}catch{};}
 function updateShortcut(active){if(settings)settings.shortcutActive=active;$('shortcut-hint').querySelector('span').textContent=active?'summon Smith':'set up shortcut';$('shortcut-hint').classList.toggle('needs-setup',!active);$('shortcut-status').textContent=active?'Ready. Double-tap Control from any app.':'The shortcut listener could not start. Try restarting it below.';$('enable-shortcut').textContent=active?'Ready':'Retry';$('enable-shortcut').disabled=active;}
 function touch(){clearTimeout(idleTimer);if(connected)idleTimer=setTimeout(()=>{endVoice();setStatus('idle','Conversation ended after five quiet minutes.');},5*60*1000);}
 function send(event){if(channel?.readyState==='open')channel.send(JSON.stringify(event));}
@@ -332,6 +411,7 @@ function monitorOutput(stream){
   try{outputAnalyser=audioContext.createAnalyser();outputAnalyser.fftSize=256;audioContext.createMediaStreamSource(stream).connect(outputAnalyser);}catch{outputAnalyser=null;}
 }
 async function startVoice(){
+  setTyping(false);
   if(preview){error('This is an interface preview. Voice is available in the Mac app.');return;}
   if(busy){error('Wait for the typed answer to finish first.');return;}
   if(!settings?.voiceReady){openSettings();return;}
@@ -365,13 +445,15 @@ function endVoice(){
   peer?.close();peer=null;microphone?.getTracks().forEach(t=>t.stop());microphone=null;
   if(outputAudio){outputAudio.pause();outputAudio.srcObject=null;}outputAudio=null;
   audioContext?.close().catch(()=>{});audioContext=null;analyser=null;outputAnalyser=null;visual.setLevel(0);
-  api.stop().catch(error);liveUI();$('mute-icon').setAttribute('href','#i-mic');$('mute-button').classList.remove('muted');setStatus('idle','Here when you need me.');
+  api.stop().catch(error);liveUI();caption=null;partial='';$('mute-icon').setAttribute('href','#i-mic');$('mute-button').classList.remove('muted');setStatus('idle','Here when you need me.');
 }
 async function onRealtime(event,token){
   const type=event.type;
-  if(type==='input_audio_buffer.speech_started'){clearToolActivity();touch();setStatus('listening','I’m listening.');}
+  if(type==='input_audio_buffer.speech_started'){clearToolActivity();partial='';touch();setStatus('listening','I’m listening.');}
+  // Partial transcripts, where the model sends them, let the bar show words as they are spoken.
+  if(type==='conversation.item.input_audio_transcription.delta'){partial+=event.delta||'';setCaption('user',partial);touch();}
   if(type==='input_audio_buffer.speech_stopped')setStatus('thinking','Let me take a look…');
-  if(type==='conversation.item.input_audio_transcription.completed')addMessage('user',event.transcript,event.item_id);
+  if(type==='conversation.item.input_audio_transcription.completed'){partial='';addMessage('user',event.transcript,event.item_id);}
   if(type==='response.created'){responseActive=true;touch();setStatus('thinking','One moment…');}
   if(type==='response.output_audio_transcript.delta'||type==='response.output_text.delta'){
     const id=event.item_id||event.response_id;const previous=transcriptItems.get(id)?.lastChild.textContent||'';addMessage('assistant',previous+(event.delta||''),id);
@@ -424,7 +506,7 @@ async function refreshHistory(){
   if(entry.status==='applied'&&entry.undoable!==false){const undo=document.createElement('button');undo.textContent='Undo';undo.disabled=connected||busy;undo.onclick=async()=>{try{await api.undo(entry.id);await refreshHistory();}catch(e){error(e);}};item.append(undo);}else if(entry.status!=='undone'){const span=document.createElement('span');span.textContent=entry.undoable===false?'Use calendar actions':entry.status;item.append(span);}$('activity-list').append(item);
  }
 }
-async function openSettings(){if(connected||connecting)endVoice();settings=await api.settings();window.orbReminders.load();appearanceEditor.open(settings.appearance);weatherSettings.load(settings.weather);placesSettings.load(settings.places);window.orbProviderSettings.load(settings,api,preview);window.trading212UI.loadSettings();$('vault-path').value=settings.vaultPath;$('life-folder').value=settings.taskFolders.life;$('business-folder').value=settings.taskFolders.business;$('rules-path').value=settings.rulesPath;$('goals-folder').value=settings.goalsFolder??'0. Home/Goals';$('habit-folder').value=settings.habitFolder??'0. Home/Habit Log';$('habit-script').value=settings.habitScript??'99. System/99.4 Scripts/habits/view.js';$('auto-start').checked=settings.autoStart;const hours=settings.workingHours||{start:'09:00',end:'17:00',days:[1,2,3,4,5]};$('work-start').value=hours.start;$('work-end').value=hours.end;document.querySelectorAll('[name=work-day]').forEach(input=>input.checked=hours.days.includes(Number(input.value)));$('calendar-token').value='';$('calendar-token').placeholder=settings.hasCalendarToken?'Token saved':'Paste token from Obsidian';const calendars=settings.googleCalendars||[],select=$('calendar-id');select.replaceChildren(new Option('Choose a Google calendar',''));for(const calendar of calendars)select.add(new Option(calendar.name,calendar.id));select.value=settings.calendarId||(calendars.length===1?calendars[0].id:'');const calendarConnected=calendars.length>0&&settings.fullCalendarServer&&settings.hasCalendarToken&&!!settings.calendarId,status=$('calendar-status'),integration=$('google-calendar-integration');status.textContent=calendarConnected?'Connected':calendars.length||settings.hasCalendarToken?'Finish setup':'Set up';status.className='integration-status '+(calendarConnected?'connected':calendars.length||settings.hasCalendarToken?'attention':'');integration.open=!calendarConnected;$('calendar-setup').textContent=!calendars.length?'Connect a Google calendar in Obsidian Full Calendar first. Then reopen Orb Settings.':!settings.fullCalendarServer?'Enable Local REST Server in Obsidian Full Calendar → Integrations. Generate a token with Read events, Write events and Read providers.':!settings.hasCalendarToken?'Paste a Full Calendar token with Read events, Write events and Read providers.':'Choose the default calendar Smith should use when creating events.';$('settings-error').hidden=true;updateShortcut(settings.shortcutActive);showPanel('settings');}
+async function openSettings(){if(connected||connecting)endVoice();settings=await api.settings();window.orbReminders.load();appearanceEditor.open(settings.appearance);applyView(window.orbAppearance.readAppearance({appearance:settings.appearance}).view);$('orb-view-status').textContent=preview?'Preview only. The layout lasts until this page reloads.':'Your layout is saved on this Mac.';renderViewChoices();weatherSettings.load(settings.weather);placesSettings.load(settings.places);window.orbProviderSettings.load(settings,api,preview);window.trading212UI.loadSettings();$('vault-path').value=settings.vaultPath;$('life-folder').value=settings.taskFolders.life;$('business-folder').value=settings.taskFolders.business;$('rules-path').value=settings.rulesPath;$('goals-folder').value=settings.goalsFolder??'0. Home/Goals';$('habit-folder').value=settings.habitFolder??'0. Home/Habit Log';$('habit-script').value=settings.habitScript??'99. System/99.4 Scripts/habits/view.js';$('auto-start').checked=settings.autoStart;const hours=settings.workingHours||{start:'09:00',end:'17:00',days:[1,2,3,4,5]};$('work-start').value=hours.start;$('work-end').value=hours.end;document.querySelectorAll('[name=work-day]').forEach(input=>input.checked=hours.days.includes(Number(input.value)));$('calendar-token').value='';$('calendar-token').placeholder=settings.hasCalendarToken?'Token saved':'Paste token from Obsidian';const calendars=settings.googleCalendars||[],select=$('calendar-id');select.replaceChildren(new Option('Choose a Google calendar',''));for(const calendar of calendars)select.add(new Option(calendar.name,calendar.id));select.value=settings.calendarId||(calendars.length===1?calendars[0].id:'');const calendarConnected=calendars.length>0&&settings.fullCalendarServer&&settings.hasCalendarToken&&!!settings.calendarId,status=$('calendar-status'),integration=$('google-calendar-integration');status.textContent=calendarConnected?'Connected':calendars.length||settings.hasCalendarToken?'Finish setup':'Set up';status.className='integration-status '+(calendarConnected?'connected':calendars.length||settings.hasCalendarToken?'attention':'');integration.open=!calendarConnected;$('calendar-setup').textContent=!calendars.length?'Connect a Google calendar in Obsidian Full Calendar first. Then reopen Orb Settings.':!settings.fullCalendarServer?'Enable Local REST Server in Obsidian Full Calendar → Integrations. Generate a token with Read events, Write events and Read providers.':!settings.hasCalendarToken?'Paste a Full Calendar token with Read events, Write events and Read providers.':'Choose the default calendar Smith should use when creating events.';$('settings-error').hidden=true;updateShortcut(settings.shortcutActive);showPanel('settings');}
 $('home-button').onclick=()=>{if(cardMode==='home')showPanel(null);else openHome().catch(error);};
 $('discover-button').onclick=()=>toggleExplore();
 $('refresh-home').onclick=()=>openHome().catch(error);
@@ -440,6 +522,9 @@ $('ask-form').onsubmit=e=>{e.preventDefault();if(cardMode==='welcome')runCommand
 $('footer-primary').onclick=()=>{if(cardMode==='settings')$('settings-form').requestSubmit();else if(cardMode==='welcome'||$('ask-input').value.trim())$('ask-form').requestSubmit();else $('ask-input').focus();};
 const toggleExplore=()=>cardMode==='welcome'?panelBack():openWelcome();
 $('footer-secondary').onclick=toggleExplore;
+$('bar-explore').onclick=toggleExplore;
+// Click the line in the bar to type instead of speaking; the buttons on it keep their own jobs.
+$('status-wrap').onclick=e=>{if(barView()&&!e.target.closest('button'))startTyping();};
 $('hide-button').onclick=()=>{endVoice();api.hide().catch(error);};
 $('chat-button').onclick=()=>openChat();
 $('shortcut-hint').onclick=()=>{if(!settings?.shortcutActive)openSettings().catch(error);};
@@ -484,9 +569,12 @@ window.addEventListener('keydown',e=>{
  if(e.metaKey&&!e.shiftKey&&!e.altKey&&e.key.toLowerCase()==='j'){e.preventDefault();chatOpen?closeChat():openChat();return;}
  if(chatOpen){if(chatKeydown(e))return;}
  else if(e.metaKey&&!e.shiftKey&&!e.altKey&&e.key.toLowerCase()==='k'){e.preventDefault();toggleExplore();return;}
+ // In the bar, a printable key starts typing, the way a search field would.
+ else if(barView()&&!barTyping&&!cardMode&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&e.key.length===1&&/\S/.test(e.key)&&!/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'')&&!document.activeElement?.isContentEditable){e.preventDefault();startTyping(e.key);return;}
  if(e.key!=='Escape')return;
- // Like a search field: the first Escape clears a typed query, the next hides Orb.
+ // Like a search field: the first Escape clears a typed query, the next puts the bar back, the next hides Orb.
  if(document.activeElement===$('ask-input')&&$('ask-input').value){$('ask-input').value='';$('ask-input').dispatchEvent(new Event('input'));return;}
+ if(barTyping){showPanel(null);return;}
  endVoice();api.hide().catch(error);
 });
 async function previewSteps(){
@@ -522,16 +610,17 @@ function previewGoals(scope='active'){
  ];
  return {id:'preview-goals',kind:'goals',title:'Your goals',subtitle:'Example data · 2 active · One next action at a time',date:'2026-09-28',scope,goals:goals.filter(g=>scope==='all'||scope==='active'&&g.status==='Active'||scope==='other'&&g.status!=='Active'||scope==='review_due'&&g.needs_review),active_count:2,warnings:[],sources:[]};
 }
-(async()=>{settings=await api.settings();appearanceEditor.initialise(settings.appearance);liveUI();updateShortcut(settings.shortcutActive);await api.ready();if(!settings.chatReady&&!preview)await openSettings();else if(preview)openWelcome();else {let seen=true;try{seen=localStorage.getItem('orb-welcome-seen')==='1';}catch{}if(!seen)openWelcome();}})().catch(error);
+(async()=>{settings=await api.settings();appearanceEditor.initialise(settings.appearance);applyView(window.orbAppearance.readAppearance({appearance:settings.appearance}).view);liveUI();updateShortcut(settings.shortcutActive);await api.ready();if(!settings.chatReady&&!preview)await openSettings();else if(preview)openWelcome();else {let seen=true;try{seen=localStorage.getItem('orb-welcome-seen')==='1';}catch{}if(!seen)openWelcome();}})().catch(error);
 
 // Fictional, in-memory preview. No vault or API calls are made here.
 const previewHabitRecords=new Map();
+const previewHabitDefinitions=[{key:'pull_ups',label:'Pull-ups',target:7,cadence:'Daily',color:'#31995b'},{key:'study_mandarin',label:'Study Mandarin',target:2,cadence:'Twice a week',color:'#6387db'}];
 function previewHabits({date='2026-09-28',year=Number(date.slice(0,4)),end=date}={}){
  const today='2026-09-28',plus=(date,n)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
  const weekStart=date=>plus(date,-((new Date(date+'T12:00:00Z').getUTCDay()+6)%7)),start=weekStart(today);
- const habits=[{key:'pull_ups',label:'Pull-ups',target:7,cadence:'Daily',color:'#31995b'},{key:'study_mandarin',label:'Study Mandarin',target:2,cadence:'Twice a week',color:'#6387db'}];
+ const habits=previewHabitDefinitions;
  const count=(a,b,key)=>[...previewHabitRecords.values()].filter(r=>r.date>=a&&r.date<=b&&r.values[key]).length;
- return {id:'preview-habits',kind:'habits',title:'Your habits',subtitle:'Fictional preview · Small actions, a little more often.',today,date,year,range:{start:plus(weekStart(end>today?today:end),-84),end:plus(weekStart(end>today?today:end),6)},week_start:start,definitions_version:'preview',habits:habits.map(h=>({...h,week_count:count(start,today,h.key),year_count:count(`${year}-01-01`,`${year}-12-31`,h.key)})),records:[...previewHabitRecords.values()],selected:previewHabitRecords.get(date)||{path:`0. Home/Habit Log/${date}.md`,date,version:null,values:{pull_ups:false,study_mandarin:false}},weeks:Array.from({length:8},(_,i)=>{const s=plus(start,-i*7),end=plus(s,6);return {start:s,end,current:i===0,counts:Object.fromEntries(habits.map(h=>[h.key,count(s,end,h.key)]))};}),warnings:[],sources:[]};
+ return {id:'preview-habits',kind:'habits',title:'Your habits',subtitle:'Fictional preview · Small actions, a little more often.',today,date,year,range:{start:plus(weekStart(end>today?today:end),-84),end:plus(weekStart(end>today?today:end),6)},week_start:start,definitions_version:'preview',script_version:'preview-'+habits.length,can_create:habits.length<12,habits:habits.map(h=>({...h,week_count:count(start,today,h.key),year_count:count(`${year}-01-01`,`${year}-12-31`,h.key)})),records:[...previewHabitRecords.values()],selected:previewHabitRecords.get(date)||{path:`0. Home/Habit Log/${date}.md`,date,version:null,values:{pull_ups:false,study_mandarin:false}},weeks:Array.from({length:8},(_,i)=>{const s=plus(start,-i*7),end=plus(s,6);return {start:s,end,current:i===0,counts:Object.fromEntries(habits.map(h=>[h.key,count(s,end,h.key)]))};}),warnings:[],sources:[]};
 }
 if(preview){
  const recurringNotes=new Map(),R=window.OrbRecurring.core;let recurringRevision=0;
@@ -549,6 +638,7 @@ if(preview){
   if(i%7!==0&&i%11!==0)previewHabitRecords.set(date,{path:`0. Home/Habit Log/${date}.md`,date,version:'preview',values:{pull_ups:i%5!==0,study_mandarin:i%3===0}});
  }
  api.habits=async args=>displayVisual(previewHabits({date:args?.date||'2026-09-28',year:args?.year??Number((args?.date||'2026-09-28').slice(0,4)),end:args?.end||args?.date||'2026-09-28'}));
+ api.createHabit=async args=>{if(!args.label.trim()||args.label.trim().length>80)throw new Error('Choose a habit name of 1–80 characters.');if(!Number.isInteger(args.target)||args.target<1||args.target>7)throw new Error('Choose a weekly target from 1 to 7 days.');if(previewHabitDefinitions.some(h=>h.label.toLowerCase()===args.label.trim().toLowerCase()))throw new Error('That habit already exists.');if(previewHabitDefinitions.length>=12)throw new Error('You can track up to 12 habits.');previewHabitDefinitions.push({key:'preview_habit_'+previewHabitDefinitions.length,label:args.label.trim(),target:args.target,cadence:args.target===7?'Daily':`${args.target} days a week`,color:'#d88b42'});displayVisual(previewHabits({date:currentVisual.date,year:currentVisual.year,end:currentVisual.range.end}));};
  api.setHabit=async args=>{const r=previewHabitRecords.get(args.date)||{path:`0. Home/Habit Log/${args.date}.md`,date:args.date,version:'preview',values:{pull_ups:false,study_mandarin:false}};r.values[args.key]=args.completed;previewHabitRecords.set(args.date,r);displayVisual(previewHabits({date:args.date,year:currentVisual.year}));};
  api.openHabitRecord=async args=>({path:`0. Home/Habit Log/${args.date}.md`});
 }

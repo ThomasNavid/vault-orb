@@ -1,6 +1,8 @@
 # Habit Setup
 
-The starter has no habits. Edit the `const habits = [];` line in `99. System/99.4 Scripts/habits/view.js` to add the habits you choose. For example, if you decide to track reading:
+The starter has no habits. In Orb, open Habits and click **Add habit**, or ask “Add reading three days a week.” Choose a name and a target of 1–7 days per week. Orb adds the definition without recording activity; undo is available through Recent changes or chat.
+
+For manual setup, edit the `const habits = [];` line in `99. System/99.4 Scripts/habits/view.js` to add the habits you choose. For example, if you decide to track reading:
 
 ```js
 const habits = [

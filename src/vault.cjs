@@ -126,6 +126,14 @@ class Vault {
     const content=fs.readFileSync(file,'utf8');
     return {path:relative,content,version:hash(content)};
   }
+  readHabitScript(relative=this.habitScript) {
+    if(relative!==this.habitScript||!relative.endsWith('.js'))throw new Error('Only the configured habit dashboard can be edited.');
+    const file=this.resolve(relative,{note:false});
+    if(!fs.statSync(file).isFile()||fs.statSync(file).size>128*1024)throw new Error('Habit definitions must be a .js file up to 128 KB.');
+    const content=fs.readFileSync(file,'utf8');
+    return {path:relative,content,version:hash(content)};
+  }
+  readChange(entry) {return entry.habitDefinitions?this.readHabitScript(entry.path):this.read(entry.path);}
   walk(folder='',extensions=['.md']) {
     const base=folder ? this.resolve(folder,{note:false}) : this.root;
     const result=[];
@@ -188,17 +196,18 @@ class Vault {
     if(!Array.isArray(entries)) throw new Error('Change history is damaged. Restore it before making changes.');
     // Recover a crash between applying a change and marking its journal entry.
     for(const e of entries) if(e.status==='pending') {
-      try {e.status=this.read(e.path).version===e.afterHash?'applied':'uncertain';} catch {e.status='uncertain';}
+      try {e.status=this.readChange(e).version===e.afterHash?'applied':'uncertain';} catch {e.status='uncertain';}
     }
     return entries;
   }
   publicHistory() {return this.history().slice(-30).reverse().map(({id,path,action,at,status,calendar,reminders})=>({id,path,action,at,status,undoable:!calendar&&!reminders}));}
   commit(relative,before,after,action,options={}) {return this.withTaskLock(()=>this._commit(relative,before,after,action,options));}
-  _commit(relative,before,after,action,{calendar=false,reminders=false}={}) {
-    const file=this.resolve(relative,{missing:before===null});
+  _commit(relative,before,after,action,{calendar=false,reminders=false,habitDefinitions=false}={}) {
+    if(habitDefinitions){this.readHabitScript(relative);if(before===null||Buffer.byteLength(after)>128*1024)throw new Error('Habit dashboard edits require an existing file up to 128 KB.');}
+    const file=this.resolve(relative,{missing:before===null,note:!habitDefinitions});
     if(before!==null && fs.readFileSync(file,'utf8')!==before) throw new Error('Note changed since it was read. Read it again before editing.');
     const entries=this.history();
-    const entry={id:crypto.randomUUID(),path:relative,action,at:new Date().toISOString(),before,afterHash:hash(after),calendar,reminders,status:'pending'};
+    const entry={id:crypto.randomUUID(),path:relative,action,at:new Date().toISOString(),before,afterHash:hash(after),calendar,reminders,...(habitDefinitions?{habitDefinitions:true}:{}),status:'pending'};
     entries.push(entry); atomicWrite(this.journalFile,JSON.stringify(entries,null,2));
     try {
       if(before===null) fs.writeFileSync(file,after,{flag:'wx',mode:0o600});
@@ -296,10 +305,10 @@ class Vault {
   _undo(id) {
     const entries=this.history(), entry=id?entries.find(e=>e.id===id):entries.findLast(e=>e.status==='applied');
     if(!entry || entry.status!=='applied') throw new Error('No change available to undo.');
-    const file=this.resolve(entry.path), current=this.read(entry.path);
+    const current=this.readChange(entry), file=this.resolve(entry.path,{note:!entry.habitDefinitions});
     if(entry.calendar)throw new Error('This change is linked to a calendar write. Move the block back, remove it, or repair its link instead of note undo.');
     if(entry.reminders)throw new Error('This change establishes a Reminders link. Pause sync and manage the linked copies explicitly instead of note undo.');
-    const nowData=parseNote(current.content).data,oldData=entry.before?parseNote(entry.before).data:{};
+    const nowData=entry.habitDefinitions?{}:parseNote(current.content).data,oldData=entry.habitDefinitions?{}:entry.before?parseNote(entry.before).data:{};
     if((nowData.calendar_block||oldData.calendar_block)&&(JSON.stringify(nowData.calendar_block)!==JSON.stringify(oldData.calendar_block)||nowData.planned!==oldData.planned))throw new Error('Undo would disconnect the calendar block. Repair the link first.');
     if(current.version!==entry.afterHash) throw new Error('This note has changed since that action. Undo newer edits first, or review it in Obsidian.');
     if(entry.before===null) fs.unlinkSync(file); else atomicWrite(file,entry.before);

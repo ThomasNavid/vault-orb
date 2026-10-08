@@ -1,5 +1,5 @@
 const fs=require('node:fs');
-const YAML=require('yaml');
+const {parse}=require('acorn');
 const {parseNote,localDate,dateValue,hash}=require('./vault.cjs');
 const HABIT_SCRIPT='99. System/99.4 Scripts/habits/view.js';
 function day(value) {
@@ -10,27 +10,70 @@ function day(value) {
 // Calendar arithmetic uses UTC noon on date-only strings, independent of DST.
 function addDays(value,count) {const d=new Date(value+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+count);return d.toISOString().slice(0,10);}
 function weekStart(value) {return addDays(value,-((new Date(value+'T12:00:00Z').getUTCDay()+6)%7));}
-function definitions(vault) {
-  const source=vault.habitScript??HABIT_SCRIPT;
-  const file=vault.resolve(source,{note:false});
-  if(!source.endsWith('.js')||fs.statSync(file).size>128*1024)throw new Error('Habit definitions must be a .js file up to 128 KB.');
-  const script=fs.readFileSync(file,'utf8');
-  // Read the existing Dataview literal as data. Never evaluate vault JavaScript.
-  const literal=script.match(/^\s*const habits\s*=\s*(\[[\s\S]*?\]);\s*$/m)?.[1];
-  if(!literal)throw new Error('Use a literal const habits = [...]; array in the habit dashboard script.');
-  const parsed=YAML.parseDocument(literal,{uniqueKeys:true});
-  if(parsed.errors.length)throw new Error('Habit definitions must contain plain literal data.');
-  const data=parsed.toJS({maxAliasCount:0}),keys=new Set();
-  if(!Array.isArray(data)||data.length>12)throw new Error('Define up to 12 habits.');
-  const habits=data.map(h=>{
-    if(!h||typeof h.key!=='string'||! /^[a-z][a-z0-9_]{0,63}$/.test(h.key)||['type','date','constructor','prototype','__proto__'].includes(h.key)||keys.has(h.key))throw new Error('Habit keys must be unique lowercase property names, excluding reserved fields.');
+const COLORS=['#31995b','#6387db','#d88b42','#ad78cb','#39a6a3','#ce708c'];
+function parseDefinitions(script) {
+  // Parse syntax only: vault JavaScript must never run in Orb.
+  let ast;
+  try {ast=parse(script,{ecmaVersion:'latest',allowAwaitOutsideFunction:true,allowReturnOutsideFunction:true});}
+  catch {throw new Error('Habit dashboard syntax is unsupported. Use a literal const habits = [...]; array.');}
+  const declarations=ast.body.filter(n=>n.type==='VariableDeclaration').flatMap(n=>n.declarations.map(d=>({kind:n.kind,...d}))).filter(n=>n.id.type==='Identifier'&&n.id.name==='habits');
+  if(declarations.length!==1||declarations[0].kind!=='const'||declarations[0].init?.type!=='ArrayExpression')throw new Error('Use one top-level literal const habits = [...]; array in the habit dashboard script.');
+  const array=declarations[0].init,keys=new Set();
+  if(array.elements.length>12)throw new Error('Define up to 12 habits.');
+  const habits=array.elements.map(node=>{
+    if(node?.type!=='ObjectExpression')throw new Error('Habit definitions must contain plain literal data.');
+    const h=Object.create(null);
+    for(const p of node.properties) {
+      const key=p.key?.type==='Identifier'?p.key.name:p.key?.value;
+      if(p.type!=='Property'||p.computed||p.method||p.kind!=='init'||!['key','label','target','cadence','color'].includes(key)||Object.hasOwn(h,key)||p.value.type!=='Literal'||!['string','number'].includes(typeof p.value.value))throw new Error('Habit definitions must contain plain literal fields: key, label, target, cadence and color.');
+      h[key]=p.value.value;
+    }
+    if(typeof h.key!=='string'||! /^[a-z][a-z0-9_]{0,63}$/.test(h.key)||['type','date','constructor','prototype','__proto__'].includes(h.key)||keys.has(h.key))throw new Error('Habit keys must be unique lowercase property names, excluding reserved fields.');
     keys.add(h.key);
     if(typeof h.label!=='string'||!h.label.trim()||h.label.length>80||!Number.isInteger(h.target)||h.target<1||h.target>7)throw new Error('Each habit needs a label and a weekly target from 1 to 7 days.');
     if(typeof h.color!=='string'||!/^#[a-f0-9]{6}$/i.test(h.color))throw new Error('Use six-digit hex habit colors.');
     if(typeof h.cadence!=='string'||h.cadence.length>80)throw new Error('Each habit needs a short cadence label.');
     return {key:h.key,label:h.label.trim(),target:h.target,cadence:h.cadence,color:h.color};
   });
-  return {habits,definitions_version:hash(JSON.stringify(habits)),definitions_path:source};
+  return {habits,array};
+}
+function definitions(vault) {
+  const {content:script,version}=vault.readHabitScript();
+  const {habits}=parseDefinitions(script);
+  return {habits,definitions_version:hash(JSON.stringify(habits)),script_version:version,definitions_path:vault.habitScript};
+}
+function createHabit(vault,args) {
+  return vault.withTaskLock(()=>{
+    folder(vault);
+    const source=vault.readHabitScript(),{habits,array}=parseDefinitions(source.content);
+    if(args.script_version!==source.version)throw new Error('Habit dashboard changed. Refresh habits before adding.');
+    if(typeof args.label!=='string'||!args.label.trim()||args.label.trim().length>80||/[\x00-\x1f\x7f]/.test(args.label))throw new Error('Choose a habit name of 1–80 characters on one line.');
+    if(!Number.isInteger(args.target)||args.target<1||args.target>7)throw new Error('Choose a weekly target from 1 to 7 days.');
+    const label=args.label.trim().replace(/\s+/g,' '),normal=s=>s.normalize('NFKC').trim().replace(/\s+/g,' ').toLowerCase();
+    if(habits.some(h=>normal(h.label)===normal(label)))throw new Error('That habit already exists. Choose the existing habit or use a distinct name.');
+    if(habits.length>=12)throw new Error('You can track up to 12 habits.');
+    let stem=label.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+    if(!/^[a-z]/.test(stem)||['type','date','constructor','prototype','__proto__'].includes(stem))stem='habit_'+stem;
+    stem=stem.slice(0,56)||'habit';
+    // Avoid reviving activity under an old property, including definitions removed externally.
+    const used=new Set(habits.map(h=>h.key));
+    for(const name of fs.readdirSync(folder(vault)))if(/^\d{4}-\d{2}-\d{2}\.md$/.test(name)) {
+      try {
+        const note=vault.read(`${vault.habitFolder}/${name}`);
+        for(const key of Object.keys(parseNote(note.content).data))used.add(key);
+      } catch(e) {throw new Error(`Could not check existing habit keys in ${name}. Fix this record before adding a habit: ${e.message}`);}
+    }
+    let key=stem;for(let n=2;used.has(key);n++)key=`${stem}_${n}`;
+    const habit={key,label,target:args.target,cadence:args.target===7?'Daily':`${args.target} ${args.target===1?'day':'days'} a week`,color:COLORS.find(c=>!habits.some(h=>h.color.toLowerCase()===c))||COLORS[habits.length%COLORS.length]};
+    const newline=source.content.includes('\r\n')?'\r\n':'\n';
+    const at=array.elements.length?array.elements.at(-1).end:array.start+1;
+    const literal='{ '+Object.entries(habit).map(([field,value])=>`${field}: ${JSON.stringify(value)}`).join(', ')+' }';
+    const insertion=(array.elements.length?',':'')+newline+'  '+literal+newline;
+    const after=source.content.slice(0,at)+insertion+source.content.slice(at);
+    if(Buffer.byteLength(after)>128*1024)throw new Error('Habit dashboard would exceed 128 KB.');
+    parseDefinitions(after);
+    return {...vault.commit(vault.habitScript,source.content,after,'Habit added',{habitDefinitions:true}),habit};
+  });
 }
 function folder(vault) {
   if(!vault.habitFolder)throw new Error('Habits are disabled. Set a Habit log folder in Settings.');
@@ -54,11 +97,11 @@ function listHabits(vault,{date=null,year=null,end=null}={}) {
   // A year without an explicit window shows that year's final weeks.
   end=day(end||(String(year)===date.slice(0,4)?date:`${year}-12-31`));if(end>today)end=today;
   const rangeStart=addDays(weekStart(end),-7*12),range={start:rangeStart,end:addDays(weekStart(end),6)};
-  const base={today,date,year,range,week_start:weekStart(today),habits:[],weeks:[],records:[],warnings:[],selected:null};
+  const base={today,date,year,range,week_start:weekStart(today),habits:[],weeks:[],records:[],warnings:[],selected:null,can_create:false};
   if(!vault.habitFolder)return {...base,setup:'Habits are disabled. Set a Habit log folder in Settings.'};
   let config;
   try {config=definitions(vault);folder(vault);} catch(e) {return {...base,setup:e.message};}
-  if(!config.habits.length)return {...base,...config,setup:"Choose your habits using 99. System/Habit Setup.md. No activity has been recorded."};
+  if(!config.habits.length)return {...base,...config,can_create:true,setup:'Choose your habits with Add habit. No activity has been recorded.'};
   const records=new Map(),warnings=[],badDates=new Set();
   const first=`${year}-01-01`,last=`${year}-12-31`,historyStart=addDays(base.week_start,-49),historyEnd=addDays(base.week_start,6);
   // Read only the selected year, heatmap window, recent weeks, and selected record, never bodies of unrelated notes.
@@ -76,7 +119,7 @@ function listHabits(vault,{date=null,year=null,end=null}={}) {
   const count=(start,end,key)=>[...records.values()].filter(r=>r.date>=start&&r.date<=end&&r.values[key]).length;
   const weeks=Array.from({length:8},(_,i)=>{const start=addDays(base.week_start,-7*i),end=addDays(start,6);return {start,end,current:i===0,counts:Object.fromEntries(config.habits.map(h=>[h.key,count(start,end,h.key)])),incomplete:[...badDates].some(d=>d>=start&&d<=end)};});
   const selected=badDates.has(date)?{path:`${vault.habitFolder}/${date}.md`,error:'This record could not be read. Fix it in Obsidian, then refresh.'}:records.get(date)||{date,path:`${vault.habitFolder}/${date}.md`,version:null,values:Object.fromEntries(config.habits.map(h=>[h.key,false]))};
-  return {...base,...config,habits:config.habits.map(h=>({...h,week_count:weeks[0].counts[h.key],year_count:count(first,last,h.key),range_count:count(range.start,range.end,h.key)})),selected,weeks,records:[...records.values()],warnings,bad_dates:[...badDates]};
+  return {...base,...config,can_create:config.habits.length<12,habits:config.habits.map(h=>({...h,week_count:weeks[0].counts[h.key],year_count:count(first,last,h.key),range_count:count(range.start,range.end,h.key)})),selected,weeks,records:[...records.values()],warnings,bad_dates:[...badDates]};
 }
 function loadForWrite(vault,args) {
   const date=day(args.date);
@@ -103,4 +146,4 @@ function ensureHabitRecord(vault,args) {
   if(r.note)return {path:r.path,version:r.version};
   return vault.commit(r.path,null,contents(date,config,r),'Habit record created');
 }
-module.exports={HABIT_SCRIPT,definitions,listHabits,setHabit,ensureHabitRecord,addDays,weekStart};
+module.exports={HABIT_SCRIPT,definitions,listHabits,createHabit,setHabit,ensureHabitRecord,addDays,weekStart};

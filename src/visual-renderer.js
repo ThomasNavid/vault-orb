@@ -131,13 +131,25 @@
  function habits(v,open,actions){
   const wrap=el('div','habits-view'),status=el('p','habit-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   let busy=false;
-  if(v.setup){wrap.append(el('p','empty',v.setup));const retry=el('button','secondary','Refresh');retry.onclick=()=>run(()=>actions.habits?.({date:v.date,year:v.year}));wrap.append(retry,status);return wrap;}
   async function run(action){
    if(busy)return;busy=true;status.textContent='Working…';
-   const controls=[...wrap.querySelectorAll('button,input')].filter(n=>!n.disabled);controls.forEach(n=>n.disabled=true);
+   const controls=[...wrap.querySelectorAll('button,input,select')].filter(n=>!n.disabled);controls.forEach(n=>n.disabled=true);
    try{await action();status.textContent='Saved.';}catch(e){status.textContent=(e.message||String(e)).replace(/^Error invoking remote method '[^']+': Error: /,'');}
    finally{busy=false;controls.forEach(n=>n.disabled=false);}
   }
+  if(v.can_create&&actions.createHabit){
+   const add=el('button','secondary habit-add','Add habit'),form=el('form','habit-create');add.type='button';add.dataset.focus='habit-add';add.setAttribute('aria-expanded','false');form.hidden=true;
+   const nameLabel=el('label',null,'Habit name'),name=el('input');name.type='text';name.required=true;name.maxLength=80;name.placeholder='e.g. Running';name.dataset.focus='habit-name';nameLabel.append(name);
+   const targetLabel=el('label',null,'Days per week'),target=el('select');target.required=true;target.dataset.focus='habit-target';
+   const placeholder=el('option',null,'Choose frequency');placeholder.value='';placeholder.disabled=true;placeholder.selected=true;target.append(placeholder);
+   for(let n=1;n<=7;n++){const option=el('option',null,n===7?'7 — Daily':String(n));option.value=String(n);target.append(option);}targetLabel.append(target);
+   const buttons=el('div','habit-create-actions'),save=el('button','primary','Add habit'),cancel=el('button','secondary','Cancel');save.type='submit';cancel.type='button';buttons.append(save,cancel);form.append(nameLabel,targetLabel,buttons);
+   add.onclick=()=>{form.hidden=!form.hidden;add.setAttribute('aria-expanded',String(!form.hidden));if(!form.hidden)name.focus();};
+   cancel.onclick=()=>{form.hidden=true;add.setAttribute('aria-expanded','false');add.focus();};
+   form.onsubmit=event=>{event.preventDefault();if(!form.reportValidity())return;const host=wrap.parentElement;run(async()=>{await actions.createHabit({label:name.value,target:Number(target.value),script_version:v.script_version});if(host){host.querySelector('[data-focus="habit-add"]')?.focus();const message=host.querySelector('.habit-status');if(message)message.textContent='Habit added.';}});};
+   wrap.append(add,form);
+  }
+  if(v.setup){wrap.append(el('p','empty',v.setup));const retry=el('button','secondary','Refresh');retry.onclick=()=>run(()=>actions.habits?.({date:v.date,year:v.year}));wrap.append(retry,status);return wrap;}
   const select=(date,year=Number(date.slice(0,4)),end=null)=>run(()=>actions.habits?.({date,year,...(end?{end}:{})}));
   const toolbar=el('div','habit-toolbar'),label=el('label',null,'Log a day'),picker=el('input');picker.type='date';picker.value=v.date;picker.max=v.today;picker.min='1900-01-01';picker.setAttribute('aria-label','Log a day');picker.dataset.focus='habit-date';label.append(picker);
   picker.onchange=()=>{if(picker.value&&picker.checkValidity())select(picker.value);else {picker.value=v.date;status.textContent='Choose a valid date from 1900 through today.';}};

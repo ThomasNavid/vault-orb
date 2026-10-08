@@ -10,7 +10,7 @@ contextBridge.exposeInMainWorld('orb',{
   knowledge:invoke('knowledge'),knowledgeNote:invoke('knowledge-note'),knowledgeWrite:invoke('knowledge-write'),knowledgeDismiss:invoke('knowledge-dismiss'),
   recurring:invoke('recurring'),recurringInstall:invoke('recurring-install'),recurringWrite:invoke('recurring-write'),recurringCreate:invoke('recurring-create'),
   dayPlanner:invoke('day-planner'),focus:invoke('focus'),completeTask:invoke('complete-task'),
-  calendar:invoke('calendar'),habits:invoke('habits'),setHabit:invoke('set-habit'),openHabitRecord:invoke('open-habit-record'),goals:invoke('goals'),today:invoke('today'),history:invoke('history'),undo:invoke('undo'),openNote:invoke('open-note'),openLink:invoke('open-link'),
+  calendar:invoke('calendar'),habits:invoke('habits'),createHabit:invoke('create-habit'),setHabit:invoke('set-habit'),openHabitRecord:invoke('open-habit-record'),goals:invoke('goals'),today:invoke('today'),history:invoke('history'),undo:invoke('undo'),openNote:invoke('open-note'),openLink:invoke('open-link'),
   connect:invoke('connect'),tool:invoke('tool'),chat:invoke('chat'),stop:invoke('stop'),
   chats:invoke('chats'),getChat:invoke('chat-get'),archiveChat:invoke('chat-archive'),renameChat:invoke('chat-rename'),deleteChat:invoke('chat-delete'),
   ready:invoke('ready'),resize:invoke('resize'),hide:invoke('hide'),enableShortcut:invoke('enable-shortcut'),

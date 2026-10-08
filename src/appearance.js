@@ -4,16 +4,29 @@
 })(typeof window==='object'?window:undefined,()=>{
   const DEFAULT_COLOUR='#1f86ff';
   const presets=[['Blue',DEFAULT_COLOUR],['Violet','#8b5cf6'],['Rose','#ec4899'],['Amber','#f59e0b'],['Mint','#34d399'],['Teal','#14b8a6']];
+  // Two ways to wear the orb: the classic floating orb, or a slim bar across the top of the screen.
+  const DEFAULT_VIEW='classic';
+  const views=[['classic','Classic orb','A floating orb with its panel beside it'],['bar','Top bar','A slim bar at the top of the screen, palette below']];
   function validateColour(value){
     if(typeof value!=='string'||!/^#[0-9a-f]{6}$/i.test(value))throw new Error('Enter a colour as #RRGGBB, for example #8b5cf6.');
     return value.toLowerCase();
   }
-  function readAppearance(config){
-    try{return {orbColour:validateColour(config?.appearance?.orbColour)};}catch{return {orbColour:DEFAULT_COLOUR};}
+  function validateView(value){
+    if(!views.some(([id])=>id===value))throw new Error('Choose the classic orb or the top bar.');
+    return value;
   }
+  function readAppearance(config){
+    let orbColour=DEFAULT_COLOUR,view=DEFAULT_VIEW;
+    try{orbColour=validateColour(config?.appearance?.orbColour);}catch{}
+    try{view=validateView(config?.appearance?.view);}catch{}
+    return {orbColour,view};
+  }
+  // An omitted view keeps the saved one, so saving a colour never changes the layout.
   function withAppearance(config,input){
     if(input===undefined)return config;
-    return {...config,appearance:{...config.appearance,orbColour:validateColour(input?.orbColour)}};
+    const appearance={...config.appearance,orbColour:validateColour(input?.orbColour)};
+    if(input.view!==undefined)appearance.view=validateView(input.view);
+    return {...config,appearance};
   }
   const hex=value=>[1,3,5].map(i=>parseInt(value.slice(i,i+2),16));
   const rgb=value=>`rgb(${value.map(Math.round).join(',')})`;
@@ -47,5 +60,5 @@
     }));
     return {states,rim:fromHsl(h,s,.13),shadow:fromHsl(h,s,.055),reflection:states.idle.light,glow:states.idle.mid};
   }
-  return {DEFAULT_COLOUR,presets,validateColour,readAppearance,withAppearance,palette,rgb};
+  return {DEFAULT_COLOUR,DEFAULT_VIEW,presets,views,validateColour,validateView,readAppearance,withAppearance,palette,rgb};
 });

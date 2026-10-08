@@ -39,6 +39,8 @@ For a packaged Mac app, see [Build and install](development.md#build-and-install
 
 In **Settings → Appearance**, choose a named colour or use the custom colour picker/hex field, then click **Apply colour**. You can do this before setting up a vault or API keys. The choice is saved on this Mac and also colours the small orb illustrations in chat. **Reset to blue** restores a preview of the original colour; apply it to save. See [colour controls](features/voice-and-controls.md#choose-your-orb-colour) for preview and save behaviour.
 
+Under **Layout** in the same section, choose **Classic orb** for a floating orb with its panel beside it, or **Top bar** for a slim glass bar at the top of your screen that shows your words as you speak and opens Explore beneath it. See [layouts](features/voice-and-controls.md#choose-where-smith-lives-on-screen).
+
 ## Your knowledge system
 
 Portfolio holds your thinking and outputs; Hubs map broad interests; Topics gather focused subjects; Knowledge Library holds source material. Topic `hub` and Knowledge `topic` properties connect the browsing structure. Portfolio cites supporting Library notes; its automatic incoming list shows Library notes that link back to it.

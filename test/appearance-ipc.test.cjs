@@ -44,6 +44,21 @@ test('appearance IPC works before setup, preserves unrelated settings, and survi
   const second=await boot(dir);assert.equal((await second.invoke('settings')).appearance.orbColour,'#ec4899');
 });
 
+test('the layout choice is saved beside the colour, survives a restart, and rejects unknown views',async t=>{
+  const dir=fixture(t),file=path.join(dir,'settings.json');
+  const first=await boot(dir);
+  assert.equal((await first.invoke('settings')).appearance.view,'classic');
+  await first.invoke('save-appearance',{orbColour:'#1f86ff',view:'bar'});
+  assert.deepEqual(JSON.parse(fs.readFileSync(file,'utf8')).appearance,{orbColour:'#1f86ff',view:'bar'});
+  // Changing only the colour must leave the chosen layout alone.
+  await first.invoke('save-appearance',{orbColour:'#34d399'});
+  assert.deepEqual((await first.invoke('settings')).appearance,{orbColour:'#34d399',view:'bar'});
+  const before=fs.readFileSync(file,'utf8');
+  for(const input of [{orbColour:'#34d399',view:'sidebar'},{orbColour:'#34d399',view:null}])await assert.rejects(first.invoke('save-appearance',input),/classic orb or the top bar/);
+  assert.equal(fs.readFileSync(file,'utf8'),before);
+  const second=await boot(dir);assert.equal((await second.invoke('settings')).appearance.view,'bar');
+});
+
 test('invalid/untrusted appearance IPC and failed writes leave disk and in-memory settings unchanged',async t=>{
   const dir=fixture(t),file=path.join(dir,'settings.json'),original={appearance:{orbColour:'#14b8a6'}};
   fs.writeFileSync(file,JSON.stringify(original));const app=await boot(dir),before=fs.readFileSync(file,'utf8');

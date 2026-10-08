@@ -52,6 +52,20 @@ Click **Apply colour** to save appearance independently, even before connecting 
 
 When a weather forecast arrives, the orb briefly tints icy blue in the cold or amber-red in the heat, and shimmers when it's wet. After about five seconds it returns to your chosen colour; your saved colour never changes. Turn this off in **Settings → Connectors → Weather**. Your choice is stored on this Mac and survives restarts and vault changes. It makes no network request and does not edit vault notes. If saving fails, the previous saved colour remains intact and the draft stays available to retry. Opening Settings ends an active voice session. The browser preview keeps applied colours only until the page reloads.
 
+## Choose where Smith lives on screen
+
+Open **Settings → Appearance → Layout** and choose between two ways of wearing the orb. The choice applies at once, is saved on this Mac, and survives restarts.
+
+**Classic orb** is the original arrangement: a floating orb you drag anywhere, with its panel opening beside it.
+
+**Top bar** is a slim glass bar that settles under the top edge of your screen. The orb shrinks to a small circular mark at the left end. The line beside it carries the status, and while you speak it turns your words into text as they arrive — your own words in white, Smith's answer in your orb colour. The bar then returns to the status line when the turn ends. Everything a panel would show, Explore (**⌘K**) included, opens directly below the bar, which grows downwards and keeps its top edge where you left it.
+
+**Click the line to type instead.** The bar's middle slot becomes the ask field, Explore opens beneath it, and what you type filters the list below exactly as ⌘K does — so the bar is the search field and the panel is its results. Press Enter to open a result or to send the request to Smith; after an answer the field stays ready for the next question. With the bar alone on screen, simply starting to type does the same thing, and **⌘K** always opens it from the keyboard. Escape clears what you typed, then puts the status line back, then hides Orb. Starting a voice conversation returns the slot to your words.
+
+The controls sit at the right end, collapsed to a single microphone button. Hover it — or reach it with the keyboard — and the rest unfold to its left: mute, Explore, Chat, Settings, and Hide. A muted microphone stays visible so the state is never hidden behind a hover. Drag the bar by its background to move it; tool steps appear as words on the status line rather than as moons around the orb.
+
+Chat (**⌘J**) and knowledge notes open in their own full windows in both layouts, and the orb returns to the top of the screen when you close them.
+
 ## Things to ask
 
 Voice and typing share the feature tools. Examples:

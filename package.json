@@ -16,6 +16,7 @@
     "build:maps": "node scripts/build-maps.cjs"
   },
   "dependencies": {
+    "acorn": "^8.19.0",
     "csv-parse": "^7.0.3",
     "exceljs": "^4.4.0",
     "ical.js": "^2.2.1",

@@ -1,6 +1,6 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {Vault,parseNote,localDate}=require('../src/vault.cjs');
-const {definitions,listHabits,setHabit,ensureHabitRecord,addDays,weekStart,HABIT_SCRIPT}=require('../src/habits.cjs');
+const {definitions,listHabits,createHabit,setHabit,ensureHabitRecord,addDays,weekStart,HABIT_SCRIPT}=require('../src/habits.cjs');
 const {Agent,tools,instructions}=require('../src/agent.cjs');
 const script=`const habits = [
  { key: "pull_ups", label: "Pull-ups", target: 7, cadence: "Daily", color: "#31995b" },
@@ -96,4 +96,84 @@ test('habit record symlinks, oversized notes and definition scripts cannot bypas
  assert.throws(()=>setHabit(v,{date,key:'pull_ups',completed:true,version:null,definitions_version:r.definitions_version}),/Symbolic/);
  fs.unlinkSync(path.join(v.root,v.habitFolder,`${date}.md`));raw(v,date,'x'.repeat(513*1024));assert.ok(listHabits(v).selected.error);
  fs.unlinkSync(path.join(v.root,HABIT_SCRIPT));fs.symlinkSync(path.join(v.root,v.habitFolder,`${date}.md`),path.join(v.root,HABIT_SCRIPT));assert.match(listHabits(v).setup,/Symbolic/);assert.equal(v.publicHistory().length,0);
+});
+
+function creation(v,label='Running',target=3){return {label,target,script_version:listHabits(v).script_version};}
+test('creates a habit without recording activity, persists across reload and restores exact script on undo',t=>{
+ const v=fixture(t),before=v.readHabitScript().content;
+ const result=createHabit(v,creation(v));assert.deepEqual(result.habit,{key:'running',label:'Running',target:3,cadence:'3 days a week',color:'#d88b42'});
+ const view=listHabits(v);assert.equal(view.habits.at(-1).week_count,0);assert.equal(view.selected.values.running,false);assert.equal(view.records.length,0);
+ assert.deepEqual(fs.readdirSync(path.join(v.root,v.habitFolder)),[]);
+ const reloaded=new Vault(v.root,v.stateDir,{folders:v.folders,goalsFolder:v.goalsFolder,habitFolder:v.habitFolder,rulesPath:''});assert.equal(listHabits(reloaded).habits.at(-1).label,'Running');
+ assert.equal(reloaded.publicHistory()[0].undoable,true);reloaded.undo(result.change_id);assert.equal(v.readHabitScript().content,before);
+});
+test('first habit works in empty tracker and creation retains comments, trailing commas, CRLF and custom code',t=>{
+ const v=fixture(t);
+ for(const literal of ['[/* keep empty */]','[\n {key:"read",label:"Read",target:1,cadence:"Weekly",color:"#31995b"} /*keep*/, // last\n]']){
+  const before=('/* const habits = []; is documentation */\nconst example = `const habits = [];`;\nconst habits = '+literal+';\nawait customDashboard(habits);\n').replace(/\n/g,'\r\n');
+  fs.writeFileSync(path.join(v.root,HABIT_SCRIPT),before);const view=listHabits(v);assert.equal(view.can_create,true);
+  if(!view.habits.length)assert.match(view.setup,/Choose your habits/);
+  const result=createHabit(v,creation(v));const after=v.readHabitScript().content;
+  assert.ok(after.startsWith(before.slice(0,before.indexOf(literal.replace(/\n/g,'\r\n')))));
+  assert.ok(after.includes('/*keep*/')||after.includes('/* keep empty */'));assert.ok(after.endsWith('await customDashboard(habits);\r\n'));assert.equal(after.replace(/\r\n/g,'').includes('\n'),false);
+  v.undo(result.change_id);assert.equal(v.readHabitScript().content,before);
+ }
+});
+test('rejects duplicates, missing frequency, invalid inputs and capacity before journaling',t=>{
+ const v=fixture(t),before=v.readHabitScript().content;
+ for(const [label,target] of [[' pull-UPS ',3],['',3],['x'.repeat(81),3],['Line\nbreak',3],['Run',0],['Run',8],['Run',1.5],['Run','3'],['Run',null],['Run',undefined]])assert.throws(()=>createHabit(v,{...creation(v),label,target}));
+ assert.equal(v.readHabitScript().content,before);assert.equal(v.publicHistory().length,0);
+ const first=creation(v);createHabit(v,first);assert.throws(()=>createHabit(v,first),/changed/);assert.throws(()=>createHabit(v,creation(v,' RUNNING ')),/already exists/);
+ for(let n=3;n<12;n++)createHabit(v,creation(v,'Habit '+n,1));assert.equal(listHabits(v).can_create,false);assert.throws(()=>createHabit(v,creation(v,'Thirteenth')),/12 habits/);
+});
+test('generated keys are safe, unique and do not revive old recorded properties',t=>{
+ const v=fixture(t),date=localDate(),before='---\nrunning: true\nrunning_2: true\n---\nMy old running notes.\n';raw(v,date,before);
+ const result=createHabit(v,creation(v));assert.equal(result.habit.key,'running_3');assert.equal(listHabits(v).habits.at(-1).week_count,0);assert.equal(v.read(`Habit Log/${date}.md`).content,before);
+ for(const label of ['123 training','Date','学习','Café','Run!', 'Run?']){
+  const h=createHabit(v,creation(v,label,7)).habit;assert.match(h.key,/^[a-z][a-z0-9_]{0,63}$/);assert.equal(h.cadence,'Daily');
+ }
+ assert.equal(new Set(definitions(v).habits.map(h=>h.key)).size,definitions(v).habits.length);
+});
+test('checks whole script version and rejects stale undo after an external edit',t=>{
+ const v=fixture(t),old=creation(v),before=v.readHabitScript().content;
+ fs.writeFileSync(path.join(v.root,HABIT_SCRIPT),before+'\n// external change\n');assert.throws(()=>createHabit(v,old),/dashboard changed/);assert.equal(v.publicHistory().length,0);
+ const change=createHabit(v,creation(v));const external=v.readHabitScript().content+'\n// later edit\n';fs.writeFileSync(path.join(v.root,HABIT_SCRIPT),external);
+ assert.throws(()=>v.undo(change.change_id),/changed/);assert.equal(v.readHabitScript().content,external);
+});
+test('journal recovery recognises a saved habit definition and generic note writes stay restricted',t=>{
+ const v=fixture(t),before=v.readHabitScript().content,change=createHabit(v,creation(v));
+ const entries=JSON.parse(fs.readFileSync(v.journalFile));entries.at(-1).status='pending';fs.writeFileSync(v.journalFile,JSON.stringify(entries));assert.equal(v.publicHistory()[0].status,'applied');
+ assert.throws(()=>v.read(HABIT_SCRIPT),/Markdown/);assert.throws(()=>v.commit(HABIT_SCRIPT,v.readHabitScript().content,'bad','Generic edit'),/Markdown/);
+ fs.writeFileSync(path.join(v.root,'other.js'),'const value = 1;');assert.throws(()=>v.commit('other.js','const value = 1;','bad','Edit',{habitDefinitions:true}),/configured/);
+ v.undo(change.change_id);assert.equal(v.readHabitScript().content,before);
+});
+test('creation refuses unsupported, missing, oversized and symlinked sources or unreadable historical records',t=>{
+ const v=fixture(t),source=path.join(v.root,HABIT_SCRIPT);
+ for(const bad of ['/*\nconst habits = [];\n*/','const habits = getHabits();','const habits = []; const habits = [];','const habits = [{...other}];','const habits = [{get key(){throw 1;}}];','const habits = [{key: "a", label: danger(), target: 1, cadence: "Once", color: "#123456"}];']){
+  fs.writeFileSync(source,bad);const view=listHabits(v);assert.equal(view.can_create,false);assert.throws(()=>createHabit(v,{label:'Run',target:3,script_version:'old'}));assert.equal(fs.readFileSync(source,'utf8'),bad);
+ }
+ fs.writeFileSync(source,script+' '.repeat(128*1024));assert.equal(listHabits(v).can_create,false);
+ fs.unlinkSync(source);assert.equal(listHabits(v).can_create,false);assert.throws(()=>createHabit(v,{label:'Run',target:3,script_version:'old'}));
+ fs.writeFileSync(path.join(v.root,'other.js'),script);fs.symlinkSync(path.join(v.root,'other.js'),source);assert.equal(listHabits(v).can_create,false);
+ fs.unlinkSync(source);fs.writeFileSync(source,script);raw(v,localDate(),'---\nbroken: [\n---\n');assert.throws(()=>createHabit(v,creation(v)));assert.equal(v.readHabitScript().content,script);assert.equal(v.publicHistory().length,0);
+});
+test('custom dashboard path is used for creation and undo without opening arbitrary JS access',t=>{
+ const v=fixture(t,{habitScript:'custom.js'});fs.writeFileSync(path.join(v.root,'custom.js'),'const habits = [];');
+ const result=createHabit(v,creation(v));assert.equal(result.path,'custom.js');assert.equal(definitions(v).habits.length,1);assert.equal(fs.readFileSync(path.join(v.root,HABIT_SCRIPT),'utf8'),script);
+ v.undo(result.change_id);assert.equal(v.readHabitScript().content,'const habits = [];');
+});
+test('creation and undo refresh the native habit panel and retain date/window through agent tools',async t=>{
+ const v=fixture(t),events=[],agent=new Agent({vault:v,getKey:()=>'',onActivity:e=>events.push(e)}),date=addDays(localDate(),-10);
+ await agent.execute('list_habits',{date});const view=agent.habitView;
+ const result=await agent.execute('create_habit',creation(v));let last=events.filter(e=>e.kind==='visual').at(-1).visual;
+ assert.equal(last.habits.at(-1).label,'Running');assert.equal(last.date,date);assert.deepEqual(agent.habitView,view);
+ await agent.execute('dismiss_visual',{});await agent.execute('undo_change',{change_id:result.change_id});last=events.filter(e=>e.kind==='visual').at(-1).visual;assert.equal(last.kind,'habits');assert.equal(last.habits.length,2);
+ assert.ok(tools.some(t=>t.name==='create_habit'));for(const deep of [false,true])assert.match(instructions(v,{deep}),/If frequency is missing, ask how many days per week/);
+});
+test('quoted habit names stay literal data and creation cannot overwrite a concurrent script edit',t=>{
+ const v=fixture(t),label='Read "quotes"; throw new Error("no"); //';
+ const added=createHabit(v,creation(v,label));assert.equal(definitions(v).habits.at(-1).label,label);v.undo(added.change_id);
+ const old=creation(v),commit=v.commit.bind(v);
+ v.commit=(...args)=>{fs.appendFileSync(path.join(v.root,HABIT_SCRIPT),'\n// changed just before commit');return commit(...args);};
+ assert.throws(()=>createHabit(v,old),/changed since/);assert.equal(v.publicHistory().filter(e=>e.status==='applied').length,0);
 });

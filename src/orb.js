@@ -38,7 +38,7 @@
   const soft=make('filter',{id:'jelly-soft',x:'-60%',y:'-200%',width:'220%',height:'500%'},defs);make('feGaussianBlur',{stdDeviation:5},soft);
   const clip=make('clipPath',{id:'jelly-clip'},defs);make('circle',{r:R},clip);
 
-  const shadow=make('ellipse',{cx:0,cy:R+18,rx:R*.66,ry:6,fill:'var(--orb-shadow)',filter:'url(#jelly-soft)'},svg);
+  const shadow=make('ellipse',{class:'orb-ground-shadow',cx:0,cy:R+18,rx:R*.66,ry:6,fill:'var(--orb-shadow)',filter:'url(#jelly-soft)'},svg);
   const halo=make('circle',{r:R*1.62,fill:'url(#jelly-halo)'},svg);
   const ring=make('circle',{r:R+13,fill:'none','stroke-width':1.5,opacity:0},svg);
   // Focus session: a faint track and a thin arc that fills clockwise from 12 o'clock, just outside the jelly.
