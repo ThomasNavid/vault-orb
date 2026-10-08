@@ -851,7 +851,19 @@ body.view-bar:not(.chat-mode) .shell{flex-direction:column;align-items:stretch;g
   box-shadow:inset 0 .5px 0 #ffffff54,inset 0 0 0 .5px #ffffff26,inset 0 -14px 24px -18px #ffffff5c,0 14px 38px -12px #000000c4,0 2px 8px #00000061;
   animation:fade-rise .4s var(--ease-out)
 }
-.view-bar .drag-handle,.view-bar .orb-nav,.view-bar .shortcut-hint,.view-bar .tool-orbit,.view-bar .moon-tip,.view-bar .dot,.view-bar .orb-ground-shadow,.view-bar .divider{display:none}
+.view-bar .drag-handle,.view-bar .orb-nav,.view-bar .shortcut-hint,.view-bar .moon-tip,.view-bar .dot,.view-bar .orb-ground-shadow,.view-bar .divider{display:none}
+
+/* Thinking, at a glance: the moons unroll into a short row of steps, and the bar's lower edge works */
+.view-bar .tool-orbit{position:static;inset:auto;flex:none;display:flex;align-items:center;gap:4px;animation:none;pointer-events:none}
+.view-bar .tool-orbit::before{display:none}
+.view-bar .moon{position:static;width:auto;height:auto;margin:0;transform:none}
+.view-bar .moon i{width:6px;height:6px}
+.view-bar .moon[data-status=done] i{transform:scale(.72)}
+/* Only the most recent steps; the chip and the Steps view hold the rest. */
+.view-bar .moon:nth-last-child(n+9){display:none}
+.view-bar .orb-home::after{content:"";position:absolute;left:16px;right:16px;bottom:0;height:1.5px;border-radius:2px;pointer-events:none;opacity:0;transition:opacity .35s;background:linear-gradient(90deg,#fff0,var(--accent-text),#fff0) no-repeat;background-size:40% 100%}
+.view-bar .orb-home[data-state=thinking]::after{opacity:.8;animation:bar-working 1.6s linear infinite}
+@keyframes bar-working{from{background-position:-42% 0}to{background-position:142% 0}}
 
 /* The orb itself, shrunk to a small circular mark at the left end */
 .view-bar .orb-stage{width:34px;height:34px;flex:none;-webkit-app-region:no-drag}
@@ -894,4 +906,5 @@ body.view-bar:not(.chat-mode) .shell{flex-direction:column;align-items:stretch;g
 @media (prefers-reduced-motion:reduce){
   .view-bar:not(.chat-mode) .orb-home{animation:none}
   .view-bar .controls>button:not(#voice-button){transition:none}
+  .view-bar .orb-home[data-state=thinking]::after{animation:none;background-size:100% 100%;opacity:.45}
 }

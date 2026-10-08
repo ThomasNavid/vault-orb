@@ -62,15 +62,21 @@ function applyView(view){
  if(view&&view!==orbView)orbView=view;
  document.body.classList.toggle('view-bar',barView());
  if(settings?.appearance)settings.appearance={...settings.appearance,view:orbView};
- placeAskForm();if(!barView())setTyping(false);
+ placeBarParts();if(!barView())setTyping(false);
  $('status-wrap').title=barView()?'Click to type instead · ⌘K':'';
  paintStatus();
 }
-// One ask field, in the bar when the bar is the window's header and in the panel header otherwise.
-function placeAskForm(){
- const form=$('ask-form'),home=document.querySelector('.orb-home'),header=document.querySelector('.card-header');
- if(barView()){if(form.parentElement!==home)home.insertBefore(form,$('dock'));}
- else if(form.parentElement!==header)header.insertBefore(form,$('card-eyebrow'));
+// The ask field and the tool steps belong to the bar in one layout and to the panel and the orb in the other.
+function placeBarParts(){
+ const form=$('ask-form'),track=$('tool-orbit'),home=document.querySelector('.orb-home'),dock=$('dock');
+ if(barView()){
+  if(form.parentElement!==home)home.insertBefore(form,dock);
+  if(track.parentElement!==home)home.insertBefore(track,dock);
+  return;
+ }
+ const header=document.querySelector('.card-header'),stage=document.querySelector('.orb-stage');
+ if(form.parentElement!==header)header.insertBefore(form,$('card-eyebrow'));
+ if(track.parentElement!==stage)stage.append(track);
 }
 // The bar's middle slot carries either what is being said or what is being typed, never both.
 let barTyping=false;
@@ -164,6 +170,7 @@ function setCaption(role,text){
 function paintStatus(){
  const node=$('status'),wrap=$('status-wrap'),live=barView()&&caption;
  visual.setState(statusLine.state);wrap.dataset.state=statusLine.state;wrap.dataset.caption=live?caption.role:'';
+ document.querySelector('.orb-home').dataset.state=statusLine.state;
  let {text,detail}=statusLine;
  node.dataset.idle=String(!live&&statusLine.state==='idle'&&text===IDLE);
  const line=node.dataset.idle==='true'&&focusLine();if(line)[text,detail]=line;
